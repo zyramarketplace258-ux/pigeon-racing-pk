@@ -1,11 +1,17 @@
 'use client'
 export const dynamic = 'force-dynamic'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import Link from 'next/link'
+
+interface RaceDay {
+  dayNumber: number
+  date: string
+  isGap: boolean
+}
 
 export default function NewTournamentPage() {
   const router = useRouter()
@@ -14,6 +20,7 @@ export default function NewTournamentPage() {
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [raceDays, setRaceDays] = useState<RaceDay[]>([])
 
   const [form, setForm] = useState({
     name: '',
@@ -23,25 +30,36 @@ export default function NewTournamentPage() {
     startDate: '',
   })
 
+  // Regenerate race days whenever startDate or totalDays changes
+  useEffect(() => {
+    if (!form.startDate || !form.totalDays) { setRaceDays([]); return }
+    const start = new Date(form.startDate)
+    const days: RaceDay[] = []
+    for (let i = 0; i < form.totalDays; i++) {
+      const d = new Date(start)
+      d.setDate(start.getDate() + i)
+      // Preserve existing gap toggles when regenerating
+      const existing = raceDays[i]
+      days.push({
+        dayNumber: i + 1,
+        date: d.toISOString().split('T')[0],
+        isGap: existing?.isGap ?? false,
+      })
+    }
+    setRaceDays(days)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.startDate, form.totalDays])
+
+  const toggleGap = (index: number) => {
+    setRaceDays(prev => prev.map((d, i) => i === index ? { ...d, isGap: !d.isGap } : d))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
 
     try {
-      // Generate race days (consecutive from startDate)
-      const raceDays = []
-      const start = new Date(form.startDate)
-      for (let i = 0; i < form.totalDays; i++) {
-        const d = new Date(start)
-        d.setDate(start.getDate() + i)
-        raceDays.push({
-          dayNumber: i + 1,
-          date: d.toISOString().split('T')[0],
-          isGap: false,
-        })
-      }
-
       await addDoc(collection(db, 'clubs', clubId, 'tournaments'), {
         name: form.name,
         status: 'inactive',
@@ -61,6 +79,9 @@ export default function NewTournamentPage() {
       setLoading(false)
     }
   }
+
+  const gapCount = raceDays.filter(d => d.isGap).length
+  const raceDayCount = raceDays.length - gapCount
 
   return (
     <main className="min-h-screen bg-dark">
@@ -116,7 +137,7 @@ export default function NewTournamentPage() {
               <input
                 type="number"
                 value={form.totalDays}
-                onChange={e => setForm(f => ({ ...f, totalDays: parseInt(e.target.value) }))}
+                onChange={e => setForm(f => ({ ...f, totalDays: parseInt(e.target.value) || 1 }))}
                 required
                 min={1}
                 max={100}
@@ -141,16 +162,43 @@ export default function NewTournamentPage() {
               <input
                 type="number"
                 value={form.pigeonCount}
-                onChange={e => setForm(f => ({ ...f, pigeonCount: parseInt(e.target.value) }))}
+                onChange={e => setForm(f => ({ ...f, pigeonCount: parseInt(e.target.value) || 1 }))}
                 required
                 min={1}
                 className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-secondary"
               />
             </div>
 
+            {/* Race Days Preview */}
+            {raceDays.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-green-300 text-sm">Schedule — tap a day to mark as gap</label>
+                  <span className="text-green-600 text-xs">{raceDayCount} race · {gapCount} gap</span>
+                </div>
+                <div className="grid grid-cols-5 gap-2 max-h-64 overflow-y-auto pr-1">
+                  {raceDays.map((d, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => toggleGap(i)}
+                      className={`rounded-lg p-2 text-center text-xs font-semibold transition border ${
+                        d.isGap
+                          ? 'bg-dark border-green-900 text-green-700 line-through'
+                          : 'bg-primary border-green-700 text-white hover:border-secondary'
+                      }`}
+                    >
+                      <span className="block font-bold">{d.isGap ? 'GAP' : `D${d.dayNumber}`}</span>
+                      <span className="block text-xs opacity-70 mt-0.5">{d.date.slice(5)}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || raceDays.length === 0}
               className="w-full bg-secondary hover:bg-accent text-dark font-bold py-3 rounded-lg transition disabled:opacity-50 mt-2"
             >
               {loading ? 'Creating...' : 'Create Tournament'}

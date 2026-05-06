@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore'
+import { collection, query, where, getDocs, doc, getDoc, onSnapshot } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { compareHours, formatTimeDisplay, calculateGrandTotal } from '@/lib/timeUtils'
 import Link from 'next/link'
@@ -26,6 +26,7 @@ interface DayEntry {
   pigeons: PigeonEntry[]
   totalHours: string
   hasData: boolean
+  savedAt?: string
 }
 
 interface TotalRow {
@@ -75,65 +76,61 @@ export default function TournamentResultsPage() {
 
       // Default to today's race day, else last day
       const today = new Date().toISOString().split('T')[0]
-      const todayDay = tData.raceDays?.find(rd => rd.date === today)
-      const defaultDay = todayDay?.dayNumber ?? tData.raceDays?.[tData.raceDays.length - 1]?.dayNumber ?? 1
+      const todayDay = tData.raceDays?.find(rd => rd.date === today && !rd.isGap)
+      const nonGapDays = tData.raceDays?.filter(rd => !rd.isGap) ?? []
+      const defaultDay = todayDay?.dayNumber ?? nonGapDays[nonGapDays.length - 1]?.dayNumber ?? 1
       setSelectedDay(defaultDay)
       setLoading(false)
     }
     load()
   }, [clubSlug, tournamentId])
 
+  // Tick every 15s to re-evaluate the 2-minute highlight expiry
+  const [, setTick] = useState(0)
   useEffect(() => {
-    if (!club || !tournament || participants.length === 0) return
-    let active = true
+    const interval = setInterval(() => setTick(t => t + 1), 15000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const isRecent = (savedAt?: string) => {
+    if (!savedAt) return false
+    return Date.now() - new Date(savedAt).getTime() < 2 * 60 * 1000
+  }
+
+  useEffect(() => {
+    if (!club || !tournament || participants.length === 0 || showTotal) return
     setLoadingEntries(true)
 
-    const load = async () => {
-      const rows: DayEntry[] = await Promise.all(
-        participants.map(async (p) => {
-          const entryRef = doc(db, 'clubs', club.id, 'tournaments', tournament.id, 'entries', `${p.id}_day${selectedDay}`)
-          const snap = await getDoc(entryRef)
-          if (snap.exists()) {
-            const d = snap.data()
-            return {
-              rank: 0,
-              participantId: p.id,
-              name: p.name,
-              area: p.area,
-              startTime: d.startTime,
-              pigeons: d.pigeons || [],
-              totalHours: d.totalHours || '',
-              hasData: true,
-            }
-          }
+    const entriesRef = collection(db, 'clubs', club.id, 'tournaments', tournament.id, 'entries')
+    const unsubscribe = onSnapshot(entriesRef, (snapshot) => {
+      const rows: DayEntry[] = participants.map(p => {
+        const entryDoc = snapshot.docs.find(d => d.id === `${p.id}_day${selectedDay}`)
+        if (entryDoc) {
+          const d = entryDoc.data()
           return {
-            rank: 0,
-            participantId: p.id,
-            name: p.name,
-            area: p.area,
-            startTime: tournament.defaultStartTime,
-            pigeons: Array.from({ length: tournament.pigeonCount }, () => ({ landingTime: '', hoursFlown: '' })),
-            totalHours: '',
-            hasData: false,
+            rank: 0, participantId: p.id, name: p.name, area: p.area,
+            startTime: d.startTime, pigeons: d.pigeons || [],
+            totalHours: d.totalHours || '', hasData: true, savedAt: d.savedAt,
           }
-        })
-      )
+        }
+        return {
+          rank: 0, participantId: p.id, name: p.name, area: p.area,
+          startTime: tournament.defaultStartTime,
+          pigeons: Array.from({ length: tournament.pigeonCount }, () => ({ landingTime: '', hoursFlown: '' })),
+          totalHours: '', hasData: false,
+        }
+      })
 
-      if (!active) return
-
-      // Sort: participants with data first (by total hours desc), then no-data at bottom
       const withData = rows.filter(r => r.hasData && r.totalHours).sort((a, b) => compareHours(a.totalHours, b.totalHours))
       const noData = rows.filter(r => !r.hasData || !r.totalHours)
       const sorted = [...withData, ...noData]
       sorted.forEach((r, i) => { r.rank = i + 1 })
-
       setDayEntries(sorted)
       setLoadingEntries(false)
-    }
+    })
 
-    load()
-    return () => { active = false }
-  }, [selectedDay, club, tournament, participants])
+    return () => unsubscribe()
+  }, [selectedDay, club, tournament, participants, showTotal])
 
   // Load grand totals across all days
   useEffect(() => {
@@ -147,7 +144,7 @@ export default function TournamentResultsPage() {
           const hours: string[] = []
           let daysFlown = 0
           await Promise.all(
-            (tournament.raceDays || []).map(async (rd) => {
+            (tournament.raceDays || []).filter(rd => !rd.isGap).map(async (rd) => {
               const snap = await getDoc(doc(db, 'clubs', club.id, 'tournaments', tournament.id, 'entries', `${p.id}_day${rd.dayNumber}`))
               if (snap.exists() && snap.data().totalHours) {
                 hours.push(snap.data().totalHours)
@@ -262,7 +259,7 @@ export default function TournamentResultsPage() {
 
         {/* Day Selector */}
         <div className="flex gap-2 flex-wrap mb-6">
-          {tournament.raceDays?.map(rd => {
+          {tournament.raceDays?.filter(rd => !rd.isGap).map(rd => {
             const isToday = rd.date === today
             const isSelected = !showTotal && rd.dayNumber === selectedDay
             return (
@@ -397,7 +394,13 @@ export default function TournamentResultsPage() {
                 {dayEntries.map(entry => (
                   <tr
                     key={entry.participantId}
-                    className={`border-b border-green-900 transition ${entry.rank === 1 && entry.hasData ? 'bg-yellow-900/20' : 'hover:bg-primary'}`}
+                    className={`border-b border-green-900 transition ${
+                      isRecent(entry.savedAt)
+                        ? 'bg-secondary/10 border-l-2 border-l-secondary'
+                        : entry.rank === 1 && entry.hasData
+                          ? 'bg-yellow-900/20'
+                          : 'hover:bg-primary'
+                    }`}
                   >
                     <td className={`px-3 py-3 whitespace-nowrap ${rankStyle(entry.rank, entry.hasData)}`}>
                       {rankEmoji(entry.rank, entry.hasData)}

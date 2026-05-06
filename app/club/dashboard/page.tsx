@@ -71,7 +71,7 @@ export default function ClubDashboard() {
 
         const today = new Date().toISOString().split('T')[0]
         setTodayDate(today)
-        const todayRaceDay = tData.raceDays?.find(rd => rd.date === today)
+        const todayRaceDay = tData.raceDays?.find(rd => rd.date === today && !rd.isGap)
         if (todayRaceDay) setTodayDay(todayRaceDay.dayNumber)
 
         const pSnap = await getDocs(collection(db, 'clubs', clubData.id, 'participants'))
@@ -256,7 +256,7 @@ export default function ClubDashboard() {
 
     const today = new Date().toISOString().split('T')[0]
     setTodayDate(today)
-    const todayRaceDay = selected.raceDays?.find(rd => rd.date === today)
+    const todayRaceDay = selected.raceDays?.find(rd => rd.date === today && !rd.isGap)
     setTodayDay(todayRaceDay?.dayNumber ?? null)
 
     const dayNum = todayRaceDay?.dayNumber

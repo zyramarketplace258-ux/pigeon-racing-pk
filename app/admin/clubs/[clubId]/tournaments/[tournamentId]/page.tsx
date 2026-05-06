@@ -82,8 +82,9 @@ export default function TournamentManagePage() {
         }
 
         const today = new Date().toISOString().split('T')[0]
-        const todayDay = tData.raceDays?.find(rd => rd.date === today)
-        const defaultDay = todayDay?.dayNumber ?? tData.raceDays?.[0]?.dayNumber ?? null
+        const todayDay = tData.raceDays?.find(rd => rd.date === today && !rd.isGap)
+        const nonGapDays = tData.raceDays?.filter(rd => !rd.isGap) ?? []
+        const defaultDay = todayDay?.dayNumber ?? nonGapDays[0]?.dayNumber ?? null
         setSelectedDay(defaultDay)
         setLoading(false)
       })
@@ -287,7 +288,7 @@ export default function TournamentManagePage() {
                 onChange={e => setSelectedDay(Number(e.target.value))}
                 className="bg-primary border border-green-700 text-white rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-secondary"
               >
-                {tournament?.raceDays?.map(rd => (
+                {tournament?.raceDays?.filter(rd => !rd.isGap).map(rd => (
                   <option key={rd.dayNumber} value={rd.dayNumber}>
                     Day {rd.dayNumber} — {rd.date}
                   </option>
