@@ -34,7 +34,7 @@ export default function AdminLoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password)
       router.push('/admin/dashboard')
-    } catch (err: unknown) {
+    } catch {
       setError('Invalid email or password. Please try again.')
     } finally {
       setLoading(false)

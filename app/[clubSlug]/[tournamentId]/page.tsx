@@ -89,7 +89,7 @@ export default function TournamentResultsPage() {
 
     const load = async () => {
       const rows: DayEntry[] = await Promise.all(
-        participants.map(async (p, i) => {
+        participants.map(async (p) => {
           const entryRef = doc(db, 'clubs', club.id, 'tournaments', tournament.id, 'entries', `${p.id}_day${selectedDay}`)
           const snap = await getDoc(entryRef)
           if (snap.exists()) {
