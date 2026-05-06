@@ -1,9 +1,9 @@
 'use client'
 export const dynamic = 'force-dynamic'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'next/navigation'
-import { collection, query, where, getDocs, doc, getDoc, onSnapshot } from 'firebase/firestore'
+import { collection, query, where, getDocs, doc, getDoc, onSnapshot, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { compareHours, formatTimeDisplay, calculateGrandTotal } from '@/lib/timeUtils'
 import Link from 'next/link'
@@ -28,7 +28,6 @@ interface DayEntry {
   hasData: boolean
   savedAt?: string
 }
-
 interface TotalRow {
   rank: number
   participantId: string
@@ -52,6 +51,8 @@ export default function TournamentResultsPage() {
   const [totalRows, setTotalRows] = useState<TotalRow[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingEntries, setLoadingEntries] = useState(false)
+  const [viewerCount, setViewerCount] = useState(0)
+  const sessionId = useRef(Math.random().toString(36).slice(2, 10))
 
   useEffect(() => {
     const load = async () => {
@@ -84,7 +85,27 @@ export default function TournamentResultsPage() {
     load()
   }, [clubSlug, tournamentId])
 
-  // Tick every 15s to re-evaluate the 5-minute highlight expiry
+  // Online viewers presence tracking
+  useEffect(() => {
+    if (!club || !tournament) return
+    const viewerRef = doc(db, 'clubs', club.id, 'tournaments', tournament.id, 'viewers', sessionId.current)
+
+    setDoc(viewerRef, { lastSeen: serverTimestamp() })
+    const heartbeat = setInterval(() => setDoc(viewerRef, { lastSeen: serverTimestamp() }), 30000)
+
+    const unsubscribe = onSnapshot(
+      collection(db, 'clubs', club.id, 'tournaments', tournament.id, 'viewers'),
+      snap => setViewerCount(snap.size)
+    )
+
+    return () => {
+      clearInterval(heartbeat)
+      deleteDoc(viewerRef)
+      unsubscribe()
+    }
+  }, [club, tournament])
+
+  // Tick every 15s to re-evaluate 5-minute highlight expiry
   const [, setTick] = useState(0)
   useEffect(() => {
     const interval = setInterval(() => setTick(t => t + 1), 15000)
@@ -150,7 +171,7 @@ export default function TournamentResultsPage() {
     return () => unsubscribe()
   }, [selectedDay, club, tournament, participants, showTotal])
 
-  // Load grand totals across all days
+  // Load grand totals
   useEffect(() => {
     if (!showTotal || !club || !tournament || participants.length === 0) return
     let active = true
@@ -170,19 +191,10 @@ export default function TournamentResultsPage() {
               }
             })
           )
-          return {
-            rank: 0,
-            participantId: p.id,
-            name: p.name,
-            area: p.area,
-            daysFlown,
-            grandTotal: hours.length > 0 ? calculateGrandTotal(hours) : '',
-          }
+          return { rank: 0, participantId: p.id, name: p.name, area: p.area, daysFlown, grandTotal: hours.length > 0 ? calculateGrandTotal(hours) : '' }
         })
       )
-
       if (!active) return
-
       const withData = rows.filter(r => r.grandTotal).sort((a, b) => compareHours(a.grandTotal, b.grandTotal))
       const noData = rows.filter(r => !r.grandTotal)
       const sorted = [...withData, ...noData]
@@ -190,7 +202,6 @@ export default function TournamentResultsPage() {
       setTotalRows(sorted)
       setLoadingEntries(false)
     }
-
     load()
     return () => { active = false }
   }, [showTotal, club, tournament, participants])
@@ -209,6 +220,34 @@ export default function TournamentResultsPage() {
     if (rank === 2) return 'text-gray-300 font-bold'
     if (rank === 3) return 'text-amber-600 font-bold'
     return 'text-green-500'
+  }
+
+  const shareOnWhatsApp = () => {
+    if (!club || !tournament) return
+    const lines: string[] = []
+
+    if (showTotal) {
+      lines.push(`🏆 Grand Total — ${tournament.name}`)
+      lines.push(`📍 ${club.name} · ${club.city}`)
+      lines.push('')
+      totalRows.filter(r => r.grandTotal).slice(0, 5).forEach((row, i) => {
+        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`
+        lines.push(`${medal} ${row.name} — ${formatTimeDisplay(row.grandTotal)}`)
+      })
+    } else {
+      lines.push(`🐦 Day ${selectedDay} Results — ${tournament.name}`)
+      lines.push(`📍 ${club.name} · ${club.city}`)
+      if (selectedRaceDay?.date) lines.push(`📅 ${selectedRaceDay.date}`)
+      lines.push('')
+      dayEntries.filter(e => e.hasData && e.totalHours).slice(0, 5).forEach((entry, i) => {
+        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`
+        lines.push(`${medal} ${entry.name} — ${formatTimeDisplay(entry.totalHours)}`)
+      })
+    }
+
+    lines.push('')
+    lines.push(`🔗 ${window.location.href}`)
+    window.open(`https://wa.me/?text=${encodeURIComponent(lines.join('\n'))}`, '_blank')
   }
 
   const today = new Date().toISOString().split('T')[0]
@@ -237,9 +276,21 @@ export default function TournamentResultsPage() {
         <div className="flex items-center justify-between">
           <div className="min-w-0 flex-1 mr-3">
             <h1 className="text-base sm:text-xl font-bold text-white truncate">{tournament.name}</h1>
-            <p className="text-green-400 text-xs truncate">{club.name} · {club.city}</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <p className="text-green-400 text-xs truncate">{club.name} · {club.city}</p>
+              {viewerCount > 1 && (
+                <span className="text-green-600 text-xs shrink-0">· 👁 {viewerCount}</span>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={shareOnWhatsApp}
+              className="bg-green-700 hover:bg-green-600 text-white text-xs px-2 sm:px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1"
+            >
+              <span>📲</span>
+              <span className="hidden sm:inline">Share</span>
+            </button>
             <Link href="/" className="text-xs text-green-400 hover:text-secondary transition">🏠</Link>
             <Link href={`/${clubSlug}`} className="text-xs text-green-400 hover:text-secondary transition">← Club</Link>
           </div>
@@ -248,22 +299,38 @@ export default function TournamentResultsPage() {
 
       <div className="px-4 py-4 max-w-6xl mx-auto">
 
-        {/* Tournament Stats */}
+        {/* Stats Bar */}
         {(() => {
-          const totalPigeons = tournament.pigeonCount * participants.length
-          const landedPigeons = dayEntries.reduce((sum, e) => sum + e.pigeons.filter(pg => pg.landingTime).length, 0)
+          const participantsWithData = dayEntries.filter(e => e.hasData).length
+          const totalLanded = dayEntries.reduce((sum, e) => {
+            if (!e.hasData) return sum
+            return sum + e.pigeons.filter(pg => pg.landingTime).length
+          }, 0)
+          const stillFlying = Math.max(0, participantsWithData * tournament.pigeonCount - totalLanded)
+
           return (
-            <div className="bg-surface border border-green-800 rounded-xl p-3 mb-4 grid grid-cols-2 gap-3 text-center">
+            <div className={`bg-surface border border-green-800 rounded-xl p-3 mb-4 grid ${showTotal ? 'grid-cols-2' : 'grid-cols-3'} gap-3 text-center`}>
               <div>
                 <p className="text-green-400 text-xs">Total Days</p>
                 <p className="text-white font-bold text-xl">{tournament.totalDays}</p>
               </div>
-              <div>
-                <p className="text-green-400 text-xs">{showTotal ? 'Participants' : 'Landed'}</p>
-                <p className="text-white font-bold text-xl">
-                  {showTotal ? participants.length : `${landedPigeons} / ${totalPigeons}`}
-                </p>
-              </div>
+              {showTotal ? (
+                <div>
+                  <p className="text-green-400 text-xs">Participants</p>
+                  <p className="text-white font-bold text-xl">{participants.length}</p>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <p className="text-green-400 text-xs">Landed</p>
+                    <p className="text-white font-bold text-xl">{totalLanded}</p>
+                  </div>
+                  <div>
+                    <p className="text-green-400 text-xs">Flying</p>
+                    <p className="text-green-300 font-bold text-xl">{stillFlying}</p>
+                  </div>
+                </>
+              )}
             </div>
           )
         })()}
@@ -300,9 +367,7 @@ export default function TournamentResultsPage() {
                   <span className={`block text-xs mt-0.5 ${isSelected ? 'text-dark opacity-70' : isToday ? 'text-secondary' : 'opacity-60'}`}>
                     {rd.date.slice(5)}
                   </span>
-                  {isToday && !isSelected && (
-                    <span className="block text-secondary text-xs">●</span>
-                  )}
+                  {isToday && !isSelected && <span className="block text-secondary text-xs">●</span>}
                 </button>
               )
             })}
@@ -346,7 +411,7 @@ export default function TournamentResultsPage() {
                       </div>
                       <div className="text-right shrink-0">
                         {row.grandTotal
-                          ? <p className="font-mono font-bold text-secondary text-base">{formatTimeDisplay(row.grandTotal)}</p>
+                          ? <p className="font-mono font-bold text-secondary">{formatTimeDisplay(row.grandTotal)}</p>
                           : <p className="text-green-800 text-sm">—</p>
                         }
                         <p className="text-green-600 text-xs">
@@ -375,13 +440,8 @@ export default function TournamentResultsPage() {
                   </thead>
                   <tbody>
                     {totalRows.map(row => (
-                      <tr
-                        key={row.participantId}
-                        className={`border-b border-green-900 transition ${row.rank === 1 && row.grandTotal ? 'bg-yellow-900/20' : 'hover:bg-primary'}`}
-                      >
-                        <td className={`px-4 py-3 ${rankStyle(row.rank, !!row.grandTotal)}`}>
-                          {rankEmoji(row.rank, !!row.grandTotal)}
-                        </td>
+                      <tr key={row.participantId} className={`border-b border-green-900 transition ${row.rank === 1 && row.grandTotal ? 'bg-yellow-900/20' : 'hover:bg-primary'}`}>
+                        <td className={`px-4 py-3 ${rankStyle(row.rank, !!row.grandTotal)}`}>{rankEmoji(row.rank, !!row.grandTotal)}</td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <span className="text-white font-semibold block">{row.name}</span>
                           <span className="text-green-500 text-xs">{row.area}</span>
@@ -440,7 +500,6 @@ export default function TournamentResultsPage() {
                       key={entry.participantId}
                       className={`rounded-xl border p-4 ${entry.rank === 1 && entry.hasData ? 'border-secondary bg-yellow-900/20' : 'border-green-800 bg-surface'}`}
                     >
-                      {/* Header row */}
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2 min-w-0">
                           <span className={`text-base shrink-0 ${rankStyle(entry.rank, entry.hasData)}`}>
@@ -456,21 +515,15 @@ export default function TournamentResultsPage() {
                             ? <p className="font-mono font-bold text-secondary">{formatTimeDisplay(entry.totalHours)}</p>
                             : <p className="text-green-800 text-sm">—</p>
                           }
-                          {entry.hasData && (
-                            <p className="text-green-600 text-xs font-mono">Start {entry.startTime}</p>
-                          )}
+                          {entry.hasData && <p className="text-green-600 text-xs font-mono">Start {entry.startTime}</p>}
                         </div>
                       </div>
-
-                      {/* Pigeon grid */}
                       <div className="grid grid-cols-3 gap-1.5">
                         {entry.pigeons.map((pg, pi) => (
                           <div
                             key={pi}
-                            className={`rounded-lg p-2 text-center text-xs transition ${
-                              pg.landingTime && isRecentLanding(pg.landingTime)
-                                ? 'bg-secondary text-dark'
-                                : 'bg-primary'
+                            className={`rounded-lg p-2 text-center transition ${
+                              pg.landingTime && isRecentLanding(pg.landingTime) ? 'bg-secondary' : 'bg-primary'
                             }`}
                           >
                             <p className={`text-xs mb-0.5 ${pg.landingTime && isRecentLanding(pg.landingTime) ? 'text-dark opacity-70' : 'text-green-500'}`}>
@@ -486,7 +539,7 @@ export default function TournamentResultsPage() {
                                 </p>
                               </>
                             ) : (
-                              <p className="text-green-800">—</p>
+                              <p className="text-green-800 text-xs">—</p>
                             )}
                           </div>
                         ))}
@@ -513,10 +566,7 @@ export default function TournamentResultsPage() {
                     </thead>
                     <tbody>
                       {dayEntries.map(entry => (
-                        <tr
-                          key={entry.participantId}
-                          className={`border-b border-green-900 transition ${entry.rank === 1 && entry.hasData ? 'bg-yellow-900/20' : 'hover:bg-primary'}`}
-                        >
+                        <tr key={entry.participantId} className={`border-b border-green-900 transition ${entry.rank === 1 && entry.hasData ? 'bg-yellow-900/20' : 'hover:bg-primary'}`}>
                           <td className={`px-3 py-3 whitespace-nowrap ${rankStyle(entry.rank, entry.hasData)}`}>
                             {rankEmoji(entry.rank, entry.hasData)}
                           </td>
@@ -542,11 +592,10 @@ export default function TournamentResultsPage() {
                             </td>
                           ))}
                           <td className="px-3 py-3 whitespace-nowrap">
-                            {entry.totalHours ? (
-                              <span className="font-mono font-bold text-secondary text-base">{formatTimeDisplay(entry.totalHours)}</span>
-                            ) : (
-                              <span className="text-green-800">—</span>
-                            )}
+                            {entry.totalHours
+                              ? <span className="font-mono font-bold text-secondary text-base">{formatTimeDisplay(entry.totalHours)}</span>
+                              : <span className="text-green-800">—</span>
+                            }
                           </td>
                         </tr>
                       ))}

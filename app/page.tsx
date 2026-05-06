@@ -4,12 +4,18 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { collection, getDocs, query, where } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import { compareHours, formatTimeDisplay } from '@/lib/timeUtils'
 import Link from 'next/link'
 
 interface Club { id: string; name: string; slug: string; city: string }
+interface RaceDay { dayNumber: number; date: string; isGap?: boolean }
+interface TopEntry { name: string; totalHours: string }
 interface ActiveTournament {
   id: string; name: string; totalDays: number
   clubId: string; clubName: string; clubSlug: string; clubCity: string
+  raceDays: RaceDay[]
+  currentDay: number; totalRaceDays: number
+  topEntries: TopEntry[]
 }
 
 const personalities = [
@@ -25,16 +31,59 @@ export default function HomePage() {
 
   useEffect(() => {
     const load = async () => {
+      const today = new Date().toISOString().split('T')[0]
+
       const snap = await getDocs(collection(db, 'clubs'))
       const list = snap.docs.map(d => ({ id: d.id, ...d.data() })) as Club[]
       setClubs(list)
+
       const tournamentList: ActiveTournament[] = []
+
       await Promise.all(list.map(async (club) => {
         const tSnap = await getDocs(query(collection(db, 'clubs', club.id, 'tournaments'), where('status', '==', 'active')))
         tSnap.docs.forEach(d => {
-          tournamentList.push({ id: d.id, name: d.data().name, totalDays: d.data().totalDays, clubId: club.id, clubName: club.name, clubSlug: club.slug, clubCity: club.city })
+          const data = d.data()
+          const raceDays: RaceDay[] = data.raceDays || []
+          const nonGap = raceDays.filter(rd => !rd.isGap)
+          const passed = nonGap.filter(rd => rd.date <= today).length
+          tournamentList.push({
+            id: d.id, name: data.name, totalDays: data.totalDays,
+            clubId: club.id, clubName: club.name, clubSlug: club.slug, clubCity: club.city,
+            raceDays,
+            currentDay: Math.min(passed, nonGap.length) || 1,
+            totalRaceDays: nonGap.length,
+            topEntries: [],
+          })
         })
       }))
+
+      // Fetch top entries and participant names for each active tournament
+      await Promise.all(tournamentList.map(async (t) => {
+        const nonGap = t.raceDays.filter(rd => !rd.isGap)
+        const todayDay = nonGap.find(rd => rd.date === today)
+        const currentDayNum = todayDay?.dayNumber ?? nonGap[nonGap.length - 1]?.dayNumber
+        if (!currentDayNum) return
+
+        const [entriesSnap, pSnap] = await Promise.all([
+          getDocs(collection(db, 'clubs', t.clubId, 'tournaments', t.id, 'entries')),
+          getDocs(collection(db, 'clubs', t.clubId, 'participants')),
+        ])
+
+        const nameMap: Record<string, string> = {}
+        pSnap.docs.forEach(d => { nameMap[d.id] = d.data().name })
+
+        const suffix = `_day${currentDayNum}`
+        t.topEntries = entriesSnap.docs
+          .filter(d => d.id.endsWith(suffix))
+          .map(d => ({
+            name: nameMap[d.id.slice(0, -suffix.length)] || 'Unknown',
+            totalHours: d.data().totalHours || '',
+          }))
+          .filter(e => e.totalHours)
+          .sort((a, b) => compareHours(a.totalHours, b.totalHours))
+          .slice(0, 3)
+      }))
+
       setActiveTournaments(tournamentList)
       setLoading(false)
     }
@@ -59,7 +108,24 @@ export default function HomePage() {
         </div>
       </header>
 
-      <section className="bg-primary py-8 px-4 text-center border-b border-green-800">
+      {/* Live Stats Banner */}
+      {!loading && (
+        <div className="bg-primary border-b border-green-800 px-4 py-4">
+          <div className="flex justify-center gap-8 sm:gap-16 max-w-lg mx-auto">
+            <div className="text-center">
+              <p className="text-secondary font-bold text-2xl sm:text-3xl">{activeTournaments.length}</p>
+              <p className="text-green-400 text-xs uppercase tracking-widest">Live Tournaments</p>
+            </div>
+            <div className="w-px bg-green-800"></div>
+            <div className="text-center">
+              <p className="text-secondary font-bold text-2xl sm:text-3xl">{clubs.length}</p>
+              <p className="text-green-400 text-xs uppercase tracking-widest">Clubs</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <section className="bg-primary py-6 px-4 text-center border-b border-green-800">
         <h2 className="text-2xl sm:text-3xl font-bold text-secondary mb-2">Pakistan Pigeon Racing</h2>
         <p className="text-green-300 text-sm max-w-xl mx-auto">
           The official platform for pigeon racing clubs across Pakistan.
@@ -89,13 +155,47 @@ export default function HomePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {activeTournaments.map(t => (
               <Link key={`${t.clubId}-${t.id}`} href={`/${t.clubSlug}/${t.id}`}
-                className="bg-surface border border-green-700 hover:border-secondary rounded-xl p-4 transition group flex items-center justify-between">
-                <div>
-                  <span className="bg-green-700 text-green-200 text-xs px-2 py-0.5 rounded-full font-semibold">LIVE</span>
-                  <h3 className="text-white font-bold text-base group-hover:text-secondary transition mt-2">{t.name}</h3>
-                  <p className="text-green-400 text-xs mt-0.5">{t.clubName} · {t.clubCity}</p>
+                className="bg-surface border border-green-700 hover:border-secondary rounded-xl p-4 transition group">
+
+                {/* Tournament header */}
+                <div className="flex items-start justify-between mb-2">
+                  <div className="min-w-0">
+                    <span className="bg-green-700 text-green-200 text-xs px-2 py-0.5 rounded-full font-semibold">LIVE</span>
+                    <h3 className="text-white font-bold text-base group-hover:text-secondary transition mt-2 truncate">{t.name}</h3>
+                    <p className="text-green-400 text-xs mt-0.5 truncate">{t.clubName} · {t.clubCity}</p>
+                  </div>
+                  <span className="text-secondary text-xl ml-3 shrink-0">→</span>
                 </div>
-                <span className="text-secondary text-xl ml-3">→</span>
+
+                {/* Day progress bar */}
+                {t.totalRaceDays > 0 && (
+                  <div className="mt-3 mb-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-green-400 text-xs">Day {t.currentDay} of {t.totalRaceDays}</span>
+                      <span className="text-green-600 text-xs">{Math.round((t.currentDay / t.totalRaceDays) * 100)}%</span>
+                    </div>
+                    <div className="w-full bg-green-900 rounded-full h-1.5">
+                      <div
+                        className="bg-secondary h-1.5 rounded-full transition-all"
+                        style={{ width: `${(t.currentDay / t.totalRaceDays) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Mini leaderboard */}
+                {t.topEntries.length > 0 && (
+                  <div className="border-t border-green-900 pt-2 space-y-1">
+                    {t.topEntries.map((entry, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs">
+                        <span className={`truncate mr-2 ${i === 0 ? 'text-yellow-400' : i === 1 ? 'text-gray-300' : 'text-amber-600'}`}>
+                          {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'} {entry.name}
+                        </span>
+                        <span className="font-mono text-secondary shrink-0">{formatTimeDisplay(entry.totalHours)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </Link>
             ))}
           </div>

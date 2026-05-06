@@ -8,7 +8,28 @@ import { db } from '@/lib/firebase'
 import Link from 'next/link'
 
 interface Club { id: string; name: string; slug: string; city: string }
-interface Tournament { id: string; name: string; status: string; totalDays: number; defaultStartTime: string }
+interface RaceDay { dayNumber: number; date: string; isGap?: boolean }
+interface Tournament {
+  id: string; name: string; status: string; totalDays: number
+  defaultStartTime: string; raceDays?: RaceDay[]
+}
+interface Weather { temp: string; desc: string; icon: string }
+
+function getWeatherIcon(code: string): string {
+  const n = parseInt(code)
+  if (n === 113) return '☀️'
+  if (n <= 116) return '⛅️'
+  if (n <= 122) return '☁️'
+  if (n <= 143) return '🌫️'
+  if (n <= 176) return '🌦️'
+  if (n <= 260) return '🌧️'
+  if (n <= 284) return '🌨️'
+  if (n <= 314) return '🌧️'
+  if (n <= 377) return '❄️'
+  if (n === 386 || n === 389) return '⛈️'
+  if (n <= 395) return '🌩️'
+  return '🌡️'
+}
 
 export default function ClubPublicPage() {
   const params = useParams()
@@ -18,6 +39,7 @@ export default function ClubPublicPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([])
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [weather, setWeather] = useState<Weather | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -28,13 +50,40 @@ export default function ClubPublicPage() {
       const clubData = { id: snap.docs[0].id, ...snap.docs[0].data() } as Club
       setClub(clubData)
 
-      const tSnap = await getDocs(collection(db, 'clubs', clubData.id, 'tournaments'))
+      const [tSnap] = await Promise.all([
+        getDocs(collection(db, 'clubs', clubData.id, 'tournaments')),
+        // Fetch weather in parallel
+        (async () => {
+          try {
+            const res = await fetch(
+              `https://wttr.in/${encodeURIComponent(clubData.city + ',Pakistan')}?format=j1`,
+              { signal: AbortSignal.timeout(5000) }
+            )
+            const data = await res.json()
+            const cc = data.current_condition[0]
+            setWeather({
+              temp: cc.temp_C + '°C',
+              desc: cc.weatherDesc[0].value,
+              icon: getWeatherIcon(cc.weatherCode),
+            })
+          } catch { /* weather is optional */ }
+        })(),
+      ])
+
       const tList = tSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Tournament[]
       setTournaments(tList)
       setLoading(false)
     }
     load()
   }, [clubSlug])
+
+  const getDayProgress = (t: Tournament) => {
+    if (!t.raceDays?.length) return null
+    const today = new Date().toISOString().split('T')[0]
+    const nonGap = t.raceDays.filter(rd => !rd.isGap)
+    const passed = nonGap.filter(rd => rd.date <= today).length
+    return { current: Math.min(passed, nonGap.length) || 1, total: nonGap.length }
+  }
 
   if (loading) return (
     <main className="min-h-screen bg-dark flex items-center justify-center">
@@ -75,6 +124,17 @@ export default function ClubPublicPage() {
 
       <div className="px-4 py-6 max-w-4xl mx-auto">
 
+        {/* Weather Widget */}
+        {weather && (
+          <div className="bg-surface border border-green-800 rounded-xl px-4 py-3 flex items-center gap-3 mb-6">
+            <span className="text-2xl shrink-0">{weather.icon}</span>
+            <div>
+              <p className="text-white font-semibold text-sm">{weather.temp} · {weather.desc}</p>
+              <p className="text-green-500 text-xs">{club?.city} current weather</p>
+            </div>
+          </div>
+        )}
+
         {/* Active */}
         {active.length > 0 && (
           <div className="mb-6">
@@ -82,21 +142,35 @@ export default function ClubPublicPage() {
               🟢 Active Tournaments
             </h2>
             <div className="space-y-3">
-              {active.map(t => (
-                <Link key={t.id} href={`/${clubSlug}/${t.id}`}
-                  className="block bg-surface border border-secondary hover:border-accent rounded-xl p-4 transition group">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <h3 className="text-white font-bold text-base group-hover:text-secondary transition truncate">{t.name}</h3>
-                      <p className="text-green-400 text-xs mt-1">{t.totalDays} days · Start: {t.defaultStartTime}</p>
+              {active.map(t => {
+                const progress = getDayProgress(t)
+                return (
+                  <Link key={t.id} href={`/${clubSlug}/${t.id}`}
+                    className="block bg-surface border border-secondary hover:border-accent rounded-xl p-4 transition group">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="min-w-0">
+                        <h3 className="text-white font-bold text-base group-hover:text-secondary transition truncate">{t.name}</h3>
+                        <p className="text-green-400 text-xs mt-0.5">Start: {t.defaultStartTime}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 mt-0.5">
+                        <span className="bg-green-700 text-green-200 text-xs px-2 py-0.5 rounded-full font-semibold">LIVE</span>
+                        <span className="text-secondary text-base">→</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0 mt-0.5">
-                      <span className="bg-green-700 text-green-200 text-xs px-2 py-0.5 rounded-full font-semibold">LIVE</span>
-                      <span className="text-secondary text-base">→</span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
+                    {progress && (
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-green-400 text-xs">Day {progress.current} of {progress.total}</span>
+                          <span className="text-green-600 text-xs">{Math.round((progress.current / progress.total) * 100)}%</span>
+                        </div>
+                        <div className="w-full bg-green-900 rounded-full h-1.5">
+                          <div className="bg-secondary h-1.5 rounded-full" style={{ width: `${(progress.current / progress.total) * 100}%` }}></div>
+                        </div>
+                      </div>
+                    )}
+                  </Link>
+                )
+              })}
             </div>
           </div>
         )}
@@ -108,21 +182,35 @@ export default function ClubPublicPage() {
               🏁 Completed Tournaments
             </h2>
             <div className="space-y-3">
-              {completed.map(t => (
-                <Link key={t.id} href={`/${clubSlug}/${t.id}`}
-                  className="block bg-surface border border-green-800 hover:border-secondary rounded-xl p-4 transition group">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <h3 className="text-white font-bold text-sm group-hover:text-secondary transition truncate">{t.name}</h3>
-                      <p className="text-green-400 text-xs mt-1">{t.totalDays} days · Start: {t.defaultStartTime}</p>
+              {completed.map(t => {
+                const progress = getDayProgress(t)
+                return (
+                  <Link key={t.id} href={`/${clubSlug}/${t.id}`}
+                    className="block bg-surface border border-green-800 hover:border-secondary rounded-xl p-4 transition group">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="min-w-0">
+                        <h3 className="text-white font-bold text-sm group-hover:text-secondary transition truncate">{t.name}</h3>
+                        <p className="text-green-400 text-xs mt-0.5">Start: {t.defaultStartTime}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 mt-0.5">
+                        <span className="bg-blue-900 text-blue-200 text-xs px-2 py-0.5 rounded-full font-semibold whitespace-nowrap">DONE</span>
+                        <span className="text-secondary text-base">→</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0 mt-0.5">
-                      <span className="bg-blue-900 text-blue-200 text-xs px-2 py-0.5 rounded-full font-semibold whitespace-nowrap">DONE</span>
-                      <span className="text-secondary text-base">→</span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
+                    {progress && (
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-green-400 text-xs">Day {progress.current} of {progress.total}</span>
+                          <span className="text-green-600 text-xs">100%</span>
+                        </div>
+                        <div className="w-full bg-green-900 rounded-full h-1.5">
+                          <div className="bg-green-600 h-1.5 rounded-full w-full"></div>
+                        </div>
+                      </div>
+                    )}
+                  </Link>
+                )
+              })}
             </div>
           </div>
         )}
