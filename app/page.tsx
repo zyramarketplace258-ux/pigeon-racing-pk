@@ -30,6 +30,7 @@ export default function HomePage() {
   const [totalLandedToday, setTotalLandedToday] = useState(0)
   const [totalLotsCompeting, setTotalLotsCompeting] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'home' | 'clubs'>('home')
 
   useEffect(() => {
     const load = async () => {
@@ -170,8 +171,8 @@ export default function HomePage() {
       </div>
       <nav className="bg-[#292929] px-4">
         <div className="max-w-5xl mx-auto flex items-center gap-6 h-9">
-          <Link href="/" className="text-white text-sm font-semibold border-b-2 border-[#66bb6a] pb-0.5">Home</Link>
-          <span className="text-gray-500 text-sm cursor-default">Clubs</span>
+          <button onClick={() => setActiveTab('home')} className={`text-sm font-semibold pb-0.5 transition ${activeTab === 'home' ? 'text-white border-b-2 border-[#66bb6a]' : 'text-gray-400 hover:text-white'}`}>Home</button>
+          <button onClick={() => setActiveTab('clubs')} className={`text-sm font-semibold pb-0.5 transition ${activeTab === 'clubs' ? 'text-white border-b-2 border-[#66bb6a]' : 'text-gray-400 hover:text-white'}`}>Clubs</button>
         </div>
       </nav>
 
@@ -194,6 +195,54 @@ export default function HomePage() {
       </div>
 
       <div className="max-w-5xl mx-auto px-3 sm:px-4 py-4">
+
+        {/* ── CLUBS TAB ── */}
+        {activeTab === 'clubs' && (
+          <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden mb-4">
+            <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-2">
+              <p className="text-green-200 text-xs font-bold uppercase tracking-widest">🏟️ Registered Clubs</p>
+            </div>
+            {loading ? (
+              <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="animate-pulse flex items-center gap-3 p-3 border border-green-100 rounded-lg">
+                    <div className="w-10 h-10 rounded-full bg-green-100 shrink-0"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3 bg-green-100 rounded w-3/4"></div>
+                      <div className="h-2 bg-green-100 rounded w-1/2"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : clubs.length === 0 ? (
+              <div className="p-10 text-center text-gray-400">
+                <p className="text-4xl mb-3">🏟️</p>
+                <p className="font-bold">No clubs registered yet</p>
+              </div>
+            ) : (
+              <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {clubs.map(club => (
+                  <Link
+                    key={club.id}
+                    href={`/${club.slug}`}
+                    className="flex items-center gap-3 p-3 border border-[#d4edda] rounded-lg hover:border-[#388e3c] hover:bg-[#f1faf2] transition group"
+                  >
+                    <div className="w-10 h-10 shrink-0 rounded-full bg-[#1b5e20] flex items-center justify-center text-white font-bold group-hover:bg-[#388e3c] transition">
+                      {club.name.charAt(0)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[#1a1a1a] font-semibold text-sm truncate group-hover:text-[#1b5e20] transition">{club.name}</p>
+                      <p className="text-[#777] text-xs">{club.city}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── HOME TAB ── */}
+        {activeTab === 'home' && <>
 
         {/* ── Highlight Cards (gs-block) ── */}
         {!loading && highlights.length > 0 && (
@@ -368,48 +417,7 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* ── Registered Clubs ── */}
-        <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden mb-4">
-          <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-2">
-            <p className="text-green-200 text-xs font-bold uppercase tracking-widest">🏟️ Registered Clubs</p>
-          </div>
-          {loading ? (
-            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="animate-pulse flex items-center gap-3 p-3 border border-green-100 rounded-lg">
-                  <div className="w-10 h-10 rounded-full bg-green-100 shrink-0"></div>
-                  <div className="flex-1 space-y-2">
-                    <div className="h-3 bg-green-100 rounded w-3/4"></div>
-                    <div className="h-2 bg-green-100 rounded w-1/2"></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : clubs.length === 0 ? (
-            <div className="p-10 text-center text-gray-400">
-              <p className="text-4xl mb-3">🏟️</p>
-              <p className="font-bold">No clubs registered yet</p>
-            </div>
-          ) : (
-            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {clubs.map(club => (
-                <Link
-                  key={club.id}
-                  href={`/${club.slug}`}
-                  className="flex items-center gap-3 p-3 border border-[#d4edda] rounded-lg hover:border-[#388e3c] hover:bg-[#f1faf2] transition group"
-                >
-                  <div className="w-10 h-10 shrink-0 rounded-full bg-[#1b5e20] flex items-center justify-center text-white font-bold group-hover:bg-[#388e3c] transition">
-                    {club.name.charAt(0)}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[#1a1a1a] font-semibold text-sm truncate group-hover:text-[#1b5e20] transition">{club.name}</p>
-                    <p className="text-[#777] text-xs">{club.city}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
+        </>}
 
       </div>
 
