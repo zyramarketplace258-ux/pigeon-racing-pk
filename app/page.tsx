@@ -6,6 +6,9 @@ import { collection, getDocs, query, where } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { compareHours, formatTimeDisplay } from '@/lib/timeUtils'
 import Link from 'next/link'
+import { Playfair_Display } from 'next/font/google'
+
+const playfair = Playfair_Display({ subsets: ['latin'], weight: ['700'], style: ['italic'] })
 
 interface Club { id: string; name: string; slug: string; city: string }
 interface RaceDay { dayNumber: number; date: string; isGap?: boolean }
@@ -156,8 +159,10 @@ export default function HomePage() {
       <div className="bg-gradient-to-r from-[#1b5e20] to-[#2e7d32] px-4 pt-4 pb-3">
         <div className="flex items-start justify-between max-w-5xl mx-auto">
           <div>
-            <h1 className="text-white text-xl sm:text-2xl font-bold leading-tight">🐦 Pakistan Pigeon Racing</h1>
-            <p className="text-green-300 text-xs mt-0.5">Official Racing Platform</p>
+            <h1 className={`${playfair.className} text-white text-2xl sm:text-3xl leading-tight`}>
+              🐦 Pakistan Pigeon
+            </h1>
+            <p className="text-green-300 text-xs mt-0.5 tracking-widest uppercase">Official Racing Platform</p>
           </div>
           <div className="flex gap-2 mt-1">
             <Link href="/club/login" className="text-xs text-green-200 border border-green-600 px-2.5 py-1.5 rounded hover:bg-green-800 transition font-medium">
