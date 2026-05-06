@@ -19,7 +19,7 @@ export function calculateHoursFlown(
   landingTime: string
 ): string {
   const startMinutes = toMinutes(startTime)
-  const landingMinutes = toMinutes(landingTime)
+  let landingMinutes = toMinutes(landingTime)
 
   // Handle next-day landing
   if (landingMinutes < startMinutes) {
