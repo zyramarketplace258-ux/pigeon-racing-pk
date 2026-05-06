@@ -9,7 +9,7 @@ import { compareHours, formatTimeDisplay, calculateGrandTotal } from '@/lib/time
 import Link from 'next/link'
 
 interface Club { id: string; name: string; slug: string; city: string }
-interface RaceDay { dayNumber: number; date: string }
+interface RaceDay { dayNumber: number; date: string; isGap?: boolean }
 interface Tournament {
   id: string; name: string; status: string; totalDays: number
   defaultStartTime: string; pigeonCount: number
