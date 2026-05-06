@@ -44,7 +44,7 @@ export default function ClubPublicPage() {
 
   if (notFound) return (
     <main className="min-h-screen bg-dark flex items-center justify-center">
-      <div className="text-center">
+      <div className="text-center px-4">
         <p className="text-6xl mb-4">🏟️</p>
         <h1 className="text-white text-2xl font-bold">Club Not Found</h1>
         <Link href="/" className="text-secondary hover:text-accent mt-4 inline-block">← Back to Home</Link>
@@ -58,41 +58,41 @@ export default function ClubPublicPage() {
 
   return (
     <main className="min-h-screen bg-dark">
-      <header className="bg-primary border-b border-secondary px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center text-dark text-xl font-bold">
+      <header className="bg-primary border-b border-secondary px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-full bg-secondary flex items-center justify-center text-dark text-lg sm:text-xl font-bold">
             {club?.name.charAt(0)}
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-white">{club?.name}</h1>
+          <div className="min-w-0">
+            <h1 className="text-base sm:text-xl font-bold text-white truncate">{club?.name}</h1>
             <p className="text-green-400 text-xs">{club?.city}</p>
           </div>
         </div>
-        <Link href="/" className="text-xs text-green-400 hover:text-secondary transition">
-          ← All Clubs
+        <Link href="/" className="text-xs text-green-400 hover:text-secondary transition shrink-0 ml-3">
+          ← Home
         </Link>
       </header>
 
-      <div className="px-6 py-8 max-w-4xl mx-auto">
+      <div className="px-4 py-6 max-w-4xl mx-auto">
 
         {/* Active */}
         {active.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-secondary font-bold text-lg uppercase tracking-widest mb-4">
+          <div className="mb-6">
+            <h2 className="text-secondary font-bold text-sm uppercase tracking-widest mb-3">
               🟢 Active Tournaments
             </h2>
             <div className="space-y-3">
               {active.map(t => (
                 <Link key={t.id} href={`/${clubSlug}/${t.id}`}
-                  className="block bg-surface border border-secondary hover:border-accent rounded-xl p-5 transition group">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-white font-bold text-base group-hover:text-secondary transition">{t.name}</h3>
-                      <p className="text-green-400 text-sm mt-1">{t.totalDays} days · Start: {t.defaultStartTime}</p>
+                  className="block bg-surface border border-secondary hover:border-accent rounded-xl p-4 transition group">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h3 className="text-white font-bold text-base group-hover:text-secondary transition truncate">{t.name}</h3>
+                      <p className="text-green-400 text-xs mt-1">{t.totalDays} days · Start: {t.defaultStartTime}</p>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="bg-green-700 text-green-200 text-xs px-3 py-1 rounded-full font-semibold">LIVE</span>
-                      <span className="text-secondary text-lg">→</span>
+                    <div className="flex items-center gap-2 shrink-0 mt-0.5">
+                      <span className="bg-green-700 text-green-200 text-xs px-2 py-0.5 rounded-full font-semibold">LIVE</span>
+                      <span className="text-secondary text-base">→</span>
                     </div>
                   </div>
                 </Link>
@@ -103,22 +103,22 @@ export default function ClubPublicPage() {
 
         {/* Completed */}
         {completed.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-secondary font-bold text-lg uppercase tracking-widest mb-4">
+          <div className="mb-6">
+            <h2 className="text-secondary font-bold text-sm uppercase tracking-widest mb-3">
               🏁 Completed Tournaments
             </h2>
             <div className="space-y-3">
               {completed.map(t => (
                 <Link key={t.id} href={`/${clubSlug}/${t.id}`}
-                  className="block bg-surface border border-green-800 hover:border-secondary rounded-xl p-5 transition group">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-white font-bold group-hover:text-secondary transition">{t.name}</h3>
-                      <p className="text-green-400 text-sm mt-1">{t.totalDays} days · Start: {t.defaultStartTime}</p>
+                  className="block bg-surface border border-green-800 hover:border-secondary rounded-xl p-4 transition group">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h3 className="text-white font-bold text-sm group-hover:text-secondary transition truncate">{t.name}</h3>
+                      <p className="text-green-400 text-xs mt-1">{t.totalDays} days · Start: {t.defaultStartTime}</p>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="bg-blue-900 text-blue-200 text-xs px-3 py-1 rounded-full font-semibold">COMPLETED</span>
-                      <span className="text-secondary text-lg">→</span>
+                    <div className="flex items-center gap-2 shrink-0 mt-0.5">
+                      <span className="bg-blue-900 text-blue-200 text-xs px-2 py-0.5 rounded-full font-semibold whitespace-nowrap">DONE</span>
+                      <span className="text-secondary text-base">→</span>
                     </div>
                   </div>
                 </Link>
@@ -129,17 +129,17 @@ export default function ClubPublicPage() {
 
         {/* Upcoming */}
         {inactive.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-green-600 font-bold text-sm uppercase tracking-widest mb-4">Upcoming</h2>
+          <div className="mb-6">
+            <h2 className="text-green-600 font-bold text-xs uppercase tracking-widest mb-3">Upcoming</h2>
             <div className="space-y-3">
               {inactive.map(t => (
-                <div key={t.id} className="bg-surface border border-green-900 rounded-xl p-5 opacity-60">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-white font-bold">{t.name}</h3>
-                      <p className="text-green-600 text-sm mt-1">{t.totalDays} days</p>
+                <div key={t.id} className="bg-surface border border-green-900 rounded-xl p-4 opacity-60">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h3 className="text-white font-bold text-sm truncate">{t.name}</h3>
+                      <p className="text-green-600 text-xs mt-1">{t.totalDays} days</p>
                     </div>
-                    <span className="bg-gray-800 text-gray-400 text-xs px-3 py-1 rounded-full">UPCOMING</span>
+                    <span className="bg-gray-800 text-gray-400 text-xs px-2 py-0.5 rounded-full shrink-0">SOON</span>
                   </div>
                 </div>
               ))}

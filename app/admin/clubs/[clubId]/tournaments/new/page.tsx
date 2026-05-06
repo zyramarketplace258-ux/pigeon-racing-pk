@@ -26,6 +26,7 @@ export default function NewTournamentPage() {
     name: '',
     totalDays: 10,
     defaultStartTime: '06:00',
+    defaultEndTime: '20:00',
     pigeonCount: 5,
     startDate: '',
   })
@@ -65,6 +66,7 @@ export default function NewTournamentPage() {
         status: 'inactive',
         totalDays: form.totalDays,
         defaultStartTime: form.defaultStartTime,
+        defaultEndTime: form.defaultEndTime,
         pigeonCount: form.pigeonCount,
         raceDays,
         createdAt: serverTimestamp(),
@@ -155,6 +157,18 @@ export default function NewTournamentPage() {
                 className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-secondary"
               />
               <p className="text-green-600 text-xs mt-1">This can be changed per participant before entry</p>
+            </div>
+
+            <div>
+              <label className="block text-green-300 text-sm mb-2">Last Landing Time (Cutoff)</label>
+              <input
+                type="time"
+                value={form.defaultEndTime}
+                onChange={e => setForm(f => ({ ...f, defaultEndTime: e.target.value }))}
+                required
+                className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-secondary"
+              />
+              <p className="text-green-600 text-xs mt-1">No pigeon landing can be entered after this time</p>
             </div>
 
             <div>

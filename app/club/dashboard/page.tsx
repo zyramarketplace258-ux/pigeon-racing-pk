@@ -10,7 +10,7 @@ import { calculateHoursFlown, calculateGrandTotal, formatTimeDisplay } from '@/l
 import Link from 'next/link'
 
 interface Club { id: string; name: string; slug: string; city: string }
-interface Tournament { id: string; name: string; status: string; totalDays: number; defaultStartTime: string; pigeonCount: number; raceDays: { dayNumber: number; date: string; isGap?: boolean }[]; participantIds?: string[] }
+interface Tournament { id: string; name: string; status: string; totalDays: number; defaultStartTime: string; defaultEndTime?: string; pigeonCount: number; raceDays: { dayNumber: number; date: string; isGap?: boolean }[]; participantIds?: string[] }
 interface Participant { id: string; name: string; area: string }
 
 interface PigeonEntry {
@@ -40,6 +40,7 @@ export default function ClubDashboard() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [timeError, setTimeError] = useState('')
 
   useEffect(() => {
     let unsubscribe: () => void = () => {}
@@ -142,7 +143,25 @@ export default function ClubDashboard() {
     setSaved(false)
   }
 
+  const toMins = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m }
+
   const updateLanding = (participantIndex: number, pigeonIndex: number, value: string) => {
+    if (value && tournament) {
+      const startTime = entries[participantIndex]?.startTime
+      const endTime = tournament.defaultEndTime
+      const landingMins = toMins(value)
+      if (startTime && landingMins < toMins(startTime)) {
+        setTimeError(`Landing time cannot be before start time (${startTime})`)
+        setTimeout(() => setTimeError(''), 3000)
+        return
+      }
+      if (endTime && landingMins > toMins(endTime)) {
+        setTimeError(`Landing time cannot be after cutoff time (${endTime})`)
+        setTimeout(() => setTimeError(''), 3000)
+        return
+      }
+    }
+    setTimeError('')
     setEntries(prev => {
       const updated = [...prev]
       const row = { ...updated[participantIndex] }
@@ -347,10 +366,21 @@ export default function ClubDashboard() {
                   <p className="text-white font-bold text-xl">{tournament.pigeonCount}</p>
                 </div>
               </div>
-              <p className="text-green-400 text-sm">
-                {todayDay ? `Day ${todayDay} · ${todayDate}` : `Today (${todayDate}) is not a race day`}
-              </p>
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-green-400 text-sm">
+                  {todayDay ? `Day ${todayDay} · ${todayDate}` : `Today (${todayDate}) is not a race day`}
+                </p>
+                {tournament.defaultEndTime && (
+                  <p className="text-green-600 text-xs">Cutoff: {tournament.defaultEndTime}</p>
+                )}
+              </div>
             </div>
+
+            {timeError && (
+              <div className="bg-red-900 border border-red-600 text-red-200 px-4 py-2 rounded-lg mb-4 text-sm">
+                ⚠️ {timeError}
+              </div>
+            )}
 
             {!todayDay ? (
               <div className="bg-surface border border-green-800 rounded-xl p-8 text-center">
