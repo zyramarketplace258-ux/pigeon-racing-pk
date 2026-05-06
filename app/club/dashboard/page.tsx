@@ -319,7 +319,10 @@ export default function ClubDashboard() {
           <div className="bg-surface border border-green-800 rounded-xl p-10 text-center">
             <p className="text-4xl mb-3">⏳</p>
             <p className="text-white font-bold text-lg">No Active Tournament</p>
-            <p className="text-green-400 text-sm mt-2">Ask your admin to activate a tournament.</p>
+            <p className="text-green-400 text-sm mt-2 mb-6">Ask your admin to activate a tournament.</p>
+            <Link href="/club/participants" className="bg-secondary hover:bg-accent text-dark font-bold px-6 py-2 rounded-lg text-sm transition inline-block">
+              👥 Manage Participants
+            </Link>
           </div>
         ) : (
           <>
