@@ -10,7 +10,7 @@ import { calculateHoursFlown, calculateGrandTotal, formatTimeDisplay } from '@/l
 import Link from 'next/link'
 
 interface Club { id: string; name: string; slug: string; city: string }
-interface Tournament { id: string; name: string; status: string; totalDays: number; defaultStartTime: string; pigeonCount: number; raceDays: { dayNumber: number; date: string }[]; participantIds?: string[] }
+interface Tournament { id: string; name: string; status: string; totalDays: number; defaultStartTime: string; pigeonCount: number; raceDays: { dayNumber: number; date: string; isGap?: boolean }[]; participantIds?: string[] }
 interface Participant { id: string; name: string; area: string }
 
 interface PigeonEntry {
