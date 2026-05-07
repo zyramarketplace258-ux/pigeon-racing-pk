@@ -7,6 +7,8 @@ import { collection, query, where, getDocs, doc, getDoc, onSnapshot, setDoc, del
 import { db } from '@/lib/firebase'
 import { compareHours, formatTimeDisplay, calculateGrandTotal } from '@/lib/timeUtils'
 import Link from 'next/link'
+import { useLanguage } from '@/lib/language-context'
+import { useT, fDayHeader, fDaysFlown, fDaysShort, fFlewCount, fParticipants, fLandedAt } from '@/lib/translations'
 
 interface Club { id: string; name: string; slug: string; city: string }
 interface RaceDay { dayNumber: number; date: string; isGap?: boolean }
@@ -47,6 +49,8 @@ export default function TournamentResultsPage() {
   const params = useParams()
   const clubSlug = params.clubSlug as string
   const tournamentId = params.tournamentId as string
+  const { lang, toggle } = useLanguage()
+  const t = useT()
 
   const [club, setClub] = useState<Club | null>(null)
   const [tournament, setTournament] = useState<Tournament | null>(null)
@@ -104,7 +108,7 @@ export default function TournamentResultsPage() {
 
   const [, setTick] = useState(0)
   useEffect(() => {
-    const interval = setInterval(() => setTick(t => t + 1), 15000)
+    const interval = setInterval(() => setTick(tk => tk + 1), 15000)
     return () => clearInterval(interval)
   }, [])
 
@@ -180,19 +184,20 @@ export default function TournamentResultsPage() {
 
   const today = new Date().toISOString().split('T')[0]
   const selectedRaceDay = tournament?.raceDays?.find(rd => rd.dayNumber === selectedDay)
+  const isUrdu = lang === 'ur'
 
   if (loading) return (
-    <main className="min-h-screen bg-[#e8f5e9] flex items-center justify-center">
-      <p className="text-[#388e3c] font-semibold">Loading...</p>
+    <main className={`min-h-screen bg-[#e8f5e9] flex items-center justify-center ${isUrdu ? 'font-urdu' : ''}`}>
+      <p className="text-[#388e3c] font-semibold">{t('loading')}</p>
     </main>
   )
 
   if (!club || !tournament) return (
-    <main className="min-h-screen bg-[#e8f5e9] flex items-center justify-center">
+    <main className={`min-h-screen bg-[#e8f5e9] flex items-center justify-center ${isUrdu ? 'font-urdu' : ''}`}>
       <div className="text-center px-4">
         <p className="text-4xl mb-3">🏆</p>
-        <p className="text-[#1a1a1a] font-bold">Tournament not found</p>
-        <Link href="/" className="text-[#388e3c] text-sm mt-3 inline-block font-semibold">← Home</Link>
+        <p className="text-[#1a1a1a] font-bold">{t('tournamentNotFound')}</p>
+        <Link href="/" className="text-[#388e3c] text-sm mt-3 inline-block font-semibold">{isUrdu ? 'ہوم →' : '← Home'}</Link>
       </div>
     </main>
   )
@@ -200,9 +205,8 @@ export default function TournamentResultsPage() {
   const totalLanded = dayEntries.reduce((sum, e) => !e.hasData ? sum : sum + e.pigeons.filter(pg => pg.landingTime).length, 0)
   const stillFlying = Math.max(0, participants.length * tournament.pigeonCount - totalLanded)
 
-
   return (
-    <main className="min-h-screen bg-[#e8f5e9]">
+    <main className={`min-h-screen bg-[#e8f5e9] ${isUrdu ? 'font-urdu' : ''}`} dir={isUrdu ? 'rtl' : 'ltr'}>
 
       {/* Header */}
       <div className="bg-gradient-to-r from-[#1b5e20] to-[#2e7d32] px-4 pt-4 pb-3">
@@ -215,45 +219,45 @@ export default function TournamentResultsPage() {
             </div>
           </div>
           <div className="flex items-center gap-3 shrink-0 mt-0.5">
-            <Link href={`/${clubSlug}`} className="text-green-300 hover:text-white text-xs font-medium transition">← Club</Link>
-            <Link href="/" className="text-green-300 hover:text-white text-xs font-medium transition">Home</Link>
+            <Link href={`/${clubSlug}`} className="text-green-300 hover:text-white text-xs font-medium transition">{t('clubBack')}</Link>
+            <Link href="/" className="text-green-300 hover:text-white text-xs font-medium transition">{t('home')}</Link>
           </div>
         </div>
       </div>
       <nav className="bg-[#292929] px-4">
         <div className="max-w-6xl mx-auto flex items-center h-9">
-          <span className="text-white text-sm font-semibold border-b-2 border-[#66bb6a] pb-0.5">Results</span>
+          <span className="text-white text-sm font-semibold border-b-2 border-[#66bb6a] pb-0.5">{t('results')}</span>
+          <button onClick={toggle} className="ms-auto text-xs text-green-300 border border-green-700 px-2.5 py-1 rounded hover:bg-green-800 transition font-medium">
+            {isUrdu ? 'EN' : 'اردو'}
+          </button>
         </div>
       </nav>
 
       <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 space-y-4">
 
-        {/* ── WINNERS PODIUM (completed tournaments) ── */}
+        {/* WINNERS PODIUM (completed tournaments) */}
         {tournament.status === 'completed' && !showDetailResults && (
           <>
             {loadingEntries ? (
-              <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm p-10 text-center text-[#999]">Loading results...</div>
+              <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm p-10 text-center text-[#999]">{t('loadingResults')}</div>
             ) : (
               <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
-                {/* Header */}
                 <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-3 text-center">
-                  <p className="text-green-200 text-xs font-bold uppercase tracking-widest mb-0.5">Tournament Complete</p>
+                  <p className="text-green-200 text-xs font-bold uppercase tracking-widest mb-0.5">{t('tournamentComplete')}</p>
                   <h2 className="text-white font-bold text-lg">{tournament.name}</h2>
                 </div>
 
                 <div className="px-4 pt-6 pb-4">
-                  {/* 1st place */}
                   {totalRows[0]?.grandTotal && (
                     <div className="flex flex-col items-center mb-5">
                       <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-lg mb-2" style={{ background: 'linear-gradient(145deg,#ffe066,#c8900a)' }}>1</div>
                       <p className="text-[#1a1a1a] font-bold text-lg leading-tight text-center">{totalRows[0].name}</p>
                       <p className="text-[#777] text-xs text-center mb-1">{totalRows[0].area}</p>
                       <p className="text-[#1b5e20] font-extrabold text-3xl">{formatTimeDisplay(totalRows[0].grandTotal)}</p>
-                      <p className="text-[#999] text-xs">{totalRows[0].daysFlown} days flown</p>
+                      <p className="text-[#999] text-xs">{fDaysFlown(lang, totalRows[0].daysFlown)}</p>
                     </div>
                   )}
 
-                  {/* 2nd and 3rd place */}
                   <div className="grid grid-cols-2 gap-3 mb-5">
                     {[totalRows[1], totalRows[2]].map((row, i) => row?.grandTotal ? (
                       <div key={row.participantId} className="rounded-xl border border-[#e9ecef] p-3 text-center bg-[#fafafa]">
@@ -264,17 +268,16 @@ export default function TournamentResultsPage() {
                         <p className="text-[#1a1a1a] font-bold text-sm truncate">{row.name}</p>
                         <p className="text-[#777] text-xs truncate mb-1">{row.area}</p>
                         <p className="text-[#1b5e20] font-bold text-lg">{formatTimeDisplay(row.grandTotal)}</p>
-                        <p className="text-[#999] text-xs">{row.daysFlown} days</p>
+                        <p className="text-[#999] text-xs">{fDaysShort(lang, row.daysFlown)}</p>
                       </div>
                     ) : <div key={i} />)}
                   </div>
 
-                  {/* Open detail results button */}
                   <button
                     onClick={() => setShowDetailResults(true)}
                     className="w-full py-3 rounded-xl bg-[#1b5e20] hover:bg-[#2e7d32] text-white font-bold text-sm transition"
                   >
-                    Open Detail Results →
+                    {t('openDetailResults')}
                   </button>
                 </div>
               </div>
@@ -282,29 +285,29 @@ export default function TournamentResultsPage() {
           </>
         )}
 
-        {/* ── DETAIL RESULTS (active tournaments always, completed when toggled) ── */}
+        {/* DETAIL RESULTS */}
         {(tournament.status !== 'completed' || showDetailResults) && (<>
 
         {/* Stats card */}
         <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
           <div className={`grid ${showTotal ? 'grid-cols-2' : 'grid-cols-3'} divide-x divide-[#e9ecef] text-center`}>
             <div className="py-3 px-2">
-              <p className="text-[#999] text-xs uppercase tracking-wide">Total Days</p>
+              <p className="text-[#999] text-xs uppercase tracking-wide">{t('totalDays')}</p>
               <p className="text-[#1b5e20] font-bold text-2xl">{tournament.totalDays}</p>
             </div>
             {showTotal ? (
               <div className="py-3 px-2">
-                <p className="text-[#999] text-xs uppercase tracking-wide">Participants</p>
+                <p className="text-[#999] text-xs uppercase tracking-wide">{t('participantsStat')}</p>
                 <p className="text-[#1b5e20] font-bold text-2xl">{participants.length}</p>
               </div>
             ) : (
               <>
                 <div className="py-3 px-2">
-                  <p className="text-[#999] text-xs uppercase tracking-wide">Landed</p>
+                  <p className="text-[#999] text-xs uppercase tracking-wide">{t('landedStat')}</p>
                   <p className="text-[#1b5e20] font-bold text-2xl">{totalLanded}</p>
                 </div>
                 <div className="py-3 px-2">
-                  <p className="text-[#999] text-xs uppercase tracking-wide">Flying</p>
+                  <p className="text-[#999] text-xs uppercase tracking-wide">{t('flyingStat')}</p>
                   <p className="text-[#388e3c] font-bold text-2xl">{stillFlying}</p>
                 </div>
               </>
@@ -316,13 +319,13 @@ export default function TournamentResultsPage() {
         {!showTotal && winnerPigeon && (
           <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
             <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-2">
-              <p className="text-green-200 text-xs font-bold uppercase tracking-widest">🏆 Winner Pigeon Today</p>
+              <p className="text-green-200 text-xs font-bold uppercase tracking-widest">{t('winnerPigeonToday')}</p>
             </div>
             <div className="px-4 py-3 flex items-center gap-3">
               <div className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center font-bold text-white text-sm shadow-md" style={{ background: 'linear-gradient(145deg,#ffe066,#c8900a)' }}>1</div>
               <div className="min-w-0">
                 <p className="text-[#1a1a1a] font-bold truncate">{winnerPigeon.name}</p>
-                <p className="text-[#777] text-xs truncate">{winnerPigeon.area} · landed {winnerPigeon.landingTime} · {formatTimeDisplay(winnerPigeon.hoursFlown)}</p>
+                <p className="text-[#777] text-xs truncate">{winnerPigeon.area} · {fLandedAt(lang, winnerPigeon.landingTime, formatTimeDisplay(winnerPigeon.hoursFlown))}</p>
               </div>
             </div>
           </div>
@@ -345,8 +348,8 @@ export default function TournamentResultsPage() {
                         : 'bg-white border-[#e9ecef] text-[#555] hover:border-[#388e3c]'
                     }`}
                   >
-                    <span className="block font-bold">D{rd.dayNumber}</span>
-                    <span className={`block text-xs mt-0.5 ${isSelected ? 'opacity-70' : isToday ? 'text-[#388e3c]' : 'text-[#aaa]'}`}>{rd.date.slice(5)}</span>
+                    <span className="block font-bold" dir="ltr">D{rd.dayNumber}</span>
+                    <span className={`block text-xs mt-0.5 ${isSelected ? 'opacity-70' : isToday ? 'text-[#388e3c]' : 'text-[#aaa]'}`} dir="ltr">{rd.date.slice(5)}</span>
                     {isToday && !isSelected && <span className="block text-[#388e3c] text-xs leading-none">●</span>}
                   </button>
                 )
@@ -358,26 +361,25 @@ export default function TournamentResultsPage() {
                 }`}
               >
                 <span className="block">🏆</span>
-                <span className="block mt-0.5">Total</span>
+                <span className="block mt-0.5">{t('total')}</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* ── TOTAL VIEW ── */}
+        {/* TOTAL VIEW */}
         {showTotal && (
           loadingEntries ? (
-            <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm p-8 text-center text-[#999]">Loading totals...</div>
+            <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm p-8 text-center text-[#999]">{t('loadingTotals')}</div>
           ) : (
             <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
               <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-2 flex items-center justify-between">
-                <p className="text-green-200 text-xs font-bold uppercase tracking-widest">🏆 Grand Total — All Days</p>
-                <p className="text-green-300 text-xs">{totalRows.filter(r => r.grandTotal).length} participants</p>
+                <p className="text-green-200 text-xs font-bold uppercase tracking-widest">{t('grandTotal')}</p>
+                <p className="text-green-300 text-xs">{fParticipants(lang, totalRows.filter(r => r.grandTotal).length)}</p>
               </div>
               <div className="divide-y divide-[#e9ecef]">
                 {totalRows.map((row, i) => (
                   <div key={row.participantId} className="px-3 py-3" style={{ background: i === 0 && row.grandTotal ? '#dff0d8' : i % 2 === 1 ? '#f6faf6' : '#fff' }}>
-                    {/* Top row: rank + name + grand total */}
                     <div className="flex items-center gap-2.5 mb-2">
                       <div className="relative shrink-0">
                         {row.photoUrl
@@ -398,19 +400,18 @@ export default function TournamentResultsPage() {
                       </div>
                       <div className="text-right shrink-0">
                         {row.grandTotal
-                          ? <p className="font-bold text-xl text-[#1b5e20] leading-none">{formatTimeDisplay(row.grandTotal)}</p>
+                          ? <p className="font-bold text-xl text-[#1b5e20] leading-none" dir="ltr">{formatTimeDisplay(row.grandTotal)}</p>
                           : <p className="text-[#ccc] text-sm">—</p>
                         }
-                        <p className="text-[#999] text-xs text-right">{row.daysFlown > 0 ? `${row.daysFlown} days` : ''}</p>
+                        <p className="text-[#999] text-xs text-right">{row.daysFlown > 0 ? fDaysShort(lang, row.daysFlown) : ''}</p>
                       </div>
                     </div>
-                    {/* Per-day chips */}
-                    <div className="flex gap-1.5 overflow-x-auto ml-11 pb-0.5" style={{ scrollbarWidth: 'none' }}>
+                    <div className="flex gap-1.5 overflow-x-auto ms-11 pb-0.5" style={{ scrollbarWidth: 'none' }}>
                       {row.dayTotals.map(dt => (
                         <div key={dt.dayNumber} className="shrink-0 rounded border px-1.5 py-1 text-center"
                           style={{ background: dt.hours ? '#f0fdf4' : '#fafafa', borderColor: dt.hours ? '#86efac' : '#e9ecef', borderStyle: dt.hours ? 'solid' : 'dashed' }}>
-                          <span className="block text-[#999] leading-none" style={{ fontSize: '0.6rem' }}>D{dt.dayNumber}</span>
-                          <span className="block font-mono leading-tight mt-0.5" style={{ fontSize: '0.78rem', color: dt.hours ? '#166534' : '#ccc' }}>
+                          <span className="block text-[#999] leading-none" style={{ fontSize: '0.6rem' }} dir="ltr">D{dt.dayNumber}</span>
+                          <span className="block font-mono leading-tight mt-0.5" style={{ fontSize: '0.78rem', color: dt.hours ? '#166534' : '#ccc' }} dir="ltr">
                             {dt.hours ? formatTimeDisplay(dt.hours) : '—'}
                           </span>
                         </div>
@@ -423,25 +424,24 @@ export default function TournamentResultsPage() {
           )
         )}
 
-        {/* ── DAY VIEW ── */}
+        {/* DAY VIEW */}
         {!showTotal && (
           loadingEntries ? (
-            <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm p-8 text-center text-[#999]">Loading results...</div>
+            <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm p-8 text-center text-[#999]">{t('loadingResults')}</div>
           ) : (
             <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
               <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-2 flex items-center justify-between">
                 <p className="text-green-200 text-xs font-bold uppercase tracking-widest">
-                  Day {selectedDay} — {selectedRaceDay?.date}
-                  {selectedRaceDay?.date === today && <span className="ml-2 text-green-300">● Live</span>}
+                  {fDayHeader(lang, selectedDay, selectedRaceDay?.date ?? '')}
+                  {selectedRaceDay?.date === today && <span className="ms-2 text-green-300">{t('live')}</span>}
                 </p>
-                <p className="text-green-300 text-xs">{dayEntries.filter(e => e.hasData).length} flew</p>
+                <p className="text-green-300 text-xs">{fFlewCount(lang, dayEntries.filter(e => e.hasData).length)}</p>
               </div>
 
               <div className="divide-y divide-[#e9ecef]">
                 {dayEntries.map((entry, i) => (
                   <div key={entry.participantId} style={{ background: i === 0 && entry.hasData ? '#dff0d8' : i % 2 === 1 ? '#f6faf6' : '#fff' }}>
                     <div className="flex items-start gap-2 px-3 py-2.5">
-                      {/* Rank / Photo */}
                       <div className="relative shrink-0">
                         {entry.photoUrl
                           ? <img src={entry.photoUrl} alt={entry.name} className="w-9 h-9 rounded-full object-cover border-2 shadow-sm" style={{ borderColor: entry.rank === 1 ? '#c8900a' : entry.rank === 2 ? '#8a8a8a' : '#e9ecef' }} />
@@ -456,7 +456,6 @@ export default function TournamentResultsPage() {
                         )}
                       </div>
 
-                      {/* Name + chips */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2 mb-1.5">
                           <div className="min-w-0">
@@ -465,7 +464,7 @@ export default function TournamentResultsPage() {
                           </div>
                           <div className="shrink-0 text-right">
                             {entry.totalHours
-                              ? <p className="font-bold text-xl text-[#1a1a1a] leading-none">{formatTimeDisplay(entry.totalHours)}</p>
+                              ? <p className="font-bold text-xl text-[#1a1a1a] leading-none" dir="ltr">{formatTimeDisplay(entry.totalHours)}</p>
                               : <p className="text-[#ccc] text-sm">—</p>
                             }
                           </div>
@@ -485,12 +484,12 @@ export default function TournamentResultsPage() {
                                   borderStyle: pg.landingTime ? 'solid' : 'dashed',
                                 }}
                               >
-                                <span className="text-[#777] leading-none" style={{ fontSize: '0.6rem' }}>#{pi + 1}</span>
-                                <span className="font-mono leading-tight mt-0.5" style={{ fontSize: '0.82rem', color: pg.landingTime ? (i === 0 ? '#664d03' : '#166534') : '#adb5bd' }}>
+                                <span className="text-[#777] leading-none" style={{ fontSize: '0.6rem' }} dir="ltr">#{pi + 1}</span>
+                                <span className="font-mono leading-tight mt-0.5" style={{ fontSize: '0.82rem', color: pg.landingTime ? (i === 0 ? '#664d03' : '#166534') : '#adb5bd' }} dir="ltr">
                                   {pg.landingTime || '—'}
                                 </span>
                                 {pg.hoursFlown && pg.landingTime && (
-                                  <span className="font-mono leading-none mt-0.5" style={{ fontSize: '0.7rem', color: '#888' }}>
+                                  <span className="font-mono leading-none mt-0.5" style={{ fontSize: '0.7rem', color: '#888' }} dir="ltr">
                                     {formatTimeDisplay(pg.hoursFlown)}
                                   </span>
                                 )}
@@ -512,7 +511,7 @@ export default function TournamentResultsPage() {
       </div>
 
       <footer className="text-center py-4 text-gray-400 text-xs border-t border-[#d4edda] bg-white mt-4">
-        © 2026 Pakistan Pigeon Racing Platform
+        {t('footer')}
       </footer>
     </main>
   )

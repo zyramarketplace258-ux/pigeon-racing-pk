@@ -7,6 +7,8 @@ import { db } from '@/lib/firebase'
 import { compareHours, formatTimeDisplay } from '@/lib/timeUtils'
 import Link from 'next/link'
 import { Playfair_Display } from 'next/font/google'
+import { useLanguage } from '@/lib/language-context'
+import { useT, fDayOf, fLanded, fStillFlying, strings } from '@/lib/translations'
 
 const playfair = Playfair_Display({ subsets: ['latin'], weight: ['700'], style: ['italic'] })
 
@@ -28,6 +30,8 @@ interface ActiveTournament {
 }
 
 export default function HomePage() {
+  const { lang, toggle } = useLanguage()
+  const t = useT()
   const [clubs, setClubs] = useState<Club[]>([])
   const [activeTournaments, setActiveTournaments] = useState<ActiveTournament[]>([])
   const [highlights, setHighlights] = useState<HighlightStat[]>([])
@@ -49,7 +53,6 @@ export default function HomePage() {
       const list = snap.docs.map(d => ({ id: d.id, ...d.data() })) as Club[]
       setClubs(list)
 
-      // Load active tournaments + participants for each club
       type TInfo = {
         base: Omit<ActiveTournament, 'topEntries' | 'totalLanded' | 'totalPigeons'>
         nameMap: Record<string, string>; areaMap: Record<string, string>
@@ -103,7 +106,6 @@ export default function HomePage() {
         setActiveTournaments([]); setLoading(false); return
       }
 
-      // Per-tournament live data store
       const liveStore = new Map<string, Pick<ActiveTournament, 'topEntries' | 'totalLanded' | 'totalPigeons'>>()
       infos.forEach(info => {
         liveStore.set(info.base.id, { topEntries: [], totalLanded: 0, totalPigeons: info.enrolledCount * info.base.pigeonCount })
@@ -122,23 +124,23 @@ export default function HomePage() {
         let topScoreRaw = '', longestFlightRaw = '', lastLandedTime = ''
         let topScore: HighlightStat | null = null, longestFlight: HighlightStat | null = null, lastLanded: HighlightStat | null = null
 
-        enriched.forEach(t => {
-          gLanded += t.totalLanded
-          gLots += t.totalPigeons / t.pigeonCount
-          if (t.topEntries[0]?.totalHours && toMins(t.topEntries[0].totalHours) > toMins(topScoreRaw)) {
-            topScoreRaw = t.topEntries[0].totalHours
-            topScore = { icon: '🏆', label: 'Top score today', value: formatTimeDisplay(t.topEntries[0].totalHours), name: t.topEntries[0].name, tournament: t.name, clubSlug: t.clubSlug, tournamentId: t.id }
+        enriched.forEach(tr => {
+          gLanded += tr.totalLanded
+          gLots += tr.totalPigeons / tr.pigeonCount
+          if (tr.topEntries[0]?.totalHours && toMins(tr.topEntries[0].totalHours) > toMins(topScoreRaw)) {
+            topScoreRaw = tr.topEntries[0].totalHours
+            topScore = { icon: '🏆', label: strings[lang].topScoreToday, value: formatTimeDisplay(tr.topEntries[0].totalHours), name: tr.topEntries[0].name, tournament: tr.name, clubSlug: tr.clubSlug, tournamentId: tr.id }
           }
-          t.topEntries.forEach(entry => {
+          tr.topEntries.forEach(entry => {
             entry.pigeons.forEach(pg => {
               if (pg.hoursFlown && pg.landingTime) {
                 if (toMins(pg.hoursFlown) > toMins(longestFlightRaw)) {
                   longestFlightRaw = pg.hoursFlown
-                  longestFlight = { icon: '⏱', label: 'Longest single flight', value: formatTimeDisplay(pg.hoursFlown), name: entry.name, tournament: t.name, clubSlug: t.clubSlug, tournamentId: t.id }
+                  longestFlight = { icon: '⏱', label: strings[lang].longestFlight, value: formatTimeDisplay(pg.hoursFlown), name: entry.name, tournament: tr.name, clubSlug: tr.clubSlug, tournamentId: tr.id }
                 }
                 if (pg.landingTime > lastLandedTime) {
                   lastLandedTime = pg.landingTime
-                  lastLanded = { icon: '🕐', label: 'Last pigeon landed', value: pg.landingTime, name: entry.name, tournament: t.name, clubSlug: t.clubSlug, tournamentId: t.id }
+                  lastLanded = { icon: '🕐', label: strings[lang].lastPigeonLanded, value: pg.landingTime, name: entry.name, tournament: tr.name, clubSlug: tr.clubSlug, tournamentId: tr.id }
                 }
               }
             })
@@ -189,7 +191,7 @@ export default function HomePage() {
 
     init()
     return () => { active = false; unsubscribers.forEach(u => u()) }
-  }, [])
+  }, [lang])
 
   const rankRingClass = (i: number) => {
     if (i === 0) return 'text-white shadow-md'
@@ -202,57 +204,59 @@ export default function HomePage() {
     return {}
   }
 
-  return (
-    <main className="min-h-screen bg-[#e8f5e9]">
+  const isUrdu = lang === 'ur'
 
-      {/* ── Header ── */}
+  return (
+    <main className={`min-h-screen bg-[#e8f5e9] ${isUrdu ? 'font-urdu' : ''}`} dir={isUrdu ? 'rtl' : 'ltr'}>
+
+      {/* Header */}
       <div className="bg-gradient-to-r from-[#1b5e20] to-[#2e7d32] px-4 py-3">
         <div className="max-w-5xl mx-auto relative flex items-center justify-between">
-          {/* Left — text */}
           <div>
-            <h1 className={`${playfair.className} text-white text-xl sm:text-2xl leading-tight`}>Pakistan Pigeon</h1>
-            <p className="text-green-300 text-xs tracking-widest uppercase">Love for the Loft</p>
+            <h1 className={`${!isUrdu ? playfair.className : ''} text-white text-xl sm:text-2xl leading-tight`}>{t('pakistanPigeon')}</h1>
+            <p className="text-green-300 text-xs tracking-widest uppercase">{t('loveForTheLoft')}</p>
           </div>
-          {/* Center — logo (absolutely centered) */}
           <img src="/pigeon.png" alt="Pigeon" className="absolute left-1/2 -translate-x-1/2 w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-lg" />
-          {/* Right — button */}
           <Link href="/club/login" className="text-xs text-green-200 border border-green-600 px-2.5 py-1.5 rounded hover:bg-green-800 transition font-medium">
-            Club Login
+            {t('clubLogin')}
           </Link>
         </div>
       </div>
       <nav className="bg-[#292929] px-4">
-        <div className="max-w-5xl mx-auto flex items-center gap-6 h-9">
-          <button onClick={() => setActiveTab('home')} className={`text-sm font-semibold pb-0.5 transition ${activeTab === 'home' ? 'text-white border-b-2 border-[#66bb6a]' : 'text-gray-400 hover:text-white'}`}>Home</button>
-          <button onClick={() => setActiveTab('clubs')} className={`text-sm font-semibold pb-0.5 transition ${activeTab === 'clubs' ? 'text-white border-b-2 border-[#66bb6a]' : 'text-gray-400 hover:text-white'}`}>Clubs</button>
+        <div className="max-w-5xl mx-auto flex items-center gap-4 h-9">
+          <button onClick={() => setActiveTab('home')} className={`text-sm font-semibold pb-0.5 transition ${activeTab === 'home' ? 'text-white border-b-2 border-[#66bb6a]' : 'text-gray-400 hover:text-white'}`}>{t('tabHome')}</button>
+          <button onClick={() => setActiveTab('clubs')} className={`text-sm font-semibold pb-0.5 transition ${activeTab === 'clubs' ? 'text-white border-b-2 border-[#66bb6a]' : 'text-gray-400 hover:text-white'}`}>{t('tabClubs')}</button>
+          <button onClick={toggle} className="ms-auto text-xs text-green-300 border border-green-700 px-2.5 py-1 rounded hover:bg-green-800 transition font-medium">
+            {isUrdu ? 'EN' : 'اردو'}
+          </button>
         </div>
       </nav>
 
-      {/* ── Stats Bar ── */}
+      {/* Stats Bar */}
       <div className="bg-[#2e7d32] text-center py-2 text-sm">
         {loading ? (
-          <span className="text-green-400 text-xs">Loading live data...</span>
+          <span className="text-green-400 text-xs">{t('loadingLiveData')}</span>
         ) : (
           <span className="text-green-100">
             <strong className="text-white">{activeTournaments.length}</strong>
-            <span className="text-green-300"> tournaments live</span>
+            <span className="text-green-300"> {t('tournamentsLive')}</span>
             <span className="text-green-600 mx-2">·</span>
             <strong className="text-white">{totalLotsCompeting}</strong>
-            <span className="text-green-300"> lofts competing</span>
+            <span className="text-green-300"> {t('loftsCompeting')}</span>
             <span className="text-green-600 mx-2">·</span>
             <strong className="text-white">{totalLandedToday}</strong>
-            <span className="text-green-300"> pigeons landed today</span>
+            <span className="text-green-300"> {t('pigeonsLandedToday')}</span>
           </span>
         )}
       </div>
 
       <div className="max-w-5xl mx-auto px-3 sm:px-4 py-4">
 
-        {/* ── CLUBS TAB ── */}
+        {/* CLUBS TAB */}
         {activeTab === 'clubs' && (
           <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden mb-4">
             <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-2">
-              <p className="text-green-200 text-xs font-bold uppercase tracking-widest">🏟️ Registered Clubs</p>
+              <p className="text-green-200 text-xs font-bold uppercase tracking-widest">{t('registeredClubs')}</p>
             </div>
             {loading ? (
               <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -269,7 +273,7 @@ export default function HomePage() {
             ) : clubs.length === 0 ? (
               <div className="p-10 text-center text-gray-400">
                 <p className="text-4xl mb-3">🏟️</p>
-                <p className="font-bold">No clubs registered yet</p>
+                <p className="font-bold">{t('noClubsYet')}</p>
               </div>
             ) : (
               <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -293,14 +297,13 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* ── HOME TAB ── */}
+        {/* HOME TAB */}
         {activeTab === 'home' && <>
 
-        {/* ── Highlight Cards (gs-block) ── */}
         {!loading && highlights.length > 0 && (
           <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden mb-4">
             <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-2">
-              <p className="text-green-200 text-xs font-bold uppercase tracking-widest">Today&apos;s Highlights</p>
+              <p className="text-green-200 text-xs font-bold uppercase tracking-widest">{t('todaysHighlights')}</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#f0f0f0]">
               {highlights.map((h, i) => (
@@ -318,7 +321,6 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* ── Loading Skeletons ── */}
         {loading && (
           <div className="space-y-4">
             {[1, 2].map(i => (
@@ -334,55 +336,50 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* ── Live Tournament Cards ── */}
         {!loading && activeTournaments.length > 0 && (
           <div className="space-y-4 mb-4">
-            {activeTournaments.map(t => (
-              <div key={`${t.clubId}-${t.id}`} className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
-
-                {/* Card header */}
+            {activeTournaments.map(tr => (
+              <div key={`${tr.clubId}-${tr.id}`} className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
                 <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-3">
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-2">
                       <span className="bg-[#e65100] text-white text-xs px-1.5 py-0.5 rounded font-bold animate-pulse tracking-wider">LIVE</span>
                       <span className="text-green-300 text-xs">
-                        {t.defaultStartTime}{t.defaultEndTime ? ` → ${t.defaultEndTime}` : ''}
+                        {tr.defaultStartTime}{tr.defaultEndTime ? ` → ${tr.defaultEndTime}` : ''}
                       </span>
                     </div>
-                    {t.totalRaceDays > 0 && (
+                    {tr.totalRaceDays > 0 && (
                       <span className="text-green-200 text-xs font-semibold bg-green-900 bg-opacity-40 px-2 py-0.5 rounded-full">
-                        Day {t.currentDay} of {t.totalRaceDays}
+                        {fDayOf(lang, tr.currentDay, tr.totalRaceDays)}
                       </span>
                     )}
                   </div>
-                  <p className="text-green-300 text-xs mb-0.5">{t.clubName} · {t.clubCity}</p>
-                  <h3 className="text-white font-bold text-base leading-snug">{t.name}</h3>
+                  <p className="text-green-300 text-xs mb-0.5">{tr.clubName} · {tr.clubCity}</p>
+                  <h3 className="text-white font-bold text-base leading-snug">{tr.name}</h3>
                 </div>
 
-                {/* Progress bar */}
-                {t.totalPigeons > 0 && (
+                {tr.totalPigeons > 0 && (
                   <div className="px-4 py-2.5 bg-green-50 border-b border-[#d4edda]">
                     <div className="h-2 bg-[#e9ecef] rounded mb-1.5 overflow-hidden">
                       <div
                         className="h-full rounded"
                         style={{
-                          width: `${Math.round((t.totalLanded / t.totalPigeons) * 100)}%`,
+                          width: `${Math.round((tr.totalLanded / tr.totalPigeons) * 100)}%`,
                           background: 'linear-gradient(90deg,#388e3c,#66bb6a)',
                           transition: 'width 0.4s ease',
                         }}
                       />
                     </div>
                     <div className="flex justify-between text-xs text-gray-500">
-                      <span>{t.totalLanded} landed</span>
-                      <span>{Math.max(0, t.totalPigeons - t.totalLanded)} still flying</span>
+                      <span>{fLanded(lang, tr.totalLanded)}</span>
+                      <span>{fStillFlying(lang, Math.max(0, tr.totalPigeons - tr.totalLanded))}</span>
                     </div>
                   </div>
                 )}
 
-                {/* Leaderboard rows */}
-                {t.topEntries.length > 0 ? (
+                {tr.topEntries.length > 0 ? (
                   <div>
-                    {t.topEntries.map((entry, i) => (
+                    {tr.topEntries.map((entry, i) => (
                       <div
                         key={i}
                         className="flex items-center gap-3 px-3 py-2.5 border-b border-[#e9ecef] last:border-b-0"
@@ -404,28 +401,26 @@ export default function HomePage() {
                   </div>
                 ) : (
                   <div className="px-4 py-6 text-center text-gray-400 text-sm bg-[#f9fdf9]">
-                    No results submitted yet for today
+                    {t('noResultsYet')}
                   </div>
                 )}
 
-                {/* Full results link */}
                 <Link
-                  href={`/${t.clubSlug}/${t.id}`}
+                  href={`/${tr.clubSlug}/${tr.id}`}
                   className="flex items-center justify-center gap-2 py-3 text-sm font-semibold text-[#23592b] bg-[#f1faf2] border-t border-[#d4edda] hover:bg-[#e8f5e9] transition"
                 >
-                  Full results <span>→</span>
+                  {t('fullResults')} <span>→</span>
                 </Link>
               </div>
             ))}
           </div>
         )}
 
-        {/* No tournaments */}
         {!loading && activeTournaments.length === 0 && (
           <div className="bg-white rounded-xl border border-[#d4edda] p-10 text-center mb-4 shadow-sm">
             <p className="text-4xl mb-3">🐦</p>
-            <p className="text-gray-700 font-bold">No live tournaments right now</p>
-            <p className="text-gray-400 text-sm mt-1">Check back soon!</p>
+            <p className="text-gray-700 font-bold">{t('noLiveTournaments')}</p>
+            <p className="text-gray-400 text-sm mt-1">{t('checkBackSoon')}</p>
           </div>
         )}
 
@@ -434,7 +429,7 @@ export default function HomePage() {
       </div>
 
       <footer className="text-center py-4 text-gray-400 text-xs border-t border-[#d4edda] bg-white">
-        © 2026 Pakistan Pigeon Racing Platform. All rights reserved.
+        {t('footerFull')}
       </footer>
 
     </main>

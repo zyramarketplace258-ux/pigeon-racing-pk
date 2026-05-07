@@ -6,6 +6,8 @@ import { useParams } from 'next/navigation'
 import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import Link from 'next/link'
+import { useLanguage } from '@/lib/language-context'
+import { useT, fDayOf, fPctComplete, fDaysLeft, fDaysShort } from '@/lib/translations'
 
 interface Club { id: string; name: string; slug: string; city: string; logoUrl?: string }
 interface RaceDay { dayNumber: number; date: string; isGap?: boolean }
@@ -34,6 +36,8 @@ function getWeatherIcon(code: string): string {
 export default function ClubPublicPage() {
   const params = useParams()
   const clubSlug = params.clubSlug as string
+  const { lang, toggle } = useLanguage()
+  const t = useT()
 
   const [club, setClub] = useState<Club | null>(null)
   const [tournaments, setTournaments] = useState<Tournament[]>([])
@@ -55,7 +59,6 @@ export default function ClubPublicPage() {
       const clubData = { id: snap.docs[0].id, ...snap.docs[0].data() } as Club
       setClub(clubData)
 
-      // Weather (optional, fire-and-forget)
       ;(async () => {
         try {
           const res = await fetch(
@@ -68,7 +71,6 @@ export default function ClubPublicPage() {
         } catch { /* weather is optional */ }
       })()
 
-      // Live tournament list
       unsubTournaments = onSnapshot(
         collection(db, 'clubs', clubData.id, 'tournaments'),
         tSnap => {
@@ -83,26 +85,28 @@ export default function ClubPublicPage() {
     return () => { active = false; unsubTournaments?.() }
   }, [clubSlug])
 
-  const getDayProgress = (t: Tournament) => {
-    if (!t.raceDays?.length) return null
+  const getDayProgress = (tr: Tournament) => {
+    if (!tr.raceDays?.length) return null
     const today = new Date().toISOString().split('T')[0]
-    const nonGap = t.raceDays.filter(rd => !rd.isGap)
+    const nonGap = tr.raceDays.filter(rd => !rd.isGap)
     const passed = nonGap.filter(rd => rd.date <= today).length
     return { current: Math.min(passed, nonGap.length) || 1, total: nonGap.length }
   }
 
+  const isUrdu = lang === 'ur'
+
   if (loading) return (
-    <main className="min-h-screen bg-[#e8f5e9] flex items-center justify-center">
-      <p className="text-[#388e3c] font-semibold">Loading...</p>
+    <main className={`min-h-screen bg-[#e8f5e9] flex items-center justify-center ${isUrdu ? 'font-urdu' : ''}`}>
+      <p className="text-[#388e3c] font-semibold">{t('loading')}</p>
     </main>
   )
 
   if (notFound) return (
-    <main className="min-h-screen bg-[#e8f5e9] flex items-center justify-center">
+    <main className={`min-h-screen bg-[#e8f5e9] flex items-center justify-center ${isUrdu ? 'font-urdu' : ''}`}>
       <div className="text-center px-4">
         <p className="text-6xl mb-4">🏟️</p>
-        <h1 className="text-[#1b5e20] text-2xl font-bold">Club Not Found</h1>
-        <Link href="/" className="text-[#388e3c] hover:text-[#1b5e20] mt-4 inline-block font-semibold">← Back to Home</Link>
+        <h1 className="text-[#1b5e20] text-2xl font-bold">{t('clubNotFound')}</h1>
+        <Link href="/" className="text-[#388e3c] hover:text-[#1b5e20] mt-4 inline-block font-semibold">{t('backToHome')}</Link>
       </div>
     </main>
   )
@@ -112,17 +116,17 @@ export default function ClubPublicPage() {
   const inactive = tournaments.filter(t => t.status === 'inactive')
 
   return (
-    <main className="min-h-screen bg-[#e8f5e9]">
+    <main className={`min-h-screen bg-[#e8f5e9] ${isUrdu ? 'font-urdu' : ''}`} dir={isUrdu ? 'rtl' : 'ltr'}>
 
       {/* Header */}
       <div className="bg-gradient-to-r from-[#1b5e20] to-[#2e7d32] px-4 pt-5 pb-4">
         <div className="max-w-4xl mx-auto text-center relative">
-          <Link href="/" className="absolute left-0 top-0 text-green-300 hover:text-white text-xs font-medium transition">
-            ← Home
+          <Link href="/" className="absolute start-0 top-0 text-green-300 hover:text-white text-xs font-medium transition">
+            {isUrdu ? 'ہوم →' : '← Home'}
           </Link>
           <img src={club?.logoUrl || '/pigeon.png'} alt="Logo" className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-full drop-shadow-lg mx-auto mb-2 border-2 border-green-600" />
           <h1 className="text-white text-lg sm:text-2xl font-bold leading-tight">{club?.name}</h1>
-          <p className="text-green-300 text-xs mt-0.5">{club?.city} · Love for the Loft</p>
+          <p className="text-green-300 text-xs mt-0.5">{club?.city} · {t('loveForTheLoft')}</p>
         </div>
       </div>
       <nav className="bg-[#292929] px-4">
@@ -132,9 +136,12 @@ export default function ClubPublicPage() {
               className={`px-4 h-full text-sm font-semibold transition border-b-2 ${
                 activeView === v ? 'text-white border-[#66bb6a]' : 'text-gray-400 border-transparent hover:text-white'
               }`}>
-              {v === 'tournaments' ? 'Tournaments' : 'History'}
+              {v === 'tournaments' ? t('tabTournaments') : t('tabHistory')}
             </button>
           ))}
+          <button onClick={toggle} className="ms-auto text-xs text-green-300 border border-green-700 px-2.5 py-1 rounded hover:bg-green-800 transition font-medium">
+            {isUrdu ? 'EN' : 'اردو'}
+          </button>
         </div>
       </nav>
 
@@ -147,52 +154,52 @@ export default function ClubPublicPage() {
               <span className="text-3xl">{weather.icon}</span>
               <div>
                 <p className="text-[#1a1a1a] font-semibold text-sm">{weather.temp} · {weather.desc}</p>
-                <p className="text-[#777] text-xs">{club?.city} current weather</p>
+                <p className="text-[#777] text-xs">{club?.city} {t('currentWeather')}</p>
               </div>
             </div>
           </div>
         )}
 
-        {/* ── TOURNAMENTS VIEW ── */}
+        {/* TOURNAMENTS VIEW */}
         {activeView === 'tournaments' && (
           <>
             {active.length > 0 && (
               <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
                 <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-2">
-                  <p className="text-green-200 text-xs font-bold uppercase tracking-widest">🟢 Active Tournaments</p>
+                  <p className="text-green-200 text-xs font-bold uppercase tracking-widest">{t('activeTournaments')}</p>
                 </div>
                 <div className="divide-y divide-[#f0f0f0]">
-                  {active.map(t => {
-                    const progress = getDayProgress(t)
+                  {active.map(tr => {
+                    const progress = getDayProgress(tr)
                     return (
-                      <div key={t.id} className="overflow-hidden">
+                      <div key={tr.id} className="overflow-hidden">
                         <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-2.5 flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <span className="bg-[#e65100] text-white text-xs px-1.5 py-0.5 rounded font-bold animate-pulse tracking-wider">LIVE</span>
-                            <span className="text-green-300 text-xs">{t.defaultStartTime}{t.defaultEndTime ? ` → ${t.defaultEndTime}` : ''}</span>
+                            <span className="text-green-300 text-xs">{tr.defaultStartTime}{tr.defaultEndTime ? ` → ${tr.defaultEndTime}` : ''}</span>
                           </div>
                           {progress && (
                             <span className="text-green-200 text-xs font-semibold bg-green-900 bg-opacity-40 px-2 py-0.5 rounded-full">
-                              Day {progress.current} of {progress.total}
+                              {fDayOf(lang, progress.current, progress.total)}
                             </span>
                           )}
                         </div>
                         <div className="px-4 py-3">
-                          <h3 className="text-[#1a1a1a] font-bold text-base mb-2">{t.name}</h3>
+                          <h3 className="text-[#1a1a1a] font-bold text-base mb-2">{tr.name}</h3>
                           {progress && (
                             <div className="mb-3">
                               <div className="h-2 bg-[#e9ecef] rounded overflow-hidden mb-1">
                                 <div className="h-full rounded" style={{ width: `${(progress.current / progress.total) * 100}%`, background: 'linear-gradient(90deg,#388e3c,#66bb6a)' }} />
                               </div>
                               <div className="flex justify-between text-xs text-gray-400">
-                                <span>{Math.round((progress.current / progress.total) * 100)}% complete</span>
-                                <span>{progress.total - progress.current} days left</span>
+                                <span>{fPctComplete(lang, Math.round((progress.current / progress.total) * 100))}</span>
+                                <span>{fDaysLeft(lang, progress.total - progress.current)}</span>
                               </div>
                             </div>
                           )}
                         </div>
-                        <Link href={`/${clubSlug}/${t.id}`} className="flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-[#23592b] bg-[#f1faf2] border-t border-[#d4edda] hover:bg-[#e8f5e9] transition">
-                          View Results →
+                        <Link href={`/${clubSlug}/${tr.id}`} className="flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-[#23592b] bg-[#f1faf2] border-t border-[#d4edda] hover:bg-[#e8f5e9] transition">
+                          {t('viewResults')}
                         </Link>
                       </div>
                     )
@@ -204,17 +211,17 @@ export default function ClubPublicPage() {
             {inactive.length > 0 && (
               <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
                 <div className="bg-[#f9f9f9] border-b border-[#e9ecef] px-4 py-2">
-                  <p className="text-[#999] text-xs font-bold uppercase tracking-widest">Upcoming</p>
+                  <p className="text-[#999] text-xs font-bold uppercase tracking-widest">{t('upcoming')}</p>
                 </div>
                 <div className="divide-y divide-[#f0f0f0]">
-                  {inactive.map(t => (
-                    <div key={t.id} className="px-4 py-3 opacity-60">
+                  {inactive.map(tr => (
+                    <div key={tr.id} className="px-4 py-3 opacity-60">
                       <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0">
-                          <h3 className="text-[#1a1a1a] font-semibold text-sm truncate">{t.name}</h3>
-                          <p className="text-[#777] text-xs mt-0.5">{t.totalDays} days</p>
+                          <h3 className="text-[#1a1a1a] font-semibold text-sm truncate">{tr.name}</h3>
+                          <p className="text-[#777] text-xs mt-0.5">{fDaysShort(lang, tr.totalDays)}</p>
                         </div>
-                        <span className="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full shrink-0 font-semibold">SOON</span>
+                        <span className="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full shrink-0 font-semibold">{t('soon')}</span>
                       </div>
                     </div>
                   ))}
@@ -225,41 +232,41 @@ export default function ClubPublicPage() {
             {active.length === 0 && inactive.length === 0 && (
               <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm p-10 text-center">
                 <p className="text-4xl mb-3">🏆</p>
-                <p className="text-[#1a1a1a] font-bold">No Active Tournaments</p>
-                <p className="text-[#777] text-sm mt-2">Check History for past results.</p>
+                <p className="text-[#1a1a1a] font-bold">{t('noActiveTournaments')}</p>
+                <p className="text-[#777] text-sm mt-2">{t('checkHistory')}</p>
               </div>
             )}
           </>
         )}
 
-        {/* ── HISTORY VIEW ── */}
+        {/* HISTORY VIEW */}
         {activeView === 'history' && (
           <>
             {completed.length === 0 ? (
               <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm p-10 text-center">
                 <p className="text-4xl mb-3">🏁</p>
-                <p className="text-[#1a1a1a] font-bold">No Completed Tournaments Yet</p>
+                <p className="text-[#1a1a1a] font-bold">{t('noCompletedYet')}</p>
               </div>
             ) : (
               <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
                 <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-2">
-                  <p className="text-green-200 text-xs font-bold uppercase tracking-widest">🏁 Completed Tournaments</p>
+                  <p className="text-green-200 text-xs font-bold uppercase tracking-widest">{t('completedTournaments')}</p>
                 </div>
                 <div className="divide-y divide-[#f0f0f0]">
-                  {completed.map(t => {
-                    const progress = getDayProgress(t)
+                  {completed.map(tr => {
+                    const progress = getDayProgress(tr)
                     return (
-                      <Link key={t.id} href={`/${clubSlug}/${t.id}`} className="block px-4 py-3 hover:bg-[#f9fdf9] transition group">
+                      <Link key={tr.id} href={`/${clubSlug}/${tr.id}`} className="block px-4 py-3 hover:bg-[#f9fdf9] transition group">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <h3 className="text-[#1a1a1a] font-semibold text-sm group-hover:text-[#1b5e20] transition truncate">{t.name}</h3>
+                            <h3 className="text-[#1a1a1a] font-semibold text-sm group-hover:text-[#1b5e20] transition truncate">{tr.name}</h3>
                             <p className="text-[#777] text-xs mt-0.5">
-                              {progress ? `${progress.total} days` : `${t.totalDays} days`}
-                              {t.defaultStartTime ? ` · Start: ${t.defaultStartTime}` : ''}
+                              {fDaysShort(lang, progress ? progress.total : tr.totalDays)}
+                              {tr.defaultStartTime ? ` · ${t('start')}: ${tr.defaultStartTime}` : ''}
                             </p>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
-                            <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full font-semibold whitespace-nowrap">DONE</span>
+                            <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full font-semibold whitespace-nowrap">{t('done')}</span>
                             <span className="text-[#388e3c]">→</span>
                           </div>
                         </div>
@@ -280,7 +287,7 @@ export default function ClubPublicPage() {
       </div>
 
       <footer className="text-center py-4 text-gray-400 text-xs border-t border-[#d4edda] bg-white mt-4">
-        © 2026 Pakistan Pigeon Racing Platform
+        {t('footer')}
       </footer>
     </main>
   )
