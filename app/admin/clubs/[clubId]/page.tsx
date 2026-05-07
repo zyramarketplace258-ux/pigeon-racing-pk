@@ -118,14 +118,15 @@ export default function ClubDetailPage() {
 
   return (
     <main className="min-h-screen bg-dark">
-      <header className="bg-primary border-b border-secondary px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-secondary">🏟️ {club?.name}</h1>
-          <p className="text-green-400 text-xs">{club?.city} · {club?.loginEmail}</p>
-        </div>
-        <Link href="/admin/dashboard" className="text-xs text-green-400 hover:text-secondary transition">
+      <header className="bg-primary border-b border-secondary px-6 py-3 relative">
+        <Link href="/admin/dashboard" className="absolute left-4 top-1/2 -translate-y-1/2 text-xs text-green-400 hover:text-secondary transition">
           ← Dashboard
         </Link>
+        <div className="text-center">
+          <img src="/pigeon.png" alt="Pigeon" className="w-10 h-10 object-contain drop-shadow mx-auto" />
+          <h1 className="text-sm font-bold text-secondary leading-tight mt-0.5">{club?.name}</h1>
+          <p className="text-green-400 text-xs">{club?.city}</p>
+        </div>
       </header>
 
       <div className="px-6 py-8 max-w-5xl mx-auto">
