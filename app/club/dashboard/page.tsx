@@ -393,8 +393,8 @@ export default function ClubDashboard() {
               <h2 className="text-secondary font-bold mb-4">+ Add Member</h2>
               <form onSubmit={addMember} className="flex flex-col sm:flex-row gap-3">
                 <input type="text" value={memberName}
-                  onChange={e => setMemberName(e.target.value.replace(/[^a-zA-Z\s]/g, ''))}
-                  required placeholder="Name (letters only)"
+                  onChange={e => setMemberName(e.target.value.replace(/[^a-zA-Z؀-ۿݐ-ݿ\s]/g, ''))}
+                  required placeholder="Name"
                   className="flex-1 bg-primary border border-green-700 text-white rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-secondary placeholder-green-700" />
                 <input type="text" value={memberArea}
                   onChange={e => setMemberArea(e.target.value.replace(/[^a-zA-Z0-9\s]/g, ''))}
