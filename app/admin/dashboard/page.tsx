@@ -42,7 +42,10 @@ export default function AdminDashboard() {
       <main className="min-h-screen bg-dark">
         <header className="bg-primary border-b border-secondary px-6 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-secondary">🐦 Admin Dashboard</h1>
+            <div className="flex items-center gap-2">
+              <img src="/pigeon.png" alt="Pigeon" className="w-7 h-7 object-contain" />
+              <h1 className="text-xl font-bold text-secondary">Admin Dashboard</h1>
+            </div>
             <p className="text-green-400 text-xs">Pakistan Pigeon Racing</p>
           </div>
           <div className="flex items-center gap-3">
@@ -96,8 +99,8 @@ export default function AdminDashboard() {
               {clubs.map((club) => (
                 <div key={club.id} className="bg-surface border border-green-800 hover:border-secondary rounded-xl p-5 transition">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-full bg-primary border border-secondary flex items-center justify-center text-secondary text-xl font-bold">
-                      {club.name?.charAt(0)}
+                    <div className="w-12 h-12 rounded-full bg-primary border border-secondary flex items-center justify-center overflow-hidden">
+                      <img src="/pigeon.png" alt="Pigeon" className="w-9 h-9 object-contain" />
                     </div>
                     <div>
                       <h3 className="text-white font-bold">{club.name}</h3>
