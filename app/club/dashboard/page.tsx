@@ -15,18 +15,22 @@ import Cropper from 'react-easy-crop'
 import type { Area } from 'react-easy-crop'
 
 async function getCroppedBlob(imageSrc: string, pixelCrop: Area): Promise<Blob> {
-  const image = new Image()
-  image.src = imageSrc
-  await new Promise(resolve => { image.onload = resolve })
-  const canvas = document.createElement('canvas')
-  const size = 400
-  canvas.width = size; canvas.height = size
-  const ctx = canvas.getContext('2d')!
-  ctx.beginPath()
-  ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2)
-  ctx.clip()
-  ctx.drawImage(image, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, size, size)
-  return new Promise(resolve => canvas.toBlob(b => resolve(b!), 'image/jpeg', 0.92))
+  return new Promise((resolve, reject) => {
+    const image = new Image()
+    image.onload = () => {
+      const canvas = document.createElement('canvas')
+      const size = 400
+      canvas.width = size; canvas.height = size
+      const ctx = canvas.getContext('2d')!
+      ctx.beginPath()
+      ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2)
+      ctx.clip()
+      ctx.drawImage(image, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, size, size)
+      canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas toBlob failed')), 'image/jpeg', 0.92)
+    }
+    image.onerror = () => reject(new Error('Image failed to load'))
+    image.src = imageSrc
+  })
 }
 
 interface Club { id: string; name: string; slug: string; city: string; logoUrl?: string }
@@ -99,6 +103,7 @@ export default function ClubDashboard() {
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
+  const [cropError, setCropError] = useState('')
   const onCropComplete = useCallback((_: Area, pixels: Area) => setCroppedAreaPixels(pixels), [])
 
   useEffect(() => {
@@ -297,7 +302,7 @@ export default function ClubDashboard() {
 
   const saveCroppedLogo = async () => {
     if (!club || !cropSrc || !croppedAreaPixels) return
-    setUploadingLogo(true)
+    setUploadingLogo(true); setCropError('')
     try {
       const blob = await getCroppedBlob(cropSrc, croppedAreaPixels)
       const storageRef = ref(storage, `clubs/${club.id}/logo`)
@@ -306,6 +311,8 @@ export default function ClubDashboard() {
       await updateDoc(doc(db, 'clubs', club.id), { logoUrl: url })
       setClub(prev => prev ? { ...prev, logoUrl: url } : prev)
       setCropSrc(null)
+    } catch (err) {
+      setCropError(err instanceof Error ? err.message : 'Upload failed. Check Firebase Storage rules.')
     } finally { setUploadingLogo(false) }
   }
 
@@ -683,6 +690,7 @@ export default function ClubDashboard() {
               />
             </div>
             <p className="text-green-600 text-xs text-center">Drag to reposition · Pinch or slide to zoom</p>
+            {cropError && <p className="text-red-400 text-xs text-center">{cropError}</p>}
           </div>
         </div>
       )}
