@@ -69,6 +69,7 @@ export default function NewTournamentPage() {
         defaultEndTime: form.defaultEndTime,
         pigeonCount: form.pigeonCount,
         raceDays,
+        participantIds: [],
         createdAt: serverTimestamp(),
         createdBy: 'admin',
       })

@@ -23,6 +23,7 @@ interface PigeonEntry { landingTime: string; hoursFlown: string }
 interface EntryRow {
   participantId: string; name: string; area: string
   startTime: string; pigeons: PigeonEntry[]; totalHours: string
+  hadData: boolean
 }
 
 async function fetchEntries(
@@ -30,20 +31,22 @@ async function fetchEntries(
 ): Promise<{ entryRows: EntryRow[]; dayNum: number | null }> {
   const todayRaceDay = tData.raceDays?.find(rd => rd.date === today && !rd.isGap)
   const dayNum = todayRaceDay?.dayNumber ?? null
-  const pList = tData.participantIds?.length
+  const pList = tData.participantIds != null
     ? allParticipants.filter(p => tData.participantIds!.includes(p.id))
     : allParticipants
   const entryRows = await Promise.all(pList.map(async (p) => {
     let startTime = tData.defaultStartTime
     let pigeons: PigeonEntry[] = Array.from({ length: tData.pigeonCount }, () => ({ landingTime: '', hoursFlown: '' }))
+    let hadData = false
     if (dayNum) {
       const snap = await getDoc(doc(db, 'clubs', clubId, 'tournaments', tData.id, 'entries', `${p.id}_day${dayNum}`))
-      if (snap.exists()) { startTime = snap.data().startTime; pigeons = snap.data().pigeons || pigeons }
+      if (snap.exists()) { startTime = snap.data().startTime; pigeons = snap.data().pigeons || pigeons; hadData = true }
     }
     const filled = pigeons.filter(pg => pg.hoursFlown)
     return {
       participantId: p.id, name: p.name, area: p.area, startTime, pigeons,
-      totalHours: filled.length > 0 ? calculateGrandTotal(filled.map(pg => pg.hoursFlown)) : ''
+      totalHours: filled.length > 0 ? calculateGrandTotal(filled.map(pg => pg.hoursFlown)) : '',
+      hadData
     }
   }))
   return { entryRows, dayNum }
@@ -101,8 +104,9 @@ export default function ClubDashboard() {
         const activeList = allTournaments.filter(t => t.status === 'active')
         setActiveTournaments(activeList)
         if (allTournaments.length > 0) {
-          setAssignTournamentId(allTournaments[0].id)
-          setAssignedIds(new Set(allTournaments[0].participantIds?.length ? allTournaments[0].participantIds : allParticipants.map(p => p.id)))
+          const firstT = allTournaments[0]
+          setAssignTournamentId(firstT.id)
+          setAssignedIds(new Set(firstT.participantIds != null ? firstT.participantIds : allParticipants.map(p => p.id)))
         }
         if (activeList.length > 0) {
           const tData = activeList[0]
@@ -173,7 +177,12 @@ export default function ClubDashboard() {
         t.id !== tournament.id && t.raceDays?.some(rd => rd.date === todayDate)
       )
       for (const entry of entries) {
-        if (!entry.pigeons.some(pg => pg.landingTime)) continue
+        if (!entry.pigeons.some(pg => pg.landingTime)) {
+          if (entry.hadData) {
+            await deleteDoc(doc(db, 'clubs', club.id, 'tournaments', tournament.id, 'entries', `${entry.participantId}_day${todayDay}`))
+          }
+          continue
+        }
         await setDoc(doc(db, 'clubs', club.id, 'tournaments', tournament.id, 'entries', `${entry.participantId}_day${todayDay}`), {
           participantId: entry.participantId, dayNumber: todayDay,
           startTime: entry.startTime, pigeons: entry.pigeons,
@@ -231,7 +240,7 @@ export default function ClubDashboard() {
     const t = tournaments.find(t => t.id === tournamentId)
     if (!t) return
     setAssignTournamentId(tournamentId)
-    setAssignedIds(new Set(t.participantIds?.length ? t.participantIds : participants.map(p => p.id)))
+    setAssignedIds(new Set(t.participantIds != null ? t.participantIds : participants.map(p => p.id)))
     setSavedAssignment(false)
   }
 

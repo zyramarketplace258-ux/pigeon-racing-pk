@@ -75,7 +75,7 @@ export default function TournamentResultsPage() {
 
       const pSnap = await getDocs(collection(db, 'clubs', clubData.id, 'participants'))
       const allParticipants = pSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Participant[]
-      const filtered = tData.participantIds?.length
+      const filtered = tData.participantIds != null
         ? allParticipants.filter(p => tData.participantIds!.includes(p.id))
         : allParticipants
       setParticipants(filtered)
