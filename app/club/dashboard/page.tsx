@@ -18,7 +18,7 @@ interface Tournament {
   defaultStartTime: string; defaultEndTime?: string; pigeonCount: number
   raceDays: RaceDay[]; participantIds?: string[]
 }
-interface Participant { id: string; name: string; area: string; photoUrl?: string }
+interface Participant { id: string; name: string; area: string; photoUrl?: string; disabled?: boolean }
 interface PigeonEntry { landingTime: string; hoursFlown: string }
 interface EntryRow {
   participantId: string; name: string; area: string
@@ -31,9 +31,9 @@ async function fetchEntries(
 ): Promise<{ entryRows: EntryRow[]; dayNum: number | null }> {
   const todayRaceDay = tData.raceDays?.find(rd => rd.date === today && !rd.isGap)
   const dayNum = todayRaceDay?.dayNumber ?? null
-  const pList = tData.participantIds != null
+  const pList = (tData.participantIds != null
     ? allParticipants.filter(p => tData.participantIds!.includes(p.id))
-    : allParticipants
+    : allParticipants).filter(p => !p.disabled)
   const entryRows = await Promise.all(pList.map(async (p) => {
     let startTime = tData.defaultStartTime
     let pigeons: PigeonEntry[] = Array.from({ length: tData.pigeonCount }, () => ({ landingTime: '', hoursFlown: '' }))
@@ -230,10 +230,17 @@ export default function ClubDashboard() {
   }
 
   const removeMember = async (id: string) => {
-    if (!club || !confirm('Remove this participant from the club?')) return
+    if (!club || !confirm('Permanently delete this member?')) return
     await deleteDoc(doc(db, 'clubs', club.id, 'participants', id))
     setParticipants(prev => prev.filter(p => p.id !== id))
     setAssignedIds(prev => { const next = new Set(prev); next.delete(id); return next })
+  }
+
+  const toggleDisabled = async (p: Participant) => {
+    if (!club) return
+    const newVal = !p.disabled
+    await updateDoc(doc(db, 'clubs', club.id, 'participants', p.id), { disabled: newVal })
+    setParticipants(prev => prev.map(m => m.id === p.id ? { ...m, disabled: newVal } : m))
   }
 
   const handleAssignTournamentSelect = (tournamentId: string) => {
@@ -351,7 +358,7 @@ export default function ClubDashboard() {
                       <span className="text-green-600 ml-auto text-xs">{assignedIds.size} / {participants.length}</span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-5">
-                      {participants.map(p => (
+                      {participants.filter(p => !p.disabled).map(p => (
                         <label key={p.id} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition ${
                           assignedIds.has(p.id) ? 'border-secondary bg-primary' : 'border-green-800 hover:border-green-600'
                         }`}>
@@ -384,9 +391,13 @@ export default function ClubDashboard() {
             <div className="bg-surface border border-green-800 rounded-xl p-6">
               <h2 className="text-secondary font-bold mb-4">+ Add Member</h2>
               <form onSubmit={addMember} className="flex flex-col sm:flex-row gap-3">
-                <input type="text" value={memberName} onChange={e => setMemberName(e.target.value)} required placeholder="Name"
+                <input type="text" value={memberName}
+                  onChange={e => setMemberName(e.target.value.replace(/[^a-zA-Z\s]/g, ''))}
+                  required placeholder="Name (letters only)"
                   className="flex-1 bg-primary border border-green-700 text-white rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-secondary placeholder-green-700" />
-                <input type="text" value={memberArea} onChange={e => setMemberArea(e.target.value)} required placeholder="Area"
+                <input type="text" value={memberArea}
+                  onChange={e => setMemberArea(e.target.value.replace(/[^a-zA-Z0-9\s]/g, ''))}
+                  required placeholder="Area (letters & numbers)"
                   className="flex-1 bg-primary border border-green-700 text-white rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-secondary placeholder-green-700" />
                 <button type="submit" disabled={addingMember}
                   className="bg-secondary hover:bg-accent text-dark font-bold px-5 py-2 rounded-lg text-sm transition disabled:opacity-50 sm:w-auto w-full">
@@ -396,9 +407,9 @@ export default function ClubDashboard() {
             </div>
 
             <div className="bg-surface border border-green-800 rounded-xl overflow-hidden">
-              <div className="bg-primary px-4 py-3 border-b border-green-800">
+              <div className="bg-primary px-4 py-3 border-b border-green-800 flex items-center justify-between">
                 <p className="text-green-400 text-sm font-semibold">
-                  {participants.length} Member{participants.length !== 1 ? 's' : ''}
+                  {participants.filter(p => !p.disabled).length} Active · {participants.filter(p => p.disabled).length} Disabled
                 </p>
               </div>
               {participants.length === 0 ? (
@@ -408,18 +419,24 @@ export default function ClubDashboard() {
               ) : (
                 <div className="divide-y divide-green-900">
                   {participants.map((p, i) => (
-                    <div key={p.id} className="flex items-center gap-3 px-4 py-3 hover:bg-primary transition">
+                    <div key={p.id} className={`flex items-center gap-3 px-4 py-3 transition ${p.disabled ? 'opacity-50' : 'hover:bg-primary'}`}>
                       <span className="text-green-600 text-xs w-5 shrink-0">{i + 1}</span>
-                      <div className="w-10 h-10 rounded-full bg-primary border border-green-700 flex items-center justify-center text-secondary font-bold text-sm shrink-0">
+                      <div className={`w-10 h-10 rounded-full border flex items-center justify-center font-bold text-sm shrink-0 ${p.disabled ? 'bg-primary border-green-900 text-green-700' : 'bg-primary border-green-700 text-secondary'}`}>
                         {p.name.charAt(0)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-white font-semibold text-sm truncate">{p.name}</p>
-                        <p className="text-green-400 text-xs">{p.area}</p>
+                        <p className={`font-semibold text-sm truncate ${p.disabled ? 'text-green-700 line-through' : 'text-white'}`}>{p.name}</p>
+                        <p className="text-green-600 text-xs">{p.area}{p.disabled ? ' · Disabled' : ''}</p>
                       </div>
-                      <button onClick={() => removeMember(p.id)} className="text-red-500 hover:text-red-400 text-xs transition shrink-0">
-                        Remove
-                      </button>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button onClick={() => toggleDisabled(p)}
+                          className={`text-xs px-2 py-1 rounded transition ${p.disabled ? 'bg-green-900 text-green-400 hover:bg-green-700' : 'bg-yellow-900 text-yellow-400 hover:bg-yellow-700'}`}>
+                          {p.disabled ? 'Enable' : 'Disable'}
+                        </button>
+                        <button onClick={() => removeMember(p.id)} className="text-red-500 hover:text-red-400 text-xs transition">
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -440,7 +457,7 @@ export default function ClubDashboard() {
             <>
               {/* Tournament selector */}
               <div className="bg-surface border border-secondary rounded-xl p-4 mb-5">
-                <div className="flex items-center justify-between mb-1">
+                <div className="mb-1">
                   {activeTournaments.length > 1 ? (
                     <select value={tournament?.id} onChange={e => handleTournamentChange(e.target.value)}
                       className="bg-primary border border-secondary text-secondary font-bold text-base rounded-lg px-3 py-1 focus:outline-none focus:border-accent">
@@ -449,10 +466,6 @@ export default function ClubDashboard() {
                   ) : (
                     <h2 className="text-secondary font-bold text-lg">{tournament?.name}</h2>
                   )}
-                  <div className="text-right">
-                    <p className="text-green-400 text-xs">Pigeons / Participant</p>
-                    <p className="text-white font-bold text-xl">{tournament?.pigeonCount}</p>
-                  </div>
                 </div>
                 <div className="flex items-center justify-between mt-1">
                   <p className="text-green-400 text-sm">
