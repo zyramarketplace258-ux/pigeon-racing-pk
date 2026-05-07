@@ -16,10 +16,11 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: "Pakistan Pigeon",
   description: "Pakistan Pigeon Racing Platform — Love for the Loft",
-  icons: {
-    icon: "/pigeon.png",
-    apple: "/pigeon.png",
-  },
+  icons: [
+    { rel: "icon", url: "/pigeon.png", type: "image/png" },
+    { rel: "shortcut icon", url: "/pigeon.png", type: "image/png" },
+    { rel: "apple-touch-icon", url: "/pigeon.png" },
+  ],
 };
 
 export default function RootLayout({
