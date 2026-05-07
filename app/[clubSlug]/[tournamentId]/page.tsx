@@ -217,9 +217,8 @@ export default function TournamentResultsPage() {
     </main>
   )
 
-  const participantsWithData = dayEntries.filter(e => e.hasData).length
   const totalLanded = dayEntries.reduce((sum, e) => !e.hasData ? sum : sum + e.pigeons.filter(pg => pg.landingTime).length, 0)
-  const stillFlying = Math.max(0, participantsWithData * tournament.pigeonCount - totalLanded)
+  const stillFlying = Math.max(0, participants.length * tournament.pigeonCount - totalLanded)
 
 
   return (

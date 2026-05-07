@@ -23,6 +23,7 @@ interface ActiveTournament {
   defaultStartTime: string; defaultEndTime: string
   clubId: string; clubName: string; clubSlug: string; clubCity: string
   raceDays: RaceDay[]; currentDay: number; totalRaceDays: number
+  participantIds: string[] | null
   topEntries: TopEntry[]; totalLanded: number; totalPigeons: number
 }
 
@@ -63,6 +64,7 @@ export default function HomePage() {
             raceDays,
             currentDay: Math.min(passed, nonGap.length) || 1,
             totalRaceDays: nonGap.length,
+            participantIds: data.participantIds ?? null,
           })
         })
       }))
@@ -88,22 +90,23 @@ export default function HomePage() {
         const nameMap: Record<string, string> = {}
         const areaMap: Record<string, string> = {}
         pSnap.docs.forEach(d => { nameMap[d.id] = d.data().name; areaMap[d.id] = d.data().area || '' })
-        gLots += pSnap.docs.length
+        const enrolledCount = t.participantIds != null ? t.participantIds.length : pSnap.docs.length
+        gLots += enrolledCount
 
         const suffix = `_day${currentDayNum}`
-        let totalLanded = 0, submittedCount = 0
+        let totalLanded = 0
 
         const allEntries: TopEntry[] = entriesSnap.docs
           .filter(d => d.id.endsWith(suffix))
-          .map(d => {
+          .flatMap(d => {
             const pId = d.id.slice(0, -suffix.length)
+            if (t.participantIds != null && !t.participantIds.includes(pId)) return []
             const data = d.data()
             const pigeons: PigeonChip[] = (data.pigeons || []).map((pg: Record<string, string>) => ({
               landingTime: pg.landingTime || '', hoursFlown: pg.hoursFlown || '',
             }))
-            submittedCount++
             pigeons.forEach(pg => { if (pg.landingTime) totalLanded++ })
-            return { name: nameMap[pId] || 'Unknown', area: areaMap[pId] || '', pigeons, totalHours: data.totalHours || '' }
+            return [{ name: nameMap[pId] || 'Unknown', area: areaMap[pId] || '', pigeons, totalHours: data.totalHours || '' }]
           })
           .filter(e => e.totalHours)
           .sort((a, b) => compareHours(a.totalHours, b.totalHours))
@@ -129,7 +132,7 @@ export default function HomePage() {
           })
         })
 
-        return { ...t, topEntries: allEntries.slice(0, 3), totalLanded, totalPigeons: submittedCount * t.pigeonCount }
+        return { ...t, topEntries: allEntries.slice(0, 3), totalLanded, totalPigeons: enrolledCount * t.pigeonCount }
       }))
 
       setTotalLandedToday(gLandedToday)
