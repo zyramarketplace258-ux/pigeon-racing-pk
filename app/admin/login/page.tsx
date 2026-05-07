@@ -48,7 +48,7 @@ export default function AdminLoginPage() {
 
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="text-5xl mb-3">🐦</div>
+          <img src="/pigeon.png" alt="Pigeon" className="w-24 h-24 mx-auto mb-2 object-contain drop-shadow-lg" />
           <h1 className="text-secondary text-2xl font-bold">Pakistan Pigeon Racing</h1>
           <p className="text-green-400 text-sm mt-1">Admin Control Panel</p>
         </div>

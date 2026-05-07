@@ -133,8 +133,8 @@ export default function ClubDetailPage() {
         {/* Club Info Card */}
         <div className="bg-surface border border-green-800 rounded-xl p-5 mb-8 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-primary border border-secondary flex items-center justify-center text-secondary text-2xl font-bold">
-              {club?.name.charAt(0)}
+            <div className="w-14 h-14 rounded-full bg-primary border border-secondary flex items-center justify-center overflow-hidden">
+              <img src="/pigeon.png" alt="Pigeon" className="w-11 h-11 object-contain" />
             </div>
             <div>
               <h2 className="text-white font-bold text-lg">{club?.name}</h2>

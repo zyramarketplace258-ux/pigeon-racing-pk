@@ -282,8 +282,8 @@ export default function HomePage() {
                     href={`/${club.slug}`}
                     className="flex items-center gap-3 p-3 border border-[#d4edda] rounded-lg hover:border-[#388e3c] hover:bg-[#f1faf2] transition group"
                   >
-                    <div className="w-10 h-10 shrink-0 rounded-full bg-[#1b5e20] flex items-center justify-center text-white font-bold group-hover:bg-[#388e3c] transition">
-                      {club.name.charAt(0)}
+                    <div className="w-10 h-10 shrink-0 rounded-full bg-white border border-[#d4edda] flex items-center justify-center overflow-hidden">
+                      <img src="/pigeon.png" alt="Pigeon" className="w-8 h-8 object-contain" />
                     </div>
                     <div className="min-w-0">
                       <p className="text-[#1a1a1a] font-semibold text-sm truncate group-hover:text-[#1b5e20] transition">{club.name}</p>
