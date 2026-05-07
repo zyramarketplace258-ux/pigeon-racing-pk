@@ -69,15 +69,10 @@ export default function ClubDetailPage() {
   }, [clubId, router])
 
   const setActiveTournament = async (tournamentId: string) => {
-    await Promise.all(tournaments.map(t =>
-      updateDoc(doc(db, 'clubs', clubId, 'tournaments', t.id), {
-        status: t.id === tournamentId ? 'active' : 'inactive'
-      })
+    await updateDoc(doc(db, 'clubs', clubId, 'tournaments', tournamentId), { status: 'active' })
+    setTournaments(prev => prev.map(t =>
+      t.id === tournamentId ? { ...t, status: 'active' } : t
     ))
-    setTournaments(prev => prev.map(t => ({
-      ...t,
-      status: t.id === tournamentId ? 'active' : 'inactive'
-    })))
   }
 
   const completeTournament = async (tournamentId: string) => {
