@@ -271,37 +271,33 @@ export default function ClubDashboard() {
   return (
     <main className="min-h-screen bg-dark">
 
-      {/* Header — club name centered */}
-      <header className="bg-primary border-b border-secondary px-4 py-2">
-        <div className="flex items-center justify-center gap-2">
-          <img src="/pigeon.png" alt="Pigeon" className="w-7 h-7 object-contain" />
-          <div>
-            <h1 className="text-sm font-bold text-secondary leading-tight">{club?.name}</h1>
-            <p className="text-green-400 text-xs leading-tight">{club?.city}</p>
-          </div>
+      {/* Header */}
+      <header className="bg-primary border-b border-secondary px-4 py-3 relative">
+        <a href="/" className="absolute left-4 top-1/2 -translate-y-1/2 text-green-400 hover:text-secondary text-xs font-medium transition">← Home</a>
+        <div className="text-center">
+          <img src="/pigeon.png" alt="Pigeon" className="w-10 h-10 object-contain drop-shadow mx-auto" />
+          <h1 className="text-sm font-bold text-secondary leading-tight mt-0.5">{club?.name}</h1>
         </div>
+        <button
+          onClick={async () => { await signOut(auth); router.push('/club/login') }}
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-xs bg-red-900 hover:bg-red-700 text-white px-3 py-1.5 rounded transition"
+        >
+          Logout
+        </button>
       </header>
 
       {/* Nav */}
       <nav className="bg-[#292929] px-4 border-b border-green-900">
-        <div className="flex items-center justify-between h-10">
-          <div className="flex items-center h-full">
-            {(['tournaments', 'members', 'add-time'] as const).map(t => (
-              <button key={t} onClick={() => setTab(t)}
-                className={`px-5 h-full text-sm font-semibold transition border-b-2 ${
-                  tab === t ? 'text-white border-[#66bb6a]' : 'text-gray-400 border-transparent hover:text-white'
-                }`}
-              >
-                {t === 'tournaments' ? 'Tournaments' : t === 'members' ? 'Members' : 'Add Time'}
-              </button>
-            ))}
-          </div>
-          <button
-            onClick={async () => { await signOut(auth); router.push('/club/login') }}
-            className="text-xs bg-red-900 hover:bg-red-700 text-white px-3 py-1.5 rounded transition"
-          >
-            Logout
-          </button>
+        <div className="flex items-center h-10">
+          {(['tournaments', 'members', 'add-time'] as const).map(t => (
+            <button key={t} onClick={() => setTab(t)}
+              className={`px-5 h-full text-sm font-semibold transition border-b-2 ${
+                tab === t ? 'text-white border-[#66bb6a]' : 'text-gray-400 border-transparent hover:text-white'
+              }`}
+            >
+              {t === 'tournaments' ? 'Tournaments' : t === 'members' ? 'Members' : 'Add Time'}
+            </button>
+          ))}
         </div>
       </nav>
 
