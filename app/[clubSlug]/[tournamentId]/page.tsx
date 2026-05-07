@@ -53,6 +53,7 @@ export default function TournamentResultsPage() {
   const [participants, setParticipants] = useState<Participant[]>([])
   const [selectedDay, setSelectedDay] = useState<number>(1)
   const [showTotal, setShowTotal] = useState(false)
+  const [showDetailResults, setShowDetailResults] = useState(false)
   const [dayEntries, setDayEntries] = useState<DayEntry[]>([])
   const [totalRows, setTotalRows] = useState<TotalRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -72,6 +73,7 @@ export default function TournamentResultsPage() {
       if (!tDoc.exists()) { setLoading(false); return }
       const tData = { id: tDoc.id, ...tDoc.data() } as Tournament
       setTournament(tData)
+      if (tData.status === 'completed') setShowTotal(true)
 
       const pSnap = await getDocs(collection(db, 'clubs', clubData.id, 'participants'))
       const allParticipants = pSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Participant[]
@@ -225,6 +227,63 @@ export default function TournamentResultsPage() {
       </nav>
 
       <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 space-y-4">
+
+        {/* ── WINNERS PODIUM (completed tournaments) ── */}
+        {tournament.status === 'completed' && !showDetailResults && (
+          <>
+            {loadingEntries ? (
+              <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm p-10 text-center text-[#999]">Loading results...</div>
+            ) : (
+              <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-3 text-center">
+                  <p className="text-green-200 text-xs font-bold uppercase tracking-widest mb-0.5">Tournament Complete</p>
+                  <h2 className="text-white font-bold text-lg">{tournament.name}</h2>
+                </div>
+
+                <div className="px-4 pt-6 pb-4">
+                  {/* 1st place */}
+                  {totalRows[0]?.grandTotal && (
+                    <div className="flex flex-col items-center mb-5">
+                      <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-lg mb-2" style={{ background: 'linear-gradient(145deg,#ffe066,#c8900a)' }}>1</div>
+                      <p className="text-[#1a1a1a] font-bold text-lg leading-tight text-center">{totalRows[0].name}</p>
+                      <p className="text-[#777] text-xs text-center mb-1">{totalRows[0].area}</p>
+                      <p className="text-[#1b5e20] font-extrabold text-3xl">{formatTimeDisplay(totalRows[0].grandTotal)}</p>
+                      <p className="text-[#999] text-xs">{totalRows[0].daysFlown} days flown</p>
+                    </div>
+                  )}
+
+                  {/* 2nd and 3rd place */}
+                  <div className="grid grid-cols-2 gap-3 mb-5">
+                    {[totalRows[1], totalRows[2]].map((row, i) => row?.grandTotal ? (
+                      <div key={row.participantId} className="rounded-xl border border-[#e9ecef] p-3 text-center bg-[#fafafa]">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shadow mx-auto mb-1.5"
+                          style={{ background: i === 0 ? 'linear-gradient(145deg,#e8e8e8,#8a8a8a)' : '#cd7f32' }}>
+                          {i + 2}
+                        </div>
+                        <p className="text-[#1a1a1a] font-bold text-sm truncate">{row.name}</p>
+                        <p className="text-[#777] text-xs truncate mb-1">{row.area}</p>
+                        <p className="text-[#1b5e20] font-bold text-lg">{formatTimeDisplay(row.grandTotal)}</p>
+                        <p className="text-[#999] text-xs">{row.daysFlown} days</p>
+                      </div>
+                    ) : <div key={i} />)}
+                  </div>
+
+                  {/* Open detail results button */}
+                  <button
+                    onClick={() => setShowDetailResults(true)}
+                    className="w-full py-3 rounded-xl bg-[#1b5e20] hover:bg-[#2e7d32] text-white font-bold text-sm transition"
+                  >
+                    Open Detail Results →
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── DETAIL RESULTS (active tournaments always, completed when toggled) ── */}
+        {(tournament.status !== 'completed' || showDetailResults) && (<>
 
         {/* Stats card */}
         <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
@@ -427,6 +486,8 @@ export default function TournamentResultsPage() {
             </div>
           )
         )}
+
+        </>)}
 
       </div>
 
