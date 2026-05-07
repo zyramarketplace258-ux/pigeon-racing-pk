@@ -1,7 +1,7 @@
 'use client'
 export const dynamic = 'force-dynamic'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import {
@@ -11,6 +11,23 @@ import {
 import { auth, db, storage } from '@/lib/firebase'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { calculateHoursFlown, calculateGrandTotal, formatTimeDisplay } from '@/lib/timeUtils'
+import Cropper from 'react-easy-crop'
+import type { Area } from 'react-easy-crop'
+
+async function getCroppedBlob(imageSrc: string, pixelCrop: Area): Promise<Blob> {
+  const image = new Image()
+  image.src = imageSrc
+  await new Promise(resolve => { image.onload = resolve })
+  const canvas = document.createElement('canvas')
+  const size = 400
+  canvas.width = size; canvas.height = size
+  const ctx = canvas.getContext('2d')!
+  ctx.beginPath()
+  ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2)
+  ctx.clip()
+  ctx.drawImage(image, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, size, size)
+  return new Promise(resolve => canvas.toBlob(b => resolve(b!), 'image/jpeg', 0.92))
+}
 
 interface Club { id: string; name: string; slug: string; city: string; logoUrl?: string }
 interface RaceDay { dayNumber: number; date: string; isGap?: boolean }
@@ -78,6 +95,11 @@ export default function ClubDashboard() {
   const [savedAssignment, setSavedAssignment] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [uploadingMemberId, setUploadingMemberId] = useState<string | null>(null)
+  const [cropSrc, setCropSrc] = useState<string | null>(null)
+  const [crop, setCrop] = useState({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1)
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
+  const onCropComplete = useCallback((_: Area, pixels: Area) => setCroppedAreaPixels(pixels), [])
 
   useEffect(() => {
     let unsubscribe: () => void = () => {}
@@ -265,16 +287,25 @@ export default function ClubDashboard() {
     setSavingAssignment(false); setSavedAssignment(true)
   }
 
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!club || !e.target.files?.[0]) return
+  const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.[0]) return
+    const reader = new FileReader()
+    reader.onload = () => { setCropSrc(reader.result as string); setCrop({ x: 0, y: 0 }); setZoom(1) }
+    reader.readAsDataURL(e.target.files[0])
+    e.target.value = ''
+  }
+
+  const saveCroppedLogo = async () => {
+    if (!club || !cropSrc || !croppedAreaPixels) return
     setUploadingLogo(true)
     try {
-      const file = e.target.files[0]
+      const blob = await getCroppedBlob(cropSrc, croppedAreaPixels)
       const storageRef = ref(storage, `clubs/${club.id}/logo`)
-      await uploadBytes(storageRef, file)
+      await uploadBytes(storageRef, blob)
       const url = await getDownloadURL(storageRef)
       await updateDoc(doc(db, 'clubs', club.id), { logoUrl: url })
       setClub(prev => prev ? { ...prev, logoUrl: url } : prev)
+      setCropSrc(null)
     } finally { setUploadingLogo(false) }
   }
 
@@ -313,7 +344,7 @@ export default function ClubDashboard() {
             <div className="absolute inset-0 rounded-full bg-black bg-opacity-0 group-hover:bg-opacity-50 flex items-center justify-center transition">
               <span className="text-white text-xs opacity-0 group-hover:opacity-100">{uploadingLogo ? '...' : '📷'}</span>
             </div>
-            <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+            <input type="file" accept="image/*" className="hidden" onChange={handleLogoSelect} />
           </label>
           <h1 className="text-sm font-bold text-secondary leading-tight mt-0.5">{club?.name}</h1>
         </div>
@@ -609,6 +640,53 @@ export default function ClubDashboard() {
         )}
 
       </div>
+
+      {/* ── CROP MODAL ── */}
+      {cropSrc && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-black bg-opacity-95">
+          {/* Top bar */}
+          <div className="flex items-center justify-between px-4 py-3 bg-black border-b border-green-900">
+            <button onClick={() => setCropSrc(null)} className="text-green-400 hover:text-white text-sm transition">Cancel</button>
+            <p className="text-white font-bold text-sm">Adjust Profile Picture</p>
+            <button
+              onClick={saveCroppedLogo}
+              disabled={uploadingLogo}
+              className="bg-secondary hover:bg-accent text-dark font-bold text-sm px-4 py-1.5 rounded-lg transition disabled:opacity-50"
+            >
+              {uploadingLogo ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+
+          {/* Cropper area */}
+          <div className="relative flex-1">
+            <Cropper
+              image={cropSrc}
+              crop={crop}
+              zoom={zoom}
+              aspect={1}
+              cropShape="round"
+              showGrid={false}
+              onCropChange={setCrop}
+              onZoomChange={setZoom}
+              onCropComplete={onCropComplete}
+            />
+          </div>
+
+          {/* Bottom controls */}
+          <div className="bg-black border-t border-green-900 px-6 py-4 space-y-3">
+            <div className="flex items-center gap-4">
+              <span className="text-green-400 text-xs w-10">Zoom</span>
+              <input
+                type="range" min={1} max={3} step={0.01}
+                value={zoom} onChange={e => setZoom(Number(e.target.value))}
+                className="flex-1 accent-yellow-400"
+              />
+            </div>
+            <p className="text-green-600 text-xs text-center">Drag to reposition · Pinch or slide to zoom</p>
+          </div>
+        </div>
+      )}
+
     </main>
   )
 }
