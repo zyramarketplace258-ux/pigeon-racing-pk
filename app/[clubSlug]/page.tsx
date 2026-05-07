@@ -121,7 +121,7 @@ export default function ClubPublicPage() {
           </Link>
           <img src="/pigeon.png" alt="Pigeon" className="w-20 h-20 sm:w-24 sm:h-24 object-contain drop-shadow-lg mx-auto mb-2" />
           <h1 className="text-white text-lg sm:text-2xl font-bold leading-tight">{club?.name}</h1>
-          <p className="text-green-300 text-xs mt-0.5">{club?.city} · Pakistan</p>
+          <p className="text-green-300 text-xs mt-0.5">{club?.city} · Love for the Loft</p>
         </div>
       </div>
       <nav className="bg-[#292929] px-4">
