@@ -129,7 +129,7 @@ export default function HomePage() {
           })
         })
 
-        return { ...t, topEntries: allEntries.slice(0, 5), totalLanded, totalPigeons: submittedCount * t.pigeonCount }
+        return { ...t, topEntries: allEntries.slice(0, 3), totalLanded, totalPigeons: submittedCount * t.pigeonCount }
       }))
 
       setTotalLandedToday(gLandedToday)
@@ -160,7 +160,7 @@ export default function HomePage() {
         <div className="flex items-start justify-between max-w-5xl mx-auto">
           <div>
             <h1 className={`${playfair.className} text-white text-2xl sm:text-3xl leading-tight`}>
-              🐦 Pakistan Pigeon
+              Pakistan Pigeon
             </h1>
             <p className="text-green-300 text-xs mt-0.5 tracking-widest uppercase">Official Racing Platform</p>
           </div>
@@ -338,60 +338,20 @@ export default function HomePage() {
                     {t.topEntries.map((entry, i) => (
                       <div
                         key={i}
-                        className="border-b border-[#e9ecef] last:border-b-0"
+                        className="flex items-center gap-3 px-3 py-2.5 border-b border-[#e9ecef] last:border-b-0"
                         style={{ background: i === 0 ? '#dff0d8' : i % 2 === 1 ? '#f6faf6' : '#fff' }}
                       >
-                        <div className="flex items-start gap-2 px-3 py-2.5">
-                          {/* Rank circle */}
-                          <div
-                            className={`w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-sm font-bold ${rankRingClass(i)}`}
-                            style={rankRingStyle(i)}
-                          >
-                            {i + 1}
-                          </div>
-
-                          {/* Name + chips */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2 mb-1.5">
-                              <div className="min-w-0">
-                                <p className="font-semibold text-sm text-[#1a1a1a] truncate">{entry.name}</p>
-                                <p className="text-[#777] text-xs">{entry.area}</p>
-                              </div>
-                              {/* Total score - shown inline on mobile */}
-                              <div className="shrink-0 text-right sm:hidden">
-                                <p className="font-bold text-xl text-[#1a1a1a] leading-none">{formatTimeDisplay(entry.totalHours)}</p>
-                              </div>
-                            </div>
-
-                            {/* Pigeon chips */}
-                            <div className="flex gap-1 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
-                              {entry.pigeons.map((pg, pi) => (
-                                <div
-                                  key={pi}
-                                  className="shrink-0 rounded flex flex-col items-center px-1.5 py-1 border"
-                                  style={{
-                                    background: pg.landingTime ? (i === 0 ? '#fff8e1' : '#f0fdf4') : '#fff',
-                                    borderColor: pg.landingTime ? (i === 0 ? '#ffc107' : '#86efac') : '#dee2e6',
-                                    borderStyle: pg.landingTime ? 'solid' : 'dashed',
-                                  }}
-                                >
-                                  <span className="text-[#777] leading-none" style={{ fontSize: '0.62rem' }}>#{pi + 1}</span>
-                                  <span
-                                    className="font-mono leading-tight mt-0.5"
-                                    style={{ fontSize: '0.85rem', color: pg.landingTime ? (i === 0 ? '#664d03' : '#166534') : '#adb5bd' }}
-                                  >
-                                    {pg.landingTime || '—'}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Total score - desktop only */}
-                          <div className="hidden sm:block shrink-0 text-right min-w-[80px]">
-                            <p className="font-bold text-2xl text-[#1a1a1a] leading-none">{formatTimeDisplay(entry.totalHours)}</p>
-                          </div>
+                        <div
+                          className={`w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-sm font-bold ${rankRingClass(i)}`}
+                          style={rankRingStyle(i)}
+                        >
+                          {i + 1}
                         </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm text-[#1a1a1a] truncate">{entry.name}</p>
+                          <p className="text-[#777] text-xs">{entry.area}</p>
+                        </div>
+                        <p className="font-bold text-xl text-[#1a1a1a] shrink-0">{formatTimeDisplay(entry.totalHours)}</p>
                       </div>
                     ))}
                   </div>
