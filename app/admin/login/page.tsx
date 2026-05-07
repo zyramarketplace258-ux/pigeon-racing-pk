@@ -45,70 +45,59 @@ export default function AdminLoginPage() {
   return (
     <main className="min-h-screen bg-dark flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-
-        {/* Logo */}
         <div className="text-center mb-8">
           <img src="/pigeon.png" alt="Pigeon" className="w-24 h-24 mx-auto mb-2 object-contain drop-shadow-lg" />
-          <h1 className="text-secondary text-2xl font-bold">Pakistan Pigeon Racing</h1>
-          <p className="text-green-400 text-sm mt-1">Admin Control Panel</p>
+          <h2 className="text-2xl font-bold text-secondary">Pakistan Pigeon Racing</h2>
+          <p className="text-green-400 text-sm mt-1">Admin Panel</p>
         </div>
 
-        {/* Login Card */}
         <div className="bg-surface border border-green-800 rounded-2xl p-8">
-          <h2 className="text-white text-xl font-bold mb-6 text-center">Admin Login</h2>
+          <h3 className="text-white text-xl font-bold mb-6 text-center">Admin Login</h3>
 
           {error && (
-            <div className="bg-red-900/50 border border-red-500 text-red-300 text-sm px-4 py-3 rounded-lg mb-5">
+            <div className="bg-red-900 border border-red-600 text-red-200 px-4 py-3 rounded-lg mb-4 text-sm">
               {error}
             </div>
           )}
 
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label className="text-green-300 text-sm font-medium block mb-2">
-                Email Address
-              </label>
+              <label className="block text-green-300 text-sm mb-2">Email Address</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="admin@pigeonracing.pk"
-                className="w-full bg-dark border border-green-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-secondary placeholder-green-900"
+                className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-secondary placeholder-green-700"
               />
             </div>
 
             <div>
-              <label className="text-green-300 text-sm font-medium block mb-2">
-                Password
-              </label>
+              <label className="block text-green-300 text-sm mb-2">Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 placeholder="••••••••"
-                className="w-full bg-dark border border-green-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-secondary placeholder-green-900"
+                className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-secondary placeholder-green-700"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-secondary hover:bg-accent text-dark font-bold py-3 rounded-lg transition text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-secondary hover:bg-accent text-dark font-bold py-3 rounded-lg transition disabled:opacity-50"
             >
               {loading ? 'Logging in...' : 'Login to Dashboard'}
             </button>
           </form>
         </div>
 
-        {/* Back link */}
-        <p className="text-center mt-4">
-          <a href="/" className="text-green-500 hover:text-secondary text-sm transition">
-            ← Back to Home
-          </a>
+        <p className="text-center text-green-600 text-sm mt-6">
+          <a href="/" className="hover:text-secondary transition">← Back to Home</a>
         </p>
-
       </div>
     </main>
   )
