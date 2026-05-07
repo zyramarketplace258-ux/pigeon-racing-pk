@@ -382,6 +382,43 @@ export default function ClubDashboard() {
                 )}
               </div>
             )}
+
+            {/* ── HISTORY — completed tournaments ── */}
+            {tournaments.filter(t => t.status === 'completed').length > 0 && (
+              <div className="bg-surface border border-green-800 rounded-xl overflow-hidden mt-5">
+                <div className="bg-primary px-4 py-3 border-b border-green-800">
+                  <p className="text-green-400 text-sm font-semibold uppercase tracking-widest">🏁 Completed Tournaments</p>
+                </div>
+                <div className="divide-y divide-green-900">
+                  {tournaments.filter(t => t.status === 'completed').map(t => {
+                    const nonGap = t.raceDays?.filter(rd => !rd.isGap) ?? []
+                    const firstDate = nonGap[0]?.date
+                    const lastDate = nonGap[nonGap.length - 1]?.date
+                    return (
+                      <a
+                        key={t.id}
+                        href={`/${club?.slug}/${t.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-primary transition group"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-white font-semibold text-sm truncate group-hover:text-secondary transition">{t.name}</p>
+                          <p className="text-green-600 text-xs mt-0.5">
+                            {nonGap.length} days
+                            {firstDate && lastDate ? ` · ${firstDate} → ${lastDate}` : ''}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="bg-blue-900 text-blue-300 text-xs px-2 py-0.5 rounded-full font-semibold">DONE</span>
+                          <span className="text-green-600 group-hover:text-secondary transition">→</span>
+                        </div>
+                      </a>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
