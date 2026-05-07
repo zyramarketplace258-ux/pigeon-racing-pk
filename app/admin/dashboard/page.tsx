@@ -40,21 +40,19 @@ export default function AdminDashboard() {
   return (
     <AdminGuard>
       <main className="min-h-screen bg-dark">
-        <header className="bg-primary border-b border-secondary px-6 py-4 flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <img src="/pigeon.png" alt="Pigeon" className="w-7 h-7 object-contain" />
-              <h1 className="text-xl font-bold text-secondary">Admin Dashboard</h1>
-            </div>
+        <header className="bg-primary border-b border-secondary px-6 py-3 relative">
+          <Link href="/" target="_blank" className="absolute left-4 top-1/2 -translate-y-1/2 text-xs text-green-400 hover:text-secondary transition">
+            View Site
+          </Link>
+          <div className="text-center">
+            <img src="/pigeon.png" alt="Pigeon" className="w-10 h-10 object-contain drop-shadow mx-auto" />
+            <h1 className="text-sm font-bold text-secondary leading-tight mt-0.5">Admin Dashboard</h1>
             <p className="text-green-400 text-xs">Pakistan Pigeon Racing</p>
           </div>
-          <div className="flex items-center gap-3">
-            <Link href="/" target="_blank" className="text-xs text-green-400 hover:text-secondary transition">
-              View Site
-            </Link>
+          <div className="absolute right-4 top-1/2 -translate-y-1/2">
             <button
               onClick={handleLogout}
-              className="text-xs bg-red-900 hover:bg-red-700 text-white px-3 py-1 rounded transition"
+              className="text-xs bg-red-900 hover:bg-red-700 text-white px-3 py-1.5 rounded transition"
             >
               Logout
             </button>
