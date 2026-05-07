@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { collection, query, where, getDocs } from 'firebase/firestore'
+import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import Link from 'next/link'
 
@@ -42,33 +42,44 @@ export default function ClubPublicPage() {
   const [weather, setWeather] = useState<Weather | null>(null)
 
   useEffect(() => {
-    const load = async () => {
+    let active = true
+    let unsubTournaments: (() => void) | null = null
+
+    const init = async () => {
       const q = query(collection(db, 'clubs'), where('slug', '==', clubSlug))
       const snap = await getDocs(q)
+      if (!active) return
       if (snap.empty) { setNotFound(true); setLoading(false); return }
 
       const clubData = { id: snap.docs[0].id, ...snap.docs[0].data() } as Club
       setClub(clubData)
 
-      const [tSnap] = await Promise.all([
-        getDocs(collection(db, 'clubs', clubData.id, 'tournaments')),
-        (async () => {
-          try {
-            const res = await fetch(
-              `https://wttr.in/${encodeURIComponent(clubData.city + ',Pakistan')}?format=j1`,
-              { signal: AbortSignal.timeout(5000) }
-            )
-            const data = await res.json()
-            const cc = data.current_condition[0]
-            setWeather({ temp: cc.temp_C + '°C', desc: cc.weatherDesc[0].value, icon: getWeatherIcon(cc.weatherCode) })
-          } catch { /* weather is optional */ }
-        })(),
-      ])
+      // Weather (optional, fire-and-forget)
+      ;(async () => {
+        try {
+          const res = await fetch(
+            `https://wttr.in/${encodeURIComponent(clubData.city + ',Pakistan')}?format=j1`,
+            { signal: AbortSignal.timeout(5000) }
+          )
+          const data = await res.json()
+          const cc = data.current_condition[0]
+          if (active) setWeather({ temp: cc.temp_C + '°C', desc: cc.weatherDesc[0].value, icon: getWeatherIcon(cc.weatherCode) })
+        } catch { /* weather is optional */ }
+      })()
 
-      setTournaments(tSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Tournament[])
-      setLoading(false)
+      // Live tournament list
+      unsubTournaments = onSnapshot(
+        collection(db, 'clubs', clubData.id, 'tournaments'),
+        tSnap => {
+          if (!active) return
+          setTournaments(tSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Tournament[])
+          setLoading(false)
+        }
+      )
     }
-    load()
+
+    init()
+    return () => { active = false; unsubTournaments?.() }
   }, [clubSlug])
 
   const getDayProgress = (t: Tournament) => {

@@ -2,7 +2,7 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
-import { collection, getDocs, query, where } from 'firebase/firestore'
+import { collection, getDocs, query, where, onSnapshot } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { compareHours, formatTimeDisplay } from '@/lib/timeUtils'
 import Link from 'next/link'
@@ -37,111 +37,158 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState<'home' | 'clubs'>('home')
 
   useEffect(() => {
-    const load = async () => {
+    let active = true
+    const unsubscribers: (() => void)[] = []
+    const toMins = (t: string) => { const [h, m] = (t || '0:0').split(':').map(Number); return h * 60 + m }
+
+    const init = async () => {
       const today = new Date().toISOString().split('T')[0]
-      const toMins = (t: string) => { const [h, m] = (t || '0:0').split(':').map(Number); return h * 60 + m }
 
       const snap = await getDocs(collection(db, 'clubs'))
+      if (!active) return
       const list = snap.docs.map(d => ({ id: d.id, ...d.data() })) as Club[]
       setClubs(list)
 
-      type RawTournament = Omit<ActiveTournament, 'topEntries' | 'totalLanded' | 'totalPigeons'>
-      const rawList: RawTournament[] = []
+      // Load active tournaments + participants for each club
+      type TInfo = {
+        base: Omit<ActiveTournament, 'topEntries' | 'totalLanded' | 'totalPigeons'>
+        nameMap: Record<string, string>; areaMap: Record<string, string>
+        enrolledCount: number; suffix: string
+      }
+      const infos: TInfo[] = []
 
       await Promise.all(list.map(async (club) => {
-        const tSnap = await getDocs(query(collection(db, 'clubs', club.id, 'tournaments'), where('status', '==', 'active')))
+        const [tSnap, pSnap] = await Promise.all([
+          getDocs(query(collection(db, 'clubs', club.id, 'tournaments'), where('status', '==', 'active'))),
+          getDocs(collection(db, 'clubs', club.id, 'participants')),
+        ])
+        if (!active) return
+        const nm: Record<string, string> = {}
+        const am: Record<string, string> = {}
+        pSnap.docs.forEach(d => { nm[d.id] = d.data().name; am[d.id] = d.data().area || '' })
+
         tSnap.docs.forEach(d => {
           const data = d.data()
           const raceDays: RaceDay[] = data.raceDays || []
           const nonGap = raceDays.filter(rd => !rd.isGap)
           const passed = nonGap.filter(rd => rd.date <= today).length
-          rawList.push({
-            id: d.id, name: data.name,
-            pigeonCount: data.pigeonCount || 5,
-            defaultStartTime: data.defaultStartTime || '',
-            defaultEndTime: data.defaultEndTime || '',
-            clubId: club.id, clubName: club.name, clubSlug: club.slug, clubCity: club.city,
-            raceDays,
-            currentDay: Math.min(passed, nonGap.length) || 1,
-            totalRaceDays: nonGap.length,
-            participantIds: data.participantIds ?? null,
+          const participantIds: string[] | null = data.participantIds ?? null
+          const enrolledIds = participantIds != null ? participantIds : pSnap.docs.map(p => p.id)
+          const filteredNm: Record<string, string> = {}
+          const filteredAm: Record<string, string> = {}
+          enrolledIds.forEach(id => { filteredNm[id] = nm[id] || ''; filteredAm[id] = am[id] || '' })
+          const todayRD = nonGap.find(rd => rd.date === today)
+          const currentDayNum = todayRD?.dayNumber ?? nonGap[nonGap.length - 1]?.dayNumber
+          infos.push({
+            base: {
+              id: d.id, name: data.name,
+              pigeonCount: data.pigeonCount || 5,
+              defaultStartTime: data.defaultStartTime || '',
+              defaultEndTime: data.defaultEndTime || '',
+              clubId: club.id, clubName: club.name, clubSlug: club.slug, clubCity: club.city,
+              raceDays, participantIds,
+              currentDay: Math.min(passed, nonGap.length) || 1,
+              totalRaceDays: nonGap.length,
+            },
+            nameMap: filteredNm, areaMap: filteredAm,
+            enrolledCount: enrolledIds.length,
+            suffix: currentDayNum ? `_day${currentDayNum}` : '',
           })
         })
       }))
 
-      // Global stats trackers
-      let gLandedToday = 0, gLots = 0
-      let topScoreRaw = '', longestFlightRaw = '', lastLandedTime = ''
-      let topScore: HighlightStat | null = null
-      let longestFlight: HighlightStat | null = null
-      let lastLanded: HighlightStat | null = null
+      if (!active) return
 
-      const enriched: ActiveTournament[] = await Promise.all(rawList.map(async (t) => {
-        const nonGap = t.raceDays.filter(rd => !rd.isGap)
-        const todayDay = nonGap.find(rd => rd.date === today)
-        const currentDayNum = todayDay?.dayNumber ?? nonGap[nonGap.length - 1]?.dayNumber
-        if (!currentDayNum) return { ...t, topEntries: [], totalLanded: 0, totalPigeons: 0 }
+      if (infos.length === 0) {
+        setActiveTournaments([]); setLoading(false); return
+      }
 
-        const [entriesSnap, pSnap] = await Promise.all([
-          getDocs(collection(db, 'clubs', t.clubId, 'tournaments', t.id, 'entries')),
-          getDocs(collection(db, 'clubs', t.clubId, 'participants')),
-        ])
+      // Per-tournament live data store
+      const liveStore = new Map<string, Pick<ActiveTournament, 'topEntries' | 'totalLanded' | 'totalPigeons'>>()
+      infos.forEach(info => {
+        liveStore.set(info.base.id, { topEntries: [], totalLanded: 0, totalPigeons: info.enrolledCount * info.base.pigeonCount })
+      })
 
-        const nameMap: Record<string, string> = {}
-        const areaMap: Record<string, string> = {}
-        pSnap.docs.forEach(d => { nameMap[d.id] = d.data().name; areaMap[d.id] = d.data().area || '' })
-        const enrolledCount = t.participantIds != null ? t.participantIds.length : pSnap.docs.length
-        gLots += enrolledCount
+      const initializedIds = new Set<string>()
 
-        const suffix = `_day${currentDayNum}`
-        let totalLanded = 0
+      const rebuildAndPublish = () => {
+        const enriched: ActiveTournament[] = infos.map(info => ({
+          ...info.base,
+          ...(liveStore.get(info.base.id) ?? { topEntries: [], totalLanded: 0, totalPigeons: info.enrolledCount * info.base.pigeonCount }),
+        }))
+        setActiveTournaments(enriched)
 
-        const allEntries: TopEntry[] = entriesSnap.docs
-          .filter(d => d.id.endsWith(suffix))
-          .flatMap(d => {
-            const pId = d.id.slice(0, -suffix.length)
-            if (t.participantIds != null && !t.participantIds.includes(pId)) return []
-            const data = d.data()
-            const pigeons: PigeonChip[] = (data.pigeons || []).map((pg: Record<string, string>) => ({
-              landingTime: pg.landingTime || '', hoursFlown: pg.hoursFlown || '',
-            }))
-            pigeons.forEach(pg => { if (pg.landingTime) totalLanded++ })
-            return [{ name: nameMap[pId] || 'Unknown', area: areaMap[pId] || '', pigeons, totalHours: data.totalHours || '' }]
-          })
-          .filter(e => e.totalHours)
-          .sort((a, b) => compareHours(a.totalHours, b.totalHours))
+        let gLanded = 0, gLots = 0
+        let topScoreRaw = '', longestFlightRaw = '', lastLandedTime = ''
+        let topScore: HighlightStat | null = null, longestFlight: HighlightStat | null = null, lastLanded: HighlightStat | null = null
 
-        gLandedToday += totalLanded
-
-        if (allEntries[0]?.totalHours && toMins(allEntries[0].totalHours) > toMins(topScoreRaw)) {
-          topScoreRaw = allEntries[0].totalHours
-          topScore = { icon: '🏆', label: 'Top score today', value: formatTimeDisplay(allEntries[0].totalHours), name: allEntries[0].name, tournament: t.name, clubSlug: t.clubSlug, tournamentId: t.id }
-        }
-        allEntries.forEach(entry => {
-          entry.pigeons.forEach(pg => {
-            if (pg.hoursFlown && pg.landingTime) {
-              if (toMins(pg.hoursFlown) > toMins(longestFlightRaw)) {
-                longestFlightRaw = pg.hoursFlown
-                longestFlight = { icon: '⏱', label: 'Longest single flight', value: formatTimeDisplay(pg.hoursFlown), name: entry.name, tournament: t.name, clubSlug: t.clubSlug, tournamentId: t.id }
+        enriched.forEach(t => {
+          gLanded += t.totalLanded
+          gLots += t.totalPigeons / t.pigeonCount
+          if (t.topEntries[0]?.totalHours && toMins(t.topEntries[0].totalHours) > toMins(topScoreRaw)) {
+            topScoreRaw = t.topEntries[0].totalHours
+            topScore = { icon: '🏆', label: 'Top score today', value: formatTimeDisplay(t.topEntries[0].totalHours), name: t.topEntries[0].name, tournament: t.name, clubSlug: t.clubSlug, tournamentId: t.id }
+          }
+          t.topEntries.forEach(entry => {
+            entry.pigeons.forEach(pg => {
+              if (pg.hoursFlown && pg.landingTime) {
+                if (toMins(pg.hoursFlown) > toMins(longestFlightRaw)) {
+                  longestFlightRaw = pg.hoursFlown
+                  longestFlight = { icon: '⏱', label: 'Longest single flight', value: formatTimeDisplay(pg.hoursFlown), name: entry.name, tournament: t.name, clubSlug: t.clubSlug, tournamentId: t.id }
+                }
+                if (pg.landingTime > lastLandedTime) {
+                  lastLandedTime = pg.landingTime
+                  lastLanded = { icon: '🕐', label: 'Last pigeon landed', value: pg.landingTime, name: entry.name, tournament: t.name, clubSlug: t.clubSlug, tournamentId: t.id }
+                }
               }
-              if (pg.landingTime > lastLandedTime) {
-                lastLandedTime = pg.landingTime
-                lastLanded = { icon: '🕐', label: 'Last pigeon landed', value: pg.landingTime, name: entry.name, tournament: t.name, clubSlug: t.clubSlug, tournamentId: t.id }
-              }
-            }
+            })
           })
         })
 
-        return { ...t, topEntries: allEntries.slice(0, 3), totalLanded, totalPigeons: enrolledCount * t.pigeonCount }
-      }))
+        setTotalLandedToday(gLanded)
+        setTotalLotsCompeting(gLots)
+        setHighlights(([topScore, longestFlight, lastLanded] as (HighlightStat | null)[]).filter((h): h is HighlightStat => h !== null))
+      }
 
-      setTotalLandedToday(gLandedToday)
-      setTotalLotsCompeting(gLots)
-      setHighlights(([topScore, longestFlight, lastLanded] as (HighlightStat | null)[]).filter((h): h is HighlightStat => h !== null))
-      setActiveTournaments(enriched)
-      setLoading(false)
+      const markInit = (id: string) => {
+        initializedIds.add(id)
+        if (initializedIds.size === infos.length) { rebuildAndPublish(); setLoading(false) }
+      }
+
+      infos.forEach(info => {
+        if (!info.suffix) { liveStore.set(info.base.id, { topEntries: [], totalLanded: 0, totalPigeons: info.enrolledCount * info.base.pigeonCount }); markInit(info.base.id); return }
+
+        const unsub = onSnapshot(
+          collection(db, 'clubs', info.base.clubId, 'tournaments', info.base.id, 'entries'),
+          snapshot => {
+            if (!active) return
+            let totalLanded = 0
+            const entries: TopEntry[] = snapshot.docs
+              .filter(d => d.id.endsWith(info.suffix))
+              .flatMap(d => {
+                const pId = d.id.slice(0, -info.suffix.length)
+                if (!(pId in info.nameMap)) return []
+                const data = d.data()
+                if (!data.totalHours) return []
+                const pigeons: PigeonChip[] = (data.pigeons || []).map((pg: Record<string, string>) => ({
+                  landingTime: pg.landingTime || '', hoursFlown: pg.hoursFlown || '',
+                }))
+                pigeons.forEach(pg => { if (pg.landingTime) totalLanded++ })
+                return [{ name: info.nameMap[pId], area: info.areaMap[pId] || '', pigeons, totalHours: data.totalHours }]
+              })
+              .sort((a, b) => compareHours(a.totalHours, b.totalHours))
+
+            liveStore.set(info.base.id, { topEntries: entries.slice(0, 3), totalLanded, totalPigeons: info.enrolledCount * info.base.pigeonCount })
+            rebuildAndPublish()
+            markInit(info.base.id)
+          }
+        )
+        unsubscribers.push(unsub)
+      })
     }
-    load()
+
+    init()
+    return () => { active = false; unsubscribers.forEach(u => u()) }
   }, [])
 
   const rankRingClass = (i: number) => {
