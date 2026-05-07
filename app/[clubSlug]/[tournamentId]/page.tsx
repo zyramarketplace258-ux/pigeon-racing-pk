@@ -176,28 +176,6 @@ export default function TournamentResultsPage() {
     load(); return () => { active = false }
   }, [showTotal, club, tournament, participants])
 
-  const shareOnWhatsApp = () => {
-    if (!club || !tournament) return
-    const lines: string[] = []
-    if (showTotal) {
-      lines.push(`🏆 Grand Total — ${tournament.name}`)
-      lines.push(`📍 ${club.name} · ${club.city}`, '')
-      totalRows.filter(r => r.grandTotal).slice(0, 5).forEach((row, i) => {
-        lines.push(`${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`} ${row.name} — ${formatTimeDisplay(row.grandTotal)}`)
-      })
-    } else {
-      lines.push(`🐦 Day ${selectedDay} Results — ${tournament.name}`)
-      lines.push(`📍 ${club.name} · ${club.city}`)
-      if (selectedRaceDay?.date) lines.push(`📅 ${selectedRaceDay.date}`)
-      lines.push('')
-      dayEntries.filter(e => e.hasData && e.totalHours).slice(0, 5).forEach((entry, i) => {
-        lines.push(`${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`} ${entry.name} — ${formatTimeDisplay(entry.totalHours)}`)
-      })
-    }
-    lines.push('', `🔗 ${window.location.href}`)
-    window.open(`https://wa.me/?text=${encodeURIComponent(lines.join('\n'))}`, '_blank')
-  }
-
   const today = new Date().toISOString().split('T')[0]
   const selectedRaceDay = tournament?.raceDays?.find(rd => rd.dayNumber === selectedDay)
 
