@@ -24,6 +24,7 @@ interface DayEntry {
 interface TotalRow {
   rank: number; participantId: string; name: string; area: string
   daysFlown: number; grandTotal: string
+  dayTotals: { dayNumber: number; hours: string }[]
 }
 
 const rankCircleStyle = (rank: number, hasData: boolean): React.CSSProperties => {
@@ -153,13 +154,18 @@ export default function TournamentResultsPage() {
     if (!showTotal || !club || !tournament || participants.length === 0) return
     let active = true; setLoadingEntries(true)
     const load = async () => {
+      const nonGapDays = (tournament.raceDays || []).filter(rd => !rd.isGap)
       const rows: TotalRow[] = await Promise.all(participants.map(async (p) => {
+        const dayTotals: { dayNumber: number; hours: string }[] = []
         const hours: string[] = []; let daysFlown = 0
-        await Promise.all((tournament.raceDays || []).filter(rd => !rd.isGap).map(async (rd) => {
+        await Promise.all(nonGapDays.map(async (rd) => {
           const snap = await getDoc(doc(db, 'clubs', club.id, 'tournaments', tournament.id, 'entries', `${p.id}_day${rd.dayNumber}`))
-          if (snap.exists() && snap.data().totalHours) { hours.push(snap.data().totalHours); daysFlown++ }
+          const h = snap.exists() ? snap.data().totalHours : ''
+          dayTotals.push({ dayNumber: rd.dayNumber, hours: h || '' })
+          if (h) { hours.push(h); daysFlown++ }
         }))
-        return { rank: 0, participantId: p.id, name: p.name, area: p.area, daysFlown, grandTotal: hours.length > 0 ? calculateGrandTotal(hours) : '' }
+        dayTotals.sort((a, b) => a.dayNumber - b.dayNumber)
+        return { rank: 0, participantId: p.id, name: p.name, area: p.area, daysFlown, grandTotal: hours.length > 0 ? calculateGrandTotal(hours) : '', dayTotals }
       }))
       if (!active) return
       const withData = rows.filter(r => r.grandTotal).sort((a, b) => compareHours(a.grandTotal, b.grandTotal))
@@ -336,19 +342,35 @@ export default function TournamentResultsPage() {
               </div>
               <div className="divide-y divide-[#e9ecef]">
                 {totalRows.map((row, i) => (
-                  <div key={row.participantId} className="flex items-center gap-3 px-4 py-3" style={{ background: i === 0 && row.grandTotal ? '#dff0d8' : i % 2 === 1 ? '#f6faf6' : '#fff' }}>
-                    <div className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-sm font-bold shadow-sm" style={rankCircleStyle(row.rank, !!row.grandTotal)}>
-                      <span className={rankCircleColor(row.rank, !!row.grandTotal)}>{rankCircleText(row.rank, !!row.grandTotal)}</span>
+                  <div key={row.participantId} className="px-3 py-3" style={{ background: i === 0 && row.grandTotal ? '#dff0d8' : i % 2 === 1 ? '#f6faf6' : '#fff' }}>
+                    {/* Top row: rank + name + grand total */}
+                    <div className="flex items-center gap-2.5 mb-2">
+                      <div className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-sm font-bold shadow-sm" style={rankCircleStyle(row.rank, !!row.grandTotal)}>
+                        <span className={rankCircleColor(row.rank, !!row.grandTotal)}>{rankCircleText(row.rank, !!row.grandTotal)}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[#1a1a1a] font-semibold text-sm truncate">{row.name}</p>
+                        <p className="text-[#777] text-xs">{row.area}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        {row.grandTotal
+                          ? <p className="font-bold text-xl text-[#1b5e20] leading-none">{formatTimeDisplay(row.grandTotal)}</p>
+                          : <p className="text-[#ccc] text-sm">—</p>
+                        }
+                        <p className="text-[#999] text-xs text-right">{row.daysFlown > 0 ? `${row.daysFlown} days` : ''}</p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[#1a1a1a] font-semibold text-sm truncate">{row.name}</p>
-                      <p className="text-[#777] text-xs">{row.area} · {row.daysFlown > 0 ? `${row.daysFlown}/${tournament.totalDays} days` : 'No data'}</p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      {row.grandTotal
-                        ? <p className="font-bold text-xl text-[#1a1a1a] leading-none">{formatTimeDisplay(row.grandTotal)}</p>
-                        : <p className="text-[#ccc]">—</p>
-                      }
+                    {/* Per-day chips */}
+                    <div className="flex gap-1.5 overflow-x-auto ml-11 pb-0.5" style={{ scrollbarWidth: 'none' }}>
+                      {row.dayTotals.map(dt => (
+                        <div key={dt.dayNumber} className="shrink-0 rounded border px-1.5 py-1 text-center"
+                          style={{ background: dt.hours ? '#f0fdf4' : '#fafafa', borderColor: dt.hours ? '#86efac' : '#e9ecef', borderStyle: dt.hours ? 'solid' : 'dashed' }}>
+                          <span className="block text-[#999] leading-none" style={{ fontSize: '0.6rem' }}>D{dt.dayNumber}</span>
+                          <span className="block font-mono leading-tight mt-0.5" style={{ fontSize: '0.78rem', color: dt.hours ? '#166534' : '#ccc' }}>
+                            {dt.hours ? formatTimeDisplay(dt.hours) : '—'}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))}
