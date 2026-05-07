@@ -234,11 +234,9 @@ export default function TournamentResultsPage() {
               {viewerCount > 1 && <span className="text-green-400 text-xs shrink-0">· 👁 {viewerCount}</span>}
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0 mt-0.5">
-            <button onClick={shareOnWhatsApp} className="bg-white text-[#1b5e20] text-xs px-2 sm:px-3 py-1.5 rounded font-bold hover:bg-green-50 transition flex items-center gap-1">
-              <span>📲</span><span className="hidden sm:inline">Share</span>
-            </button>
+          <div className="flex items-center gap-3 shrink-0 mt-0.5">
             <Link href={`/${clubSlug}`} className="text-green-300 hover:text-white text-xs font-medium transition">← Club</Link>
+            <Link href="/" className="text-green-300 hover:text-white text-xs font-medium transition">Home</Link>
           </div>
         </div>
       </div>
