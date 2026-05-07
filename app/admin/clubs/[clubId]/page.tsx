@@ -14,6 +14,7 @@ interface Club {
   city: string
   slug: string
   loginEmail: string
+  logoUrl?: string
 }
 
 interface Tournament {
@@ -123,7 +124,7 @@ export default function ClubDetailPage() {
           ← Dashboard
         </Link>
         <div className="text-center">
-          <img src="/pigeon.png" alt="Pigeon" className="w-10 h-10 object-contain drop-shadow mx-auto" />
+          <img src={club?.logoUrl || '/pigeon.png'} alt="Logo" className="w-10 h-10 object-cover rounded-full drop-shadow mx-auto border border-green-700" />
           <h1 className="text-sm font-bold text-secondary leading-tight mt-0.5">{club?.name}</h1>
           <p className="text-green-400 text-xs">{club?.city}</p>
         </div>
@@ -134,8 +135,8 @@ export default function ClubDetailPage() {
         {/* Club Info Card */}
         <div className="bg-surface border border-green-800 rounded-xl p-5 mb-8 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-primary border border-secondary flex items-center justify-center overflow-hidden">
-              <img src="/pigeon.png" alt="Pigeon" className="w-11 h-11 object-contain" />
+            <div className="w-14 h-14 rounded-full bg-primary border border-secondary overflow-hidden">
+              <img src={club?.logoUrl || '/pigeon.png'} alt={club?.name} className="w-full h-full object-cover" />
             </div>
             <div>
               <h2 className="text-white font-bold text-lg">{club?.name}</h2>

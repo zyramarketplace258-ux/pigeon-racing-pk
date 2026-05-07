@@ -10,7 +10,7 @@ import { Playfair_Display } from 'next/font/google'
 
 const playfair = Playfair_Display({ subsets: ['latin'], weight: ['700'], style: ['italic'] })
 
-interface Club { id: string; name: string; slug: string; city: string }
+interface Club { id: string; name: string; slug: string; city: string; logoUrl?: string }
 interface RaceDay { dayNumber: number; date: string; isGap?: boolean }
 interface PigeonChip { landingTime: string; hoursFlown: string }
 interface TopEntry { name: string; area: string; pigeons: PigeonChip[]; totalHours: string }
@@ -279,8 +279,8 @@ export default function HomePage() {
                     href={`/${club.slug}`}
                     className="flex items-center gap-3 p-3 border border-[#d4edda] rounded-lg hover:border-[#388e3c] hover:bg-[#f1faf2] transition group"
                   >
-                    <div className="w-10 h-10 shrink-0 rounded-full bg-white border border-[#d4edda] flex items-center justify-center overflow-hidden">
-                      <img src="/pigeon.png" alt="Pigeon" className="w-8 h-8 object-contain" />
+                    <div className="w-10 h-10 shrink-0 rounded-full bg-white border border-[#d4edda] overflow-hidden">
+                      <img src={club.logoUrl || '/pigeon.png'} alt={club.name} className="w-full h-full object-cover" />
                     </div>
                     <div className="min-w-0">
                       <p className="text-[#1a1a1a] font-semibold text-sm truncate group-hover:text-[#1b5e20] transition">{club.name}</p>

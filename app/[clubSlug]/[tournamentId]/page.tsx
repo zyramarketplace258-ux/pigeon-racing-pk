@@ -15,14 +15,14 @@ interface Tournament {
   defaultStartTime: string; pigeonCount: number
   raceDays: RaceDay[]; participantIds?: string[]
 }
-interface Participant { id: string; name: string; area: string }
+interface Participant { id: string; name: string; area: string; photoUrl?: string }
 interface PigeonEntry { landingTime: string; hoursFlown: string }
 interface DayEntry {
-  rank: number; participantId: string; name: string; area: string
+  rank: number; participantId: string; name: string; area: string; photoUrl?: string
   startTime: string; pigeons: PigeonEntry[]; totalHours: string; hasData: boolean
 }
 interface TotalRow {
-  rank: number; participantId: string; name: string; area: string
+  rank: number; participantId: string; name: string; area: string; photoUrl?: string
   daysFlown: number; grandTotal: string
   dayTotals: { dayNumber: number; hours: string }[]
 }
@@ -138,9 +138,9 @@ export default function TournamentResultsPage() {
         const entryDoc = snapshot.docs.find(d => d.id === `${p.id}_day${selectedDay}`)
         if (entryDoc) {
           const d = entryDoc.data()
-          return { rank: 0, participantId: p.id, name: p.name, area: p.area, startTime: d.startTime, pigeons: d.pigeons || [], totalHours: d.totalHours || '', hasData: true }
+          return { rank: 0, participantId: p.id, name: p.name, area: p.area, photoUrl: p.photoUrl, startTime: d.startTime, pigeons: d.pigeons || [], totalHours: d.totalHours || '', hasData: true }
         }
-        return { rank: 0, participantId: p.id, name: p.name, area: p.area, startTime: tournament.defaultStartTime, pigeons: Array.from({ length: tournament.pigeonCount }, () => ({ landingTime: '', hoursFlown: '' })), totalHours: '', hasData: false }
+        return { rank: 0, participantId: p.id, name: p.name, area: p.area, photoUrl: p.photoUrl, startTime: tournament.defaultStartTime, pigeons: Array.from({ length: tournament.pigeonCount }, () => ({ landingTime: '', hoursFlown: '' })), totalHours: '', hasData: false }
       })
       const withData = rows.filter(r => r.hasData && r.totalHours).sort((a, b) => compareHours(a.totalHours, b.totalHours))
       const noData = rows.filter(r => !r.hasData || !r.totalHours)
@@ -167,7 +167,7 @@ export default function TournamentResultsPage() {
           if (h) { hours.push(h); daysFlown++ }
         }))
         dayTotals.sort((a, b) => a.dayNumber - b.dayNumber)
-        return { rank: 0, participantId: p.id, name: p.name, area: p.area, daysFlown, grandTotal: hours.length > 0 ? calculateGrandTotal(hours) : '', dayTotals }
+        return { rank: 0, participantId: p.id, name: p.name, area: p.area, photoUrl: p.photoUrl, daysFlown, grandTotal: hours.length > 0 ? calculateGrandTotal(hours) : '', dayTotals }
       }))
       if (!active) return
       const withData = rows.filter(r => r.grandTotal).sort((a, b) => compareHours(a.grandTotal, b.grandTotal))
@@ -379,8 +379,18 @@ export default function TournamentResultsPage() {
                   <div key={row.participantId} className="px-3 py-3" style={{ background: i === 0 && row.grandTotal ? '#dff0d8' : i % 2 === 1 ? '#f6faf6' : '#fff' }}>
                     {/* Top row: rank + name + grand total */}
                     <div className="flex items-center gap-2.5 mb-2">
-                      <div className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-sm font-bold shadow-sm" style={rankCircleStyle(row.rank, !!row.grandTotal)}>
-                        <span className={rankCircleColor(row.rank, !!row.grandTotal)}>{rankCircleText(row.rank, !!row.grandTotal)}</span>
+                      <div className="relative shrink-0">
+                        {row.photoUrl
+                          ? <img src={row.photoUrl} alt={row.name} className="w-9 h-9 rounded-full object-cover border-2 shadow-sm" style={{ borderColor: row.rank === 1 ? '#c8900a' : row.rank === 2 ? '#8a8a8a' : '#e9ecef' }} />
+                          : <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shadow-sm" style={rankCircleStyle(row.rank, !!row.grandTotal)}>
+                              <span className={rankCircleColor(row.rank, !!row.grandTotal)}>{rankCircleText(row.rank, !!row.grandTotal)}</span>
+                            </div>
+                        }
+                        {row.photoUrl && row.grandTotal && (
+                          <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center shadow" style={rankCircleStyle(row.rank, !!row.grandTotal)}>
+                            <span className={`${rankCircleColor(row.rank, !!row.grandTotal)} leading-none`} style={{ fontSize: '0.55rem' }}>{row.rank}</span>
+                          </div>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[#1a1a1a] font-semibold text-sm truncate">{row.name}</p>
@@ -431,9 +441,19 @@ export default function TournamentResultsPage() {
                 {dayEntries.map((entry, i) => (
                   <div key={entry.participantId} style={{ background: i === 0 && entry.hasData ? '#dff0d8' : i % 2 === 1 ? '#f6faf6' : '#fff' }}>
                     <div className="flex items-start gap-2 px-3 py-2.5">
-                      {/* Rank circle */}
-                      <div className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-sm font-bold shadow-sm" style={rankCircleStyle(entry.rank, entry.hasData)}>
-                        <span className={rankCircleColor(entry.rank, entry.hasData)}>{rankCircleText(entry.rank, entry.hasData)}</span>
+                      {/* Rank / Photo */}
+                      <div className="relative shrink-0">
+                        {entry.photoUrl
+                          ? <img src={entry.photoUrl} alt={entry.name} className="w-9 h-9 rounded-full object-cover border-2 shadow-sm" style={{ borderColor: entry.rank === 1 ? '#c8900a' : entry.rank === 2 ? '#8a8a8a' : '#e9ecef' }} />
+                          : <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shadow-sm" style={rankCircleStyle(entry.rank, entry.hasData)}>
+                              <span className={rankCircleColor(entry.rank, entry.hasData)}>{rankCircleText(entry.rank, entry.hasData)}</span>
+                            </div>
+                        }
+                        {entry.photoUrl && entry.hasData && (
+                          <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold shadow" style={rankCircleStyle(entry.rank, entry.hasData)}>
+                            <span className={`${rankCircleColor(entry.rank, entry.hasData)} text-xs leading-none`} style={{ fontSize: '0.55rem' }}>{entry.rank}</span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Name + chips */}

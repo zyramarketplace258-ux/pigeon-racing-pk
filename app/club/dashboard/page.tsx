@@ -8,17 +8,18 @@ import {
   collection, query, where, getDocs, doc, setDoc, getDoc,
   addDoc, deleteDoc, updateDoc, serverTimestamp
 } from 'firebase/firestore'
-import { auth, db } from '@/lib/firebase'
+import { auth, db, storage } from '@/lib/firebase'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { calculateHoursFlown, calculateGrandTotal, formatTimeDisplay } from '@/lib/timeUtils'
 
-interface Club { id: string; name: string; slug: string; city: string }
+interface Club { id: string; name: string; slug: string; city: string; logoUrl?: string }
 interface RaceDay { dayNumber: number; date: string; isGap?: boolean }
 interface Tournament {
   id: string; name: string; status: string; totalDays: number
   defaultStartTime: string; defaultEndTime?: string; pigeonCount: number
   raceDays: RaceDay[]; participantIds?: string[]
 }
-interface Participant { id: string; name: string; area: string }
+interface Participant { id: string; name: string; area: string; photoUrl?: string }
 interface PigeonEntry { landingTime: string; hoursFlown: string }
 interface EntryRow {
   participantId: string; name: string; area: string
@@ -75,6 +76,8 @@ export default function ClubDashboard() {
   const [assignedIds, setAssignedIds] = useState<Set<string>>(new Set())
   const [savingAssignment, setSavingAssignment] = useState(false)
   const [savedAssignment, setSavedAssignment] = useState(false)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [uploadingMemberId, setUploadingMemberId] = useState<string | null>(null)
 
   useEffect(() => {
     let unsubscribe: () => void = () => {}
@@ -262,6 +265,32 @@ export default function ClubDashboard() {
     setSavingAssignment(false); setSavedAssignment(true)
   }
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!club || !e.target.files?.[0]) return
+    setUploadingLogo(true)
+    try {
+      const file = e.target.files[0]
+      const storageRef = ref(storage, `clubs/${club.id}/logo`)
+      await uploadBytes(storageRef, file)
+      const url = await getDownloadURL(storageRef)
+      await updateDoc(doc(db, 'clubs', club.id), { logoUrl: url })
+      setClub(prev => prev ? { ...prev, logoUrl: url } : prev)
+    } finally { setUploadingLogo(false) }
+  }
+
+  const handleMemberPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, memberId: string) => {
+    if (!club || !e.target.files?.[0]) return
+    setUploadingMemberId(memberId)
+    try {
+      const file = e.target.files[0]
+      const storageRef = ref(storage, `clubs/${club.id}/members/${memberId}`)
+      await uploadBytes(storageRef, file)
+      const url = await getDownloadURL(storageRef)
+      await updateDoc(doc(db, 'clubs', club.id, 'participants', memberId), { photoUrl: url })
+      setParticipants(prev => prev.map(p => p.id === memberId ? { ...p, photoUrl: url } : p))
+    } finally { setUploadingMemberId(null) }
+  }
+
   if (loading) return (
     <main className="min-h-screen bg-dark flex items-center justify-center">
       <p className="text-green-400">Loading...</p>
@@ -275,7 +304,17 @@ export default function ClubDashboard() {
       <header className="bg-primary border-b border-secondary px-4 py-3 relative">
         <a href="/" className="absolute left-4 top-1/2 -translate-y-1/2 text-green-400 hover:text-secondary text-xs font-medium transition">← Home</a>
         <div className="text-center">
-          <img src="/pigeon.png" alt="Pigeon" className="w-10 h-10 object-contain drop-shadow mx-auto" />
+          <label className="cursor-pointer relative inline-block group">
+            <img
+              src={club?.logoUrl || '/pigeon.png'}
+              alt="Logo"
+              className="w-10 h-10 object-cover rounded-full drop-shadow mx-auto border border-green-700"
+            />
+            <div className="absolute inset-0 rounded-full bg-black bg-opacity-0 group-hover:bg-opacity-50 flex items-center justify-center transition">
+              <span className="text-white text-xs opacity-0 group-hover:opacity-100">{uploadingLogo ? '...' : '📷'}</span>
+            </div>
+            <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+          </label>
           <h1 className="text-sm font-bold text-secondary leading-tight mt-0.5">{club?.name}</h1>
         </div>
         <button
@@ -405,30 +444,30 @@ export default function ClubDashboard() {
                   <p className="text-green-600">No members yet. Add your first one above.</p>
                 </div>
               ) : (
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-green-900">
-                      <th className="text-left text-green-400 px-4 py-3">#</th>
-                      <th className="text-left text-green-400 px-4 py-3">Name</th>
-                      <th className="text-left text-green-400 px-4 py-3">Area</th>
-                      <th className="px-4 py-3"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {participants.map((p, i) => (
-                      <tr key={p.id} className="border-b border-green-900 hover:bg-primary transition">
-                        <td className="px-4 py-3 text-green-600">{i + 1}</td>
-                        <td className="px-4 py-3 text-white font-semibold">{p.name}</td>
-                        <td className="px-4 py-3 text-green-300">{p.area}</td>
-                        <td className="px-4 py-3 text-right">
-                          <button onClick={() => removeMember(p.id)} className="text-red-500 hover:text-red-400 text-xs transition">
-                            Remove
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div className="divide-y divide-green-900">
+                  {participants.map((p, i) => (
+                    <div key={p.id} className="flex items-center gap-3 px-4 py-3 hover:bg-primary transition">
+                      <span className="text-green-600 text-xs w-5 shrink-0">{i + 1}</span>
+                      <label className="cursor-pointer relative group shrink-0">
+                        {p.photoUrl
+                          ? <img src={p.photoUrl} alt={p.name} className="w-10 h-10 rounded-full object-cover border border-green-700" />
+                          : <div className="w-10 h-10 rounded-full bg-primary border border-green-700 flex items-center justify-center text-secondary font-bold text-sm">{p.name.charAt(0)}</div>
+                        }
+                        <div className="absolute inset-0 rounded-full bg-black bg-opacity-0 group-hover:bg-opacity-50 flex items-center justify-center transition">
+                          <span className="text-white text-xs opacity-0 group-hover:opacity-100">{uploadingMemberId === p.id ? '...' : '📷'}</span>
+                        </div>
+                        <input type="file" accept="image/*" className="hidden" onChange={e => handleMemberPhotoUpload(e, p.id)} />
+                      </label>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-semibold text-sm truncate">{p.name}</p>
+                        <p className="text-green-400 text-xs">{p.area}</p>
+                      </div>
+                      <button onClick={() => removeMember(p.id)} className="text-red-500 hover:text-red-400 text-xs transition shrink-0">
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </div>

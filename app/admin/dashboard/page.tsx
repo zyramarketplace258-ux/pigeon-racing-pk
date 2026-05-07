@@ -15,6 +15,7 @@ interface Club {
   slug: string
   city: string
   loginEmail: string
+  logoUrl?: string
 }
 
 export default function AdminDashboard() {
@@ -97,8 +98,8 @@ export default function AdminDashboard() {
               {clubs.map((club) => (
                 <div key={club.id} className="bg-surface border border-green-800 hover:border-secondary rounded-xl p-5 transition">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-full bg-primary border border-secondary flex items-center justify-center overflow-hidden">
-                      <img src="/pigeon.png" alt="Pigeon" className="w-9 h-9 object-contain" />
+                    <div className="w-12 h-12 rounded-full bg-primary border border-secondary overflow-hidden">
+                      <img src={club.logoUrl || '/pigeon.png'} alt={club.name} className="w-full h-full object-cover" />
                     </div>
                     <div>
                       <h3 className="text-white font-bold">{club.name}</h3>

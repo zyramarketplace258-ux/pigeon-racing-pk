@@ -7,7 +7,7 @@ import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestor
 import { db } from '@/lib/firebase'
 import Link from 'next/link'
 
-interface Club { id: string; name: string; slug: string; city: string }
+interface Club { id: string; name: string; slug: string; city: string; logoUrl?: string }
 interface RaceDay { dayNumber: number; date: string; isGap?: boolean }
 interface Tournament {
   id: string; name: string; status: string; totalDays: number
@@ -119,7 +119,7 @@ export default function ClubPublicPage() {
           <Link href="/" className="absolute left-0 top-0 text-green-300 hover:text-white text-xs font-medium transition">
             ← Home
           </Link>
-          <img src="/pigeon.png" alt="Pigeon" className="w-20 h-20 sm:w-24 sm:h-24 object-contain drop-shadow-lg mx-auto mb-2" />
+          <img src={club?.logoUrl || '/pigeon.png'} alt="Logo" className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-full drop-shadow-lg mx-auto mb-2 border-2 border-green-600" />
           <h1 className="text-white text-lg sm:text-2xl font-bold leading-tight">{club?.name}</h1>
           <p className="text-green-300 text-xs mt-0.5">{club?.city} · Love for the Loft</p>
         </div>
