@@ -206,15 +206,9 @@ export default function HomePage() {
     <main className="min-h-screen bg-[#e8f5e9]">
 
       {/* ── Header ── */}
-      <div className="bg-gradient-to-r from-[#1b5e20] to-[#2e7d32] px-4 pt-4 pb-3">
-        <div className="flex items-start justify-between max-w-5xl mx-auto">
-          <div>
-            <h1 className={`${playfair.className} text-white text-2xl sm:text-3xl leading-tight`}>
-              Pakistan Pigeon
-            </h1>
-            <p className="text-green-300 text-xs mt-0.5 tracking-widest uppercase">Official Racing Platform</p>
-          </div>
-          <div className="flex gap-2 mt-1">
+      <div className="bg-gradient-to-r from-[#1b5e20] to-[#2e7d32] px-4 pt-5 pb-4">
+        <div className="max-w-5xl mx-auto text-center relative">
+          <div className="absolute right-0 top-0 flex gap-2">
             <Link href="/club/login" className="text-xs text-green-200 border border-green-600 px-2.5 py-1.5 rounded hover:bg-green-800 transition font-medium">
               Club Login
             </Link>
@@ -222,6 +216,9 @@ export default function HomePage() {
               Admin
             </Link>
           </div>
+          <img src="/pigeon.png" alt="Pigeon" className="w-20 h-20 sm:w-24 sm:h-24 object-contain drop-shadow-lg mx-auto mb-2" />
+          <h1 className={`${playfair.className} text-white text-2xl sm:text-3xl leading-tight`}>Pakistan Pigeon</h1>
+          <p className="text-green-300 text-xs mt-0.5 tracking-widest uppercase">Official Racing Platform</p>
         </div>
       </div>
       <nav className="bg-[#292929] px-4">

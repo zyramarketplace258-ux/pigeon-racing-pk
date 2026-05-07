@@ -274,10 +274,8 @@ export default function ClubDashboard() {
       {/* Header — club name centered */}
       <header className="bg-primary border-b border-secondary px-4 py-4 relative">
         <div className="text-center">
-          <div className="flex items-center justify-center gap-2">
-            <img src="/pigeon.png" alt="Pigeon" className="w-8 h-8 object-contain" />
-            <h1 className="text-xl font-bold text-secondary">{club?.name}</h1>
-          </div>
+          <img src="/pigeon.png" alt="Pigeon" className="w-16 h-16 object-contain drop-shadow-lg mx-auto mb-1" />
+          <h1 className="text-xl font-bold text-secondary">{club?.name}</h1>
           <p className="text-green-400 text-xs">{club?.city}</p>
         </div>
         <button

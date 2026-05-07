@@ -114,20 +114,14 @@ export default function ClubPublicPage() {
     <main className="min-h-screen bg-[#e8f5e9]">
 
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#1b5e20] to-[#2e7d32] px-4 pt-4 pb-3">
-        <div className="flex items-center justify-between max-w-4xl mx-auto">
-          <div className="min-w-0 flex-1">
-            <h1 className="text-white text-lg sm:text-2xl font-bold truncate leading-tight">{club?.name}</h1>
-            <p className="text-green-300 text-xs">{club?.city} · Pakistan</p>
-            <Link href="/" className="text-green-300 hover:text-white text-xs font-medium transition mt-1 inline-block">
-              ← Home
-            </Link>
-          </div>
-          <img
-            src="/pigeon.png"
-            alt="Pigeon"
-            className="w-20 h-20 sm:w-28 sm:h-28 object-contain drop-shadow-lg shrink-0 ml-4"
-          />
+      <div className="bg-gradient-to-r from-[#1b5e20] to-[#2e7d32] px-4 pt-5 pb-4">
+        <div className="max-w-4xl mx-auto text-center relative">
+          <Link href="/" className="absolute left-0 top-0 text-green-300 hover:text-white text-xs font-medium transition">
+            ← Home
+          </Link>
+          <img src="/pigeon.png" alt="Pigeon" className="w-20 h-20 sm:w-24 sm:h-24 object-contain drop-shadow-lg mx-auto mb-2" />
+          <h1 className="text-white text-lg sm:text-2xl font-bold leading-tight">{club?.name}</h1>
+          <p className="text-green-300 text-xs mt-0.5">{club?.city} · Pakistan</p>
         </div>
       </div>
       <nav className="bg-[#292929] px-4">
