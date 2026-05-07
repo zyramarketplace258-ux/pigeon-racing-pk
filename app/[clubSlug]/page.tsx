@@ -40,6 +40,7 @@ export default function ClubPublicPage() {
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [weather, setWeather] = useState<Weather | null>(null)
+  const [activeView, setActiveView] = useState<'tournaments' | 'history'>('tournaments')
 
   useEffect(() => {
     let active = true
@@ -125,8 +126,15 @@ export default function ClubPublicPage() {
         </div>
       </div>
       <nav className="bg-[#292929] px-4">
-        <div className="max-w-4xl mx-auto flex items-center h-9">
-          <span className="text-white text-sm font-semibold border-b-2 border-[#66bb6a] pb-0.5">Tournaments</span>
+        <div className="max-w-4xl mx-auto flex items-center h-9 gap-1">
+          {(['tournaments', 'history'] as const).map(v => (
+            <button key={v} onClick={() => setActiveView(v)}
+              className={`px-4 h-full text-sm font-semibold transition border-b-2 ${
+                activeView === v ? 'text-white border-[#66bb6a]' : 'text-gray-400 border-transparent hover:text-white'
+              }`}>
+              {v === 'tournaments' ? 'Tournaments' : 'History'}
+            </button>
+          ))}
         </div>
       </nav>
 
@@ -145,128 +153,128 @@ export default function ClubPublicPage() {
           </div>
         )}
 
-        {/* Active Tournaments */}
-        {active.length > 0 && (
-          <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
-            <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-2">
-              <p className="text-green-200 text-xs font-bold uppercase tracking-widest">🟢 Active Tournaments</p>
-            </div>
-            <div className="divide-y divide-[#f0f0f0]">
-              {active.map(t => {
-                const progress = getDayProgress(t)
-                return (
-                  <div key={t.id} className="overflow-hidden">
-                    {/* Mini card header */}
-                    <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-2.5 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="bg-[#e65100] text-white text-xs px-1.5 py-0.5 rounded font-bold animate-pulse tracking-wider">LIVE</span>
-                        <span className="text-green-300 text-xs">
-                          {t.defaultStartTime}{t.defaultEndTime ? ` → ${t.defaultEndTime}` : ''}
-                        </span>
-                      </div>
-                      {progress && (
-                        <span className="text-green-200 text-xs font-semibold bg-green-900 bg-opacity-40 px-2 py-0.5 rounded-full">
-                          Day {progress.current} of {progress.total}
-                        </span>
-                      )}
-                    </div>
-                    {/* Tournament body */}
-                    <div className="px-4 py-3">
-                      <h3 className="text-[#1a1a1a] font-bold text-base mb-2">{t.name}</h3>
-                      {progress && (
-                        <div className="mb-3">
-                          <div className="h-2 bg-[#e9ecef] rounded overflow-hidden mb-1">
-                            <div
-                              className="h-full rounded"
-                              style={{ width: `${(progress.current / progress.total) * 100}%`, background: 'linear-gradient(90deg,#388e3c,#66bb6a)' }}
-                            />
+        {/* ── TOURNAMENTS VIEW ── */}
+        {activeView === 'tournaments' && (
+          <>
+            {active.length > 0 && (
+              <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
+                <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-2">
+                  <p className="text-green-200 text-xs font-bold uppercase tracking-widest">🟢 Active Tournaments</p>
+                </div>
+                <div className="divide-y divide-[#f0f0f0]">
+                  {active.map(t => {
+                    const progress = getDayProgress(t)
+                    return (
+                      <div key={t.id} className="overflow-hidden">
+                        <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-2.5 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="bg-[#e65100] text-white text-xs px-1.5 py-0.5 rounded font-bold animate-pulse tracking-wider">LIVE</span>
+                            <span className="text-green-300 text-xs">{t.defaultStartTime}{t.defaultEndTime ? ` → ${t.defaultEndTime}` : ''}</span>
                           </div>
-                          <div className="flex justify-between text-xs text-gray-400">
-                            <span>{Math.round((progress.current / progress.total) * 100)}% complete</span>
-                            <span>{progress.total - progress.current} days left</span>
+                          {progress && (
+                            <span className="text-green-200 text-xs font-semibold bg-green-900 bg-opacity-40 px-2 py-0.5 rounded-full">
+                              Day {progress.current} of {progress.total}
+                            </span>
+                          )}
+                        </div>
+                        <div className="px-4 py-3">
+                          <h3 className="text-[#1a1a1a] font-bold text-base mb-2">{t.name}</h3>
+                          {progress && (
+                            <div className="mb-3">
+                              <div className="h-2 bg-[#e9ecef] rounded overflow-hidden mb-1">
+                                <div className="h-full rounded" style={{ width: `${(progress.current / progress.total) * 100}%`, background: 'linear-gradient(90deg,#388e3c,#66bb6a)' }} />
+                              </div>
+                              <div className="flex justify-between text-xs text-gray-400">
+                                <span>{Math.round((progress.current / progress.total) * 100)}% complete</span>
+                                <span>{progress.total - progress.current} days left</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <Link href={`/${clubSlug}/${t.id}`} className="flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-[#23592b] bg-[#f1faf2] border-t border-[#d4edda] hover:bg-[#e8f5e9] transition">
+                          View Results →
+                        </Link>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {inactive.length > 0 && (
+              <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
+                <div className="bg-[#f9f9f9] border-b border-[#e9ecef] px-4 py-2">
+                  <p className="text-[#999] text-xs font-bold uppercase tracking-widest">Upcoming</p>
+                </div>
+                <div className="divide-y divide-[#f0f0f0]">
+                  {inactive.map(t => (
+                    <div key={t.id} className="px-4 py-3 opacity-60">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <h3 className="text-[#1a1a1a] font-semibold text-sm truncate">{t.name}</h3>
+                          <p className="text-[#777] text-xs mt-0.5">{t.totalDays} days</p>
+                        </div>
+                        <span className="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full shrink-0 font-semibold">SOON</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {active.length === 0 && inactive.length === 0 && (
+              <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm p-10 text-center">
+                <p className="text-4xl mb-3">🏆</p>
+                <p className="text-[#1a1a1a] font-bold">No Active Tournaments</p>
+                <p className="text-[#777] text-sm mt-2">Check History for past results.</p>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── HISTORY VIEW ── */}
+        {activeView === 'history' && (
+          <>
+            {completed.length === 0 ? (
+              <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm p-10 text-center">
+                <p className="text-4xl mb-3">🏁</p>
+                <p className="text-[#1a1a1a] font-bold">No Completed Tournaments Yet</p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
+                <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-2">
+                  <p className="text-green-200 text-xs font-bold uppercase tracking-widest">🏁 Completed Tournaments</p>
+                </div>
+                <div className="divide-y divide-[#f0f0f0]">
+                  {completed.map(t => {
+                    const progress = getDayProgress(t)
+                    return (
+                      <Link key={t.id} href={`/${clubSlug}/${t.id}`} className="block px-4 py-3 hover:bg-[#f9fdf9] transition group">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <h3 className="text-[#1a1a1a] font-semibold text-sm group-hover:text-[#1b5e20] transition truncate">{t.name}</h3>
+                            <p className="text-[#777] text-xs mt-0.5">
+                              {progress ? `${progress.total} days` : `${t.totalDays} days`}
+                              {t.defaultStartTime ? ` · Start: ${t.defaultStartTime}` : ''}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full font-semibold whitespace-nowrap">DONE</span>
+                            <span className="text-[#388e3c]">→</span>
                           </div>
                         </div>
-                      )}
-                    </div>
-                    <Link
-                      href={`/${clubSlug}/${t.id}`}
-                      className="flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-[#23592b] bg-[#f1faf2] border-t border-[#d4edda] hover:bg-[#e8f5e9] transition"
-                    >
-                      View Results →
-                    </Link>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Completed Tournaments */}
-        {completed.length > 0 && (
-          <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
-            <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-2">
-              <p className="text-green-200 text-xs font-bold uppercase tracking-widest">🏁 Completed Tournaments</p>
-            </div>
-            <div className="divide-y divide-[#f0f0f0]">
-              {completed.map(t => {
-                const progress = getDayProgress(t)
-                return (
-                  <Link key={t.id} href={`/${clubSlug}/${t.id}`}
-                    className="block px-4 py-3 hover:bg-[#f9fdf9] transition group">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <h3 className="text-[#1a1a1a] font-semibold text-sm group-hover:text-[#1b5e20] transition truncate">{t.name}</h3>
-                        <p className="text-[#777] text-xs mt-0.5">
-                          {progress ? `${progress.total} days` : `${t.totalDays} days`}
-                          {t.defaultStartTime ? ` · Start: ${t.defaultStartTime}` : ''}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full font-semibold whitespace-nowrap">DONE</span>
-                        <span className="text-[#388e3c]">→</span>
-                      </div>
-                    </div>
-                    {progress && (
-                      <div className="mt-2 h-1.5 bg-[#e9ecef] rounded overflow-hidden">
-                        <div className="h-full w-full rounded bg-[#388e3c]" />
-                      </div>
-                    )}
-                  </Link>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Upcoming Tournaments */}
-        {inactive.length > 0 && (
-          <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
-            <div className="bg-[#f9f9f9] border-b border-[#e9ecef] px-4 py-2">
-              <p className="text-[#999] text-xs font-bold uppercase tracking-widest">Upcoming</p>
-            </div>
-            <div className="divide-y divide-[#f0f0f0]">
-              {inactive.map(t => (
-                <div key={t.id} className="px-4 py-3 opacity-60">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <h3 className="text-[#1a1a1a] font-semibold text-sm truncate">{t.name}</h3>
-                      <p className="text-[#777] text-xs mt-0.5">{t.totalDays} days</p>
-                    </div>
-                    <span className="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full shrink-0 font-semibold">SOON</span>
-                  </div>
+                        {progress && (
+                          <div className="mt-2 h-1.5 bg-[#e9ecef] rounded overflow-hidden">
+                            <div className="h-full w-full rounded bg-[#388e3c]" />
+                          </div>
+                        )}
+                      </Link>
+                    )
+                  })}
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* No tournaments */}
-        {tournaments.length === 0 && (
-          <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm p-10 text-center">
-            <p className="text-4xl mb-3">🏆</p>
-            <p className="text-[#1a1a1a] font-bold">No Tournaments Yet</p>
-            <p className="text-[#777] text-sm mt-2">Check back soon!</p>
-          </div>
+              </div>
+            )}
+          </>
         )}
 
       </div>

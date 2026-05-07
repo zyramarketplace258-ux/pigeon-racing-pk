@@ -54,7 +54,7 @@ async function fetchEntries(
 
 export default function ClubDashboard() {
   const router = useRouter()
-  const [tab, setTab] = useState<'add-time' | 'members' | 'tournaments'>('add-time')
+  const [tab, setTab] = useState<'add-time' | 'members' | 'tournaments' | 'history'>('add-time')
   const [club, setClub] = useState<Club | null>(null)
   const [loading, setLoading] = useState(true)
   const [entriesLoading, setEntriesLoading] = useState(false)
@@ -297,13 +297,13 @@ export default function ClubDashboard() {
       {/* Nav */}
       <nav className="bg-[#292929] px-4 border-b border-green-900">
         <div className="flex items-center h-10">
-          {(['tournaments', 'members', 'add-time'] as const).map(t => (
+          {(['tournaments', 'members', 'add-time', 'history'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
-              className={`px-5 h-full text-sm font-semibold transition border-b-2 ${
+              className={`px-4 h-full text-sm font-semibold transition border-b-2 ${
                 tab === t ? 'text-white border-[#66bb6a]' : 'text-gray-400 border-transparent hover:text-white'
               }`}
             >
-              {t === 'tournaments' ? 'Tournaments' : t === 'members' ? 'Members' : 'Add Time'}
+              {t === 'tournaments' ? 'Tournaments' : t === 'members' ? 'Members' : t === 'add-time' ? 'Add Time' : 'History'}
             </button>
           ))}
         </div>
@@ -383,42 +383,6 @@ export default function ClubDashboard() {
               </div>
             )}
 
-            {/* ── HISTORY — completed tournaments ── */}
-            {tournaments.filter(t => t.status === 'completed').length > 0 && (
-              <div className="bg-surface border border-green-800 rounded-xl overflow-hidden mt-5">
-                <div className="bg-primary px-4 py-3 border-b border-green-800">
-                  <p className="text-green-400 text-sm font-semibold uppercase tracking-widest">🏁 Completed Tournaments</p>
-                </div>
-                <div className="divide-y divide-green-900">
-                  {tournaments.filter(t => t.status === 'completed').map(t => {
-                    const nonGap = t.raceDays?.filter(rd => !rd.isGap) ?? []
-                    const firstDate = nonGap[0]?.date
-                    const lastDate = nonGap[nonGap.length - 1]?.date
-                    return (
-                      <a
-                        key={t.id}
-                        href={`/${club?.slug}/${t.id}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-primary transition group"
-                      >
-                        <div className="min-w-0">
-                          <p className="text-white font-semibold text-sm truncate group-hover:text-secondary transition">{t.name}</p>
-                          <p className="text-green-600 text-xs mt-0.5">
-                            {nonGap.length} days
-                            {firstDate && lastDate ? ` · ${firstDate} → ${lastDate}` : ''}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="bg-blue-900 text-blue-300 text-xs px-2 py-0.5 rounded-full font-semibold">DONE</span>
-                          <span className="text-green-600 group-hover:text-secondary transition">→</span>
-                        </div>
-                      </a>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -479,6 +443,46 @@ export default function ClubDashboard() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* ── HISTORY TAB ── */}
+        {tab === 'history' && (
+          <div className="max-w-2xl mx-auto">
+            {tournaments.filter(t => t.status === 'completed').length === 0 ? (
+              <div className="bg-surface border border-green-800 rounded-xl p-10 text-center">
+                <p className="text-4xl mb-3">🏁</p>
+                <p className="text-white font-bold">No completed tournaments yet</p>
+              </div>
+            ) : (
+              <div className="bg-surface border border-green-800 rounded-xl overflow-hidden">
+                <div className="bg-primary px-4 py-3 border-b border-green-800">
+                  <p className="text-green-400 text-sm font-semibold uppercase tracking-widest">🏁 Completed Tournaments</p>
+                </div>
+                <div className="divide-y divide-green-900">
+                  {tournaments.filter(t => t.status === 'completed').map(t => {
+                    const nonGap = t.raceDays?.filter(rd => !rd.isGap) ?? []
+                    const firstDate = nonGap[0]?.date
+                    const lastDate = nonGap[nonGap.length - 1]?.date
+                    return (
+                      <a key={t.id} href={`/${club?.slug}/${t.id}`} target="_blank" rel="noreferrer"
+                        className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-primary transition group">
+                        <div className="min-w-0">
+                          <p className="text-white font-semibold text-sm truncate group-hover:text-secondary transition">{t.name}</p>
+                          <p className="text-green-600 text-xs mt-0.5">
+                            {nonGap.length} days{firstDate && lastDate ? ` · ${firstDate} → ${lastDate}` : ''}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="bg-blue-900 text-blue-300 text-xs px-2 py-0.5 rounded-full font-semibold">DONE</span>
+                          <span className="text-green-600 group-hover:text-secondary transition">→</span>
+                        </div>
+                      </a>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
