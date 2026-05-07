@@ -278,26 +278,28 @@ export default function ClubDashboard() {
           <h1 className="text-xl font-bold text-secondary">{club?.name}</h1>
           <p className="text-green-400 text-xs">{club?.city}</p>
         </div>
-        <button
-          onClick={async () => { await signOut(auth); router.push('/club/login') }}
-          className="absolute right-4 top-1/2 -translate-y-1/2 text-xs bg-red-900 hover:bg-red-700 text-white px-3 py-1.5 rounded transition"
-        >
-          Logout
-        </button>
       </header>
 
       {/* Nav */}
       <nav className="bg-[#292929] px-4 border-b border-green-900">
-        <div className="flex items-center h-10">
-          {(['tournaments', 'members', 'add-time'] as const).map(t => (
-            <button key={t} onClick={() => setTab(t)}
-              className={`px-5 h-full text-sm font-semibold transition border-b-2 ${
-                tab === t ? 'text-white border-[#66bb6a]' : 'text-gray-400 border-transparent hover:text-white'
-              }`}
-            >
-              {t === 'tournaments' ? 'Tournaments' : t === 'members' ? 'Members' : 'Add Time'}
-            </button>
-          ))}
+        <div className="flex items-center justify-between h-10">
+          <div className="flex items-center h-full">
+            {(['tournaments', 'members', 'add-time'] as const).map(t => (
+              <button key={t} onClick={() => setTab(t)}
+                className={`px-5 h-full text-sm font-semibold transition border-b-2 ${
+                  tab === t ? 'text-white border-[#66bb6a]' : 'text-gray-400 border-transparent hover:text-white'
+                }`}
+              >
+                {t === 'tournaments' ? 'Tournaments' : t === 'members' ? 'Members' : 'Add Time'}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={async () => { await signOut(auth); router.push('/club/login') }}
+            className="text-xs bg-red-900 hover:bg-red-700 text-white px-3 py-1.5 rounded transition"
+          >
+            Logout
+          </button>
         </div>
       </nav>
 
