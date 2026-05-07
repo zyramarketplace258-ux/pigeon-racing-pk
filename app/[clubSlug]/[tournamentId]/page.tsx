@@ -194,7 +194,6 @@ export default function TournamentResultsPage() {
 
   const today = new Date().toISOString().split('T')[0]
   const selectedRaceDay = tournament?.raceDays?.find(rd => rd.dayNumber === selectedDay)
-  const hasAnyEntries = dayEntries.some(e => e.hasData)
 
   if (loading) return (
     <main className="min-h-screen bg-[#e8f5e9] flex items-center justify-center">
@@ -215,6 +214,7 @@ export default function TournamentResultsPage() {
   const participantsWithData = dayEntries.filter(e => e.hasData).length
   const totalLanded = dayEntries.reduce((sum, e) => !e.hasData ? sum : sum + e.pigeons.filter(pg => pg.landingTime).length, 0)
   const stillFlying = Math.max(0, participantsWithData * tournament.pigeonCount - totalLanded)
+
 
   return (
     <main className="min-h-screen bg-[#e8f5e9]">
@@ -361,14 +361,6 @@ export default function TournamentResultsPage() {
         {!showTotal && (
           loadingEntries ? (
             <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm p-8 text-center text-[#999]">Loading results...</div>
-          ) : !hasAnyEntries ? (
-            <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm p-10 text-center">
-              <p className="text-3xl mb-3">📋</p>
-              <p className="text-[#1a1a1a] font-bold">No results for Day {selectedDay}</p>
-              <p className="text-[#777] text-sm mt-1">
-                {selectedRaceDay?.date === today ? 'Results will appear once the club submits entries.' : 'No data was submitted for this day.'}
-              </p>
-            </div>
           ) : (
             <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
               <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-2 flex items-center justify-between">
