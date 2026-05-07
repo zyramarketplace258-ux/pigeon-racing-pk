@@ -17,9 +17,9 @@ export const metadata: Metadata = {
   title: "Pakistan Pigeon",
   description: "Pakistan Pigeon Racing Platform — Love for the Loft",
   icons: [
-    { rel: "icon", url: "/icon.jpg", type: "image/jpeg" },
-    { rel: "shortcut icon", url: "/icon.jpg", type: "image/jpeg" },
-    { rel: "apple-touch-icon", url: "/icon.jpg" },
+    { rel: "icon", url: "/pigeon.png", type: "image/png" },
+    { rel: "shortcut icon", url: "/pigeon.png", type: "image/png" },
+    { rel: "apple-touch-icon", url: "/pigeon.png" },
   ],
 };
 
