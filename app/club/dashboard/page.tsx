@@ -381,13 +381,13 @@ export default function ClubDashboard() {
           <div className="max-w-2xl mx-auto space-y-5">
             <div className="bg-surface border border-green-800 rounded-xl p-6">
               <h2 className="text-secondary font-bold mb-4">+ Add Member</h2>
-              <form onSubmit={addMember} className="flex gap-3">
+              <form onSubmit={addMember} className="flex flex-col sm:flex-row gap-3">
                 <input type="text" value={memberName} onChange={e => setMemberName(e.target.value)} required placeholder="Name"
                   className="flex-1 bg-primary border border-green-700 text-white rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-secondary placeholder-green-700" />
                 <input type="text" value={memberArea} onChange={e => setMemberArea(e.target.value)} required placeholder="Area"
                   className="flex-1 bg-primary border border-green-700 text-white rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-secondary placeholder-green-700" />
                 <button type="submit" disabled={addingMember}
-                  className="bg-secondary hover:bg-accent text-dark font-bold px-5 py-2 rounded-lg text-sm transition disabled:opacity-50">
+                  className="bg-secondary hover:bg-accent text-dark font-bold px-5 py-2 rounded-lg text-sm transition disabled:opacity-50 sm:w-auto w-full">
                   Add
                 </button>
               </form>
