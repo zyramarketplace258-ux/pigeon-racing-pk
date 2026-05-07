@@ -216,14 +216,9 @@ export default function HomePage() {
           {/* Center — logo */}
           <img src="/pigeon.png" alt="Pigeon" className="w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-lg" />
           {/* Right — buttons */}
-          <div className="flex gap-2">
-            <Link href="/club/login" className="text-xs text-green-200 border border-green-600 px-2.5 py-1.5 rounded hover:bg-green-800 transition font-medium">
-              Club Login
-            </Link>
-            <Link href="/admin/login" className="text-xs bg-white text-[#1b5e20] px-2.5 py-1.5 rounded font-bold hover:bg-green-50 transition">
-              Admin
-            </Link>
-          </div>
+          <Link href="/club/login" className="text-xs text-green-200 border border-green-600 px-2.5 py-1.5 rounded hover:bg-green-800 transition font-medium">
+            Club Login
+          </Link>
         </div>
       </div>
       <nav className="bg-[#292929] px-4">
