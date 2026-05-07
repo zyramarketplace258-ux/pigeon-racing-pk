@@ -207,15 +207,15 @@ export default function HomePage() {
 
       {/* ── Header ── */}
       <div className="bg-gradient-to-r from-[#1b5e20] to-[#2e7d32] px-4 py-3">
-        <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
+        <div className="max-w-5xl mx-auto relative flex items-center justify-between">
           {/* Left — text */}
           <div>
             <h1 className={`${playfair.className} text-white text-xl sm:text-2xl leading-tight`}>Pakistan Pigeon</h1>
-            <p className="text-green-300 text-xs tracking-widest uppercase">Official Racing Platform</p>
+            <p className="text-green-300 text-xs tracking-widest uppercase">Love for the Loft</p>
           </div>
-          {/* Center — logo */}
-          <img src="/pigeon.png" alt="Pigeon" className="w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-lg" />
-          {/* Right — buttons */}
+          {/* Center — logo (absolutely centered) */}
+          <img src="/pigeon.png" alt="Pigeon" className="absolute left-1/2 -translate-x-1/2 w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-lg" />
+          {/* Right — button */}
           <Link href="/club/login" className="text-xs text-green-200 border border-green-600 px-2.5 py-1.5 rounded hover:bg-green-800 transition font-medium">
             Club Login
           </Link>
