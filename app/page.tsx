@@ -628,15 +628,6 @@ export default function HomePage() {
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-sm text-[#1a1a1a] truncate">{entry.name}</p>
                           <p className="text-[#777] text-xs">{entry.area}</p>
-                          {entry.pigeons.some(pg => pg.landingTime) && (
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {entry.pigeons.filter(pg => pg.landingTime).map((pg, pi) => (
-                                <span key={pi} className="text-[10px] bg-[#e8f5e9] text-[#2e7d32] px-1.5 py-0.5 rounded font-medium leading-tight">
-                                  🐦 {pg.landingTime}
-                                </span>
-                              ))}
-                            </div>
-                          )}
                         </div>
                         <p className="font-bold text-xl text-[#1a1a1a] shrink-0">{formatTimeDisplay(entry.totalHours)}</p>
                       </div>
