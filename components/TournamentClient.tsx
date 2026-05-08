@@ -294,25 +294,21 @@ export default function TournamentClient({
 
         {/* Stats card */}
         <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
-          <div className={`grid ${showTotal ? 'grid-cols-2' : 'grid-cols-3'} divide-x divide-[#e9ecef] text-center`}>
-            <div className="py-3 px-2">
-              <p className="text-[#999] text-xs uppercase tracking-wide">{t('totalDays')}</p>
-              <p className="text-[#1b5e20] font-bold text-2xl">{tournament.totalDays}</p>
-            </div>
+          <div className="grid grid-cols-2 divide-x divide-[#e9ecef] text-center">
             {showTotal ? (
-              <div className="py-3 px-2">
+              <div className="col-span-2 py-2 px-2">
                 <p className="text-[#999] text-xs uppercase tracking-wide">{t('participantsStat')}</p>
-                <p className="text-[#1b5e20] font-bold text-2xl">{participants.length}</p>
+                <p className="text-[#1b5e20] font-bold text-xl">{participants.length}</p>
               </div>
             ) : (
               <>
-                <div className="py-3 px-2">
+                <div className="py-2 px-2">
                   <p className="text-[#999] text-xs uppercase tracking-wide">{t('landedStat')}</p>
-                  <p className="text-[#1b5e20] font-bold text-2xl">{totalLanded}</p>
+                  <p className="text-[#1b5e20] font-bold text-xl">{totalLanded}</p>
                 </div>
-                <div className="py-3 px-2">
+                <div className="py-2 px-2">
                   <p className="text-[#999] text-xs uppercase tracking-wide">{t('flyingStat')}</p>
-                  <p className="text-[#388e3c] font-bold text-2xl">{stillFlying}</p>
+                  <p className="text-[#388e3c] font-bold text-xl">{stillFlying}</p>
                 </div>
               </>
             )}
