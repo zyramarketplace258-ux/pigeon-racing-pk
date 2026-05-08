@@ -9,7 +9,7 @@ import { compareHours, formatTimeDisplay } from '@/lib/timeUtils'
 import Link from 'next/link'
 import { Playfair_Display } from 'next/font/google'
 import { useLanguage } from '@/lib/language-context'
-import { useT, fDayOf, fLanded, fStillFlying, strings } from '@/lib/translations'
+import { useT, fDayOf, fLanded, fStillFlying } from '@/lib/translations'
 
 const playfair = Playfair_Display({ subsets: ['latin'], weight: ['700'], style: ['italic'] })
 
@@ -18,10 +18,7 @@ interface GalleryPost { id: string; imageUrl: string; title: string; description
 interface RaceDay { dayNumber: number; date: string; isGap?: boolean }
 interface PigeonChip { landingTime: string; hoursFlown: string }
 interface TopEntry { name: string; area: string; photoUrl?: string; pigeons: PigeonChip[]; totalHours: string }
-interface HighlightStat {
-  icon: string; label: string; value: string
-  name: string; tournament: string; clubSlug: string; tournamentId: string
-}
+interface TopScorer { rank: number; name: string; area: string; photoUrl?: string; totalHours: string; tournament: string; clubSlug: string; tournamentId: string }
 interface WinnerEntry { rank: number; name: string; landingTime: string; hoursFlown: string; tournament: string; clubSlug: string; tournamentId: string }
 interface ActiveTournament {
   id: string; name: string; pigeonCount: number
@@ -37,7 +34,7 @@ export default function HomePage() {
   const t = useT()
   const [clubs, setClubs] = useState<Club[]>([])
   const [activeTournaments, setActiveTournaments] = useState<ActiveTournament[]>([])
-  const [highlights, setHighlights] = useState<HighlightStat[]>([])
+  const [topScorers, setTopScorers] = useState<TopScorer[]>([])
   const [totalLandedToday, setTotalLandedToday] = useState(0)
   const [totalStillFlying, setTotalStillFlying] = useState(0)
   const [winnerPigeons, setWinnerPigeons] = useState<WinnerEntry[]>([])
@@ -120,8 +117,10 @@ export default function HomePage() {
       infos.forEach(info => {
         liveStore.set(info.base.id, { topEntries: [], totalLanded: 0, totalPigeons: info.enrolledCount * info.base.pigeonCount })
       })
-      type PigeonRec = { name: string; hoursFlown: string; landingTime: string }
+      type PigeonRec = { participantKey: string; name: string; hoursFlown: string; landingTime: string }
       const pigeonStore = new Map<string, PigeonRec[]>()
+      type ScoreRec = { name: string; area: string; photoUrl: string; totalHours: string }
+      const scoreStore = new Map<string, ScoreRec[]>()
 
       const initializedIds = new Set<string>()
 
@@ -133,51 +132,50 @@ export default function HomePage() {
         setActiveTournaments(enriched)
 
         let gLanded = 0, gLots = 0, gStillFlying = 0
-        let topScoreRaw = '', longestFlightRaw = '', lastLandedTime = ''
-        let topScore: HighlightStat | null = null, longestFlight: HighlightStat | null = null, lastLanded: HighlightStat | null = null
-
         enriched.forEach(tr => {
           gLanded += tr.totalLanded
           gLots += tr.totalPigeons / tr.pigeonCount
           gStillFlying += Math.max(0, tr.totalPigeons - tr.totalLanded)
-          if (tr.topEntries[0]?.totalHours && toMins(tr.topEntries[0].totalHours) > toMins(topScoreRaw)) {
-            topScoreRaw = tr.topEntries[0].totalHours
-            topScore = { icon: '🏆', label: strings[lang].topScoreToday, value: formatTimeDisplay(tr.topEntries[0].totalHours), name: tr.topEntries[0].name, tournament: tr.name, clubSlug: tr.clubSlug, tournamentId: tr.id }
-          }
-          tr.topEntries.forEach(entry => {
-            entry.pigeons.forEach(pg => {
-              if (pg.hoursFlown && pg.landingTime) {
-                if (toMins(pg.hoursFlown) > toMins(longestFlightRaw)) {
-                  longestFlightRaw = pg.hoursFlown
-                  longestFlight = { icon: '⏱', label: strings[lang].longestFlight, value: formatTimeDisplay(pg.hoursFlown), name: entry.name, tournament: tr.name, clubSlug: tr.clubSlug, tournamentId: tr.id }
-                }
-                if (pg.landingTime > lastLandedTime) {
-                  lastLandedTime = pg.landingTime
-                  lastLanded = { icon: '🕐', label: strings[lang].lastPigeonLanded, value: pg.landingTime, name: entry.name, tournament: tr.name, clubSlug: tr.clubSlug, tournamentId: tr.id }
-                }
-              }
-            })
-          })
         })
-
         setTotalLandedToday(gLanded)
         setTotalStillFlying(gStillFlying)
         setTotalLotsCompeting(gLots)
-        setHighlights(([topScore, longestFlight, lastLanded] as (HighlightStat | null)[]).filter((h): h is HighlightStat => h !== null))
 
-        // Build cross-tournament winner pigeon ranking
+        // Today's Highlights: top 3 scorers by daily totalHours, across ALL tournaments and clubs
+        const allScorers: (ScoreRec & { tournament: string; clubSlug: string; tournamentId: string })[] = []
+        infos.forEach(info => {
+          ;(scoreStore.get(info.base.id) || []).forEach(s => {
+            allScorers.push({ ...s, tournament: info.base.name, clubSlug: info.base.clubSlug, tournamentId: info.base.id })
+          })
+        })
+        allScorers.sort((a, b) => compareHours(a.totalHours, b.totalHours))
+        const ts: TopScorer[] = []
+        let prevHTS = '', rankTS = 0
+        for (const s of allScorers) {
+          if (s.totalHours !== prevHTS) { rankTS++; if (rankTS > 3) break; prevHTS = s.totalHours }
+          ts.push({ ...s, rank: rankTS })
+        }
+        setTopScorers(ts)
+
+        // Winner Pigeon Today: best individual pigeon per unique participant (dedup by club+id),
+        // so a person winning multiple tournaments still appears only once with their best pigeon
         const allPR: (PigeonRec & { tournament: string; clubSlug: string; tournamentId: string })[] = []
         infos.forEach(info => {
           ;(pigeonStore.get(info.base.id) || []).forEach(p => {
             allPR.push({ ...p, tournament: info.base.name, clubSlug: info.base.clubSlug, tournamentId: info.base.id })
           })
         })
-        allPR.sort((a, b) => compareHours(a.hoursFlown, b.hoursFlown))
+        const bestMap = new Map<string, typeof allPR[0]>()
+        allPR.forEach(p => {
+          const ex = bestMap.get(p.participantKey)
+          if (!ex || compareHours(p.hoursFlown, ex.hoursFlown) < 0) bestMap.set(p.participantKey, p)
+        })
+        const sorted = Array.from(bestMap.values()).sort((a, b) => compareHours(a.hoursFlown, b.hoursFlown))
         const wp: WinnerEntry[] = []
         let prevHW = '', rankW = 0
-        for (const p of allPR) {
+        for (const p of sorted) {
           if (p.hoursFlown !== prevHW) { rankW++; if (rankW > 3) break; prevHW = p.hoursFlown }
-          wp.push({ ...p, rank: rankW })
+          wp.push({ name: p.name, landingTime: p.landingTime, hoursFlown: p.hoursFlown, tournament: p.tournament, clubSlug: p.clubSlug, tournamentId: p.tournamentId, rank: rankW })
         }
         setWinnerPigeons(wp)
       }
@@ -191,6 +189,7 @@ export default function HomePage() {
         if (!info.suffix) {
           liveStore.set(info.base.id, { topEntries: [], totalLanded: 0, totalPigeons: info.enrolledCount * info.base.pigeonCount })
           pigeonStore.set(info.base.id, [])
+          scoreStore.set(info.base.id, [])
           markInit(info.base.id)
           return
         }
@@ -223,20 +222,26 @@ export default function HomePage() {
               top.push(entry)
             }
 
-            // Collect ALL individual pigeon records (every participant, not just top 3) for winner pigeon ranking
+            // Collect all individual pigeon records + daily scores from every participant
             const precs: PigeonRec[] = []
+            const srecs: ScoreRec[] = []
             snapshot.docs
               .filter(d => d.id.endsWith(info.suffix))
               .forEach(d => {
                 const pId = d.id.slice(0, -info.suffix.length)
                 if (!(pId in info.nameMap)) return
-                ;(d.data().pigeons || []).forEach((pg: Record<string, string>) => {
+                const ddata = d.data()
+                if (ddata.totalHours) {
+                  srecs.push({ name: info.nameMap[pId], area: info.areaMap[pId] || '', photoUrl: info.photoMap[pId] || '', totalHours: ddata.totalHours })
+                }
+                ;(ddata.pigeons || []).forEach((pg: Record<string, string>) => {
                   if (pg.hoursFlown && pg.landingTime) {
-                    precs.push({ name: info.nameMap[pId], hoursFlown: pg.hoursFlown, landingTime: pg.landingTime })
+                    precs.push({ participantKey: `${info.base.clubId}::${pId}`, name: info.nameMap[pId], hoursFlown: pg.hoursFlown, landingTime: pg.landingTime })
                   }
                 })
               })
             pigeonStore.set(info.base.id, precs)
+            scoreStore.set(info.base.id, srecs)
 
             liveStore.set(info.base.id, { topEntries: top, totalLanded, totalPigeons: info.enrolledCount * info.base.pigeonCount })
             rebuildAndPublish()
@@ -481,23 +486,32 @@ export default function HomePage() {
         {/* HOME TAB */}
         {activeTab === 'home' && <>
 
-        {!loading && highlights.length > 0 && (
+        {!loading && topScorers.length > 0 && (
           <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden mb-4">
             <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-2">
               <p className="text-green-200 text-xs font-bold uppercase tracking-widest">{t('todaysHighlights')}</p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#f0f0f0]">
-              {highlights.map((h, i) => (
-                <Link key={i} href={`/${h.clubSlug}/${h.tournamentId}`} className="flex items-start gap-3 p-4 hover:bg-[#f9fdf9] transition">
-                  <span className="text-2xl mt-0.5">{h.icon}</span>
-                  <div className="min-w-0">
-                    <p className="text-[#999] text-xs font-bold uppercase tracking-wide mb-0.5">{h.label}</p>
-                    <p className="text-[#1b5e20] font-extrabold text-2xl leading-none">{h.value}</p>
-                    <p className="text-[#222] text-sm font-medium mt-1 truncate">{h.name}</p>
-                    <p className="text-[#999] text-xs truncate">{h.tournament}</p>
-                  </div>
-                </Link>
-              ))}
+            <div className="divide-y divide-[#f0f0f0]">
+              {topScorers.map((s, i) => {
+                const medal = s.rank === 1 ? '🥇' : s.rank === 2 ? '🥈' : '🥉'
+                return (
+                  <Link key={i} href={`/${s.clubSlug}/${s.tournamentId}`} className="flex items-center gap-3 px-4 py-3 hover:bg-[#f9fdf9] transition">
+                    <span className="text-xl shrink-0">{medal}</span>
+                    {s.photoUrl ? (
+                      <img src={s.photoUrl} alt={s.name} className="w-8 h-8 rounded-full object-cover shrink-0" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-[#e8f5e9] flex items-center justify-center shrink-0">
+                        <span className="text-[#2e7d32] text-xs font-bold">{s.name.charAt(0)}</span>
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm text-[#1a1a1a] truncate">{s.name}</p>
+                      <p className="text-[#999] text-xs truncate">{s.tournament}</p>
+                    </div>
+                    <p className="font-bold text-lg text-[#1b5e20] shrink-0">{formatTimeDisplay(s.totalHours)}</p>
+                  </Link>
+                )
+              })}
             </div>
           </div>
         )}
