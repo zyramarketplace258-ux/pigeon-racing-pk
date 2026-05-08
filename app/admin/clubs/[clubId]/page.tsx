@@ -35,6 +35,7 @@ export default function ClubDetailPage() {
   const [club, setClub] = useState<Club | null>(null)
   const [tournaments, setTournaments] = useState<Tournament[]>([])
   const [loading, setLoading] = useState(true)
+  const [tTab, setTTab] = useState<'active' | 'inactive' | 'completed'>('active')
 
   useEffect(() => {
     let unsubscribe: () => void = () => {}
@@ -163,9 +164,7 @@ export default function ClubDetailPage() {
 
         {/* Tournaments */}
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-secondary font-bold text-lg uppercase tracking-widest">
-            🏆 Tournaments
-          </h2>
+          <h2 className="text-secondary font-bold text-lg uppercase tracking-widest">🏆 Tournaments</h2>
           <Link
             href={`/admin/clubs/${clubId}/tournaments/new`}
             className="bg-secondary hover:bg-accent text-dark text-sm font-bold px-4 py-2 rounded-lg transition"
@@ -174,80 +173,106 @@ export default function ClubDetailPage() {
           </Link>
         </div>
 
-        {tournaments.length === 0 ? (
-          <div className="bg-surface border border-green-800 rounded-xl p-10 text-center">
-            <p className="text-4xl mb-3">🏆</p>
-            <p className="text-white font-bold">No tournaments yet</p>
-            <p className="text-green-400 text-sm mt-1 mb-4">Create the first tournament for this club</p>
-            <Link
-              href={`/admin/clubs/${clubId}/tournaments/new`}
-              className="bg-secondary hover:bg-accent text-dark text-sm font-bold px-6 py-2 rounded-lg transition inline-block"
-            >
-              + Create Tournament
-            </Link>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {tournaments.map((t) => (
-              <div key={t.id} className="bg-surface border border-green-800 hover:border-secondary rounded-xl p-5 transition">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
+        {/* Tournament tabs */}
+        <div className="flex gap-1 bg-primary rounded-xl p-1 mb-5 border border-green-900">
+          {(['active', 'inactive', 'completed'] as const).map(s => {
+            const count = tournaments.filter(t => t.status === s).length
+            return (
+              <button
+                key={s}
+                onClick={() => setTTab(s)}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition ${
+                  tTab === s
+                    ? s === 'active' ? 'bg-green-700 text-white' : s === 'completed' ? 'bg-blue-800 text-white' : 'bg-gray-600 text-white'
+                    : 'text-green-500 hover:text-white'
+                }`}
+              >
+                {s === 'active' ? '🟢' : s === 'completed' ? '🏁' : '⏸️'}
+                <span className="capitalize">{s}</span>
+                {count > 0 && (
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${tTab === s ? 'bg-white bg-opacity-20 text-white' : 'bg-green-900 text-green-400'}`}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+
+        {(() => {
+          const filtered = tournaments.filter(t => t.status === tTab)
+          if (filtered.length === 0) return (
+            <div className="bg-surface border border-green-800 rounded-xl p-10 text-center">
+              <p className="text-4xl mb-3">{tTab === 'active' ? '🟢' : tTab === 'completed' ? '🏁' : '⏸️'}</p>
+              <p className="text-white font-bold">No {tTab} tournaments</p>
+              {tTab === 'inactive' && (
+                <Link href={`/admin/clubs/${clubId}/tournaments/new`} className="bg-secondary hover:bg-accent text-dark text-sm font-bold px-6 py-2 rounded-lg transition inline-block mt-4">
+                  + Create Tournament
+                </Link>
+              )}
+            </div>
+          )
+          return (
+            <div className="space-y-4">
+              {filtered.map((t) => (
+                <div key={t.id} className="bg-surface border border-green-800 hover:border-secondary rounded-xl p-5 transition">
+                  <div className="flex items-center gap-3 mb-3">
                     <h3 className="text-white font-bold text-base">{t.name}</h3>
                     <span className={`text-xs px-2 py-1 rounded-full font-semibold ${statusBadge(t.status)}`}>
                       {t.status.toUpperCase()}
                     </span>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  <div className="bg-primary rounded-lg p-3 text-center">
-                    <p className="text-green-400 text-xs">Total Days</p>
-                    <p className="text-white font-bold text-lg">{t.totalDays}</p>
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    <div className="bg-primary rounded-lg p-3 text-center">
+                      <p className="text-green-400 text-xs">Total Days</p>
+                      <p className="text-white font-bold text-lg">{t.totalDays}</p>
+                    </div>
+                    <div className="bg-primary rounded-lg p-3 text-center">
+                      <p className="text-green-400 text-xs">Start Time</p>
+                      <p className="text-white font-bold text-lg">{t.defaultStartTime}</p>
+                    </div>
+                    <div className="bg-primary rounded-lg p-3 text-center">
+                      <p className="text-green-400 text-xs">Pigeons</p>
+                      <p className="text-white font-bold text-lg">{t.pigeonCount}</p>
+                    </div>
                   </div>
-                  <div className="bg-primary rounded-lg p-3 text-center">
-                    <p className="text-green-400 text-xs">Start Time</p>
-                    <p className="text-white font-bold text-lg">{t.defaultStartTime}</p>
-                  </div>
-                  <div className="bg-primary rounded-lg p-3 text-center">
-                    <p className="text-green-400 text-xs">Pigeons</p>
-                    <p className="text-white font-bold text-lg">{t.pigeonCount}</p>
-                  </div>
-                </div>
 
-                <div className="flex gap-2">
-                  {t.status !== 'active' && t.status !== 'completed' && (
-                    <button
-                      onClick={() => setActiveTournament(t.id)}
-                      className="bg-green-700 hover:bg-green-600 text-white text-xs px-4 py-2 rounded-lg transition"
+                  <div className="flex gap-2 flex-wrap">
+                    {t.status === 'inactive' && (
+                      <button
+                        onClick={() => setActiveTournament(t.id)}
+                        className="bg-green-700 hover:bg-green-600 text-white text-xs px-4 py-2 rounded-lg transition"
+                      >
+                        Set Active
+                      </button>
+                    )}
+                    {t.status === 'active' && (
+                      <button
+                        onClick={() => completeTournament(t.id)}
+                        className="bg-blue-800 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg transition"
+                      >
+                        Mark Completed
+                      </button>
+                    )}
+                    <Link
+                      href={`/admin/clubs/${clubId}/tournaments/${t.id}`}
+                      className="bg-primary hover:bg-green-800 text-white text-xs px-4 py-2 rounded-lg transition"
                     >
-                      Set Active
-                    </button>
-                  )}
-                  {t.status === 'active' && (
+                      Manage
+                    </Link>
                     <button
-                      onClick={() => completeTournament(t.id)}
-                      className="bg-blue-800 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg transition"
+                      onClick={() => deleteTournament(t.id, t.name)}
+                      className="bg-red-900 hover:bg-red-700 text-white text-xs px-4 py-2 rounded-lg transition ml-auto"
                     >
-                      Mark Completed
+                      Delete
                     </button>
-                  )}
-                  <Link
-                    href={`/admin/clubs/${clubId}/tournaments/${t.id}`}
-                    className="bg-primary hover:bg-green-800 text-white text-xs px-4 py-2 rounded-lg transition"
-                  >
-                    Manage
-                  </Link>
-                  <button
-                    onClick={() => deleteTournament(t.id, t.name)}
-                    className="bg-red-900 hover:bg-red-700 text-white text-xs px-4 py-2 rounded-lg transition ml-auto"
-                  >
-                    Delete
-                  </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )
+        })()}
       </div>
     </main>
   )
