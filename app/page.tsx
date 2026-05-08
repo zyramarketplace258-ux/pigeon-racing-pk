@@ -2,18 +2,18 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
-import { collection, getDocs, query, where, onSnapshot } from 'firebase/firestore'
+import { collection, getDocs, query, where, onSnapshot, orderBy } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { compareHours, formatTimeDisplay } from '@/lib/timeUtils'
 import Link from 'next/link'
 import { Playfair_Display } from 'next/font/google'
 import { useLanguage } from '@/lib/language-context'
 import { useT, fDayOf, fLanded, fStillFlying, strings } from '@/lib/translations'
-import { GALLERY_POSTS } from '@/lib/gallery-data'
 
 const playfair = Playfair_Display({ subsets: ['latin'], weight: ['700'], style: ['italic'] })
 
 interface Club { id: string; name: string; slug: string; city: string; logoUrl?: string }
+interface GalleryPost { id: string; imageUrl: string; title: string; description: string; postedBy: string; createdAt?: { seconds: number } }
 interface RaceDay { dayNumber: number; date: string; isGap?: boolean }
 interface PigeonChip { landingTime: string; hoursFlown: string }
 interface TopEntry { name: string; area: string; pigeons: PigeonChip[]; totalHours: string }
@@ -40,6 +40,8 @@ export default function HomePage() {
   const [totalLotsCompeting, setTotalLotsCompeting] = useState(0)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'home' | 'clubs' | 'gallery'>('home')
+  const [galleryPosts, setGalleryPosts] = useState<GalleryPost[]>([])
+  const [galleryLoading, setGalleryLoading] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -194,6 +196,17 @@ export default function HomePage() {
     return () => { active = false; unsubscribers.forEach(u => u()) }
   }, [lang])
 
+  useEffect(() => {
+    if (activeTab !== 'gallery') return
+    setGalleryLoading(true)
+    getDocs(query(collection(db, 'gallery'), orderBy('createdAt', 'desc')))
+      .then(snap => {
+        setGalleryPosts(snap.docs.map(d => ({ id: d.id, ...d.data() })) as GalleryPost[])
+        setGalleryLoading(false)
+      })
+      .catch(() => setGalleryLoading(false))
+  }, [activeTab])
+
   const rankRingClass = (i: number) => {
     if (i === 0) return 'text-white shadow-md'
     if (i === 1) return 'text-white shadow'
@@ -301,7 +314,19 @@ export default function HomePage() {
 
         {/* GALLERY TAB */}
         {activeTab === 'gallery' && (
-          GALLERY_POSTS.length === 0 ? (
+          galleryLoading ? (
+            <div className="space-y-4">
+              {[1, 2].map(i => (
+                <div key={i} className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden animate-pulse">
+                  <div className="h-48 bg-green-100" />
+                  <div className="p-4 space-y-2">
+                    <div className="h-3 bg-green-100 rounded w-2/3" />
+                    <div className="h-2.5 bg-green-100 rounded w-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : galleryPosts.length === 0 ? (
             <div className="bg-white rounded-xl border border-[#d4edda] p-10 text-center shadow-sm">
               <p className="text-4xl mb-3">🖼️</p>
               <p className="text-gray-700 font-bold">{t('noGalleryPosts')}</p>
@@ -309,20 +334,24 @@ export default function HomePage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {GALLERY_POSTS.map(post => (
+              {galleryPosts.map(post => (
                 <div key={post.id} className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
                   <img
-                    src={post.image}
+                    src={post.imageUrl}
                     alt={post.title}
                     className="w-full object-cover max-h-72"
                     onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
                   />
                   <div className="p-4">
                     <p className="text-[#1b5e20] font-bold text-base mb-1">{post.title}</p>
-                    <p className="text-[#444] text-sm leading-relaxed">{post.description}</p>
+                    {post.description && <p className="text-[#444] text-sm leading-relaxed">{post.description}</p>}
                     <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#f0f0f0]">
                       <p className="text-[#888] text-xs font-medium">{post.postedBy}</p>
-                      <p className="text-[#aaa] text-xs" dir="ltr">{post.date}</p>
+                      {post.createdAt && (
+                        <p className="text-[#aaa] text-xs" dir="ltr">
+                          {new Date(post.createdAt.seconds * 1000).toLocaleDateString()}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
