@@ -29,10 +29,8 @@ interface EntryRow {
 }
 
 async function fetchEntries(
-  clubId: string, tData: Tournament, allParticipants: Participant[], today: string
-): Promise<{ entryRows: EntryRow[]; dayNum: number | null }> {
-  const todayRaceDay = tData.raceDays?.find(rd => rd.date === today && !rd.isGap)
-  const dayNum = todayRaceDay?.dayNumber ?? null
+  clubId: string, tData: Tournament, allParticipants: Participant[], dayNum: number | null
+): Promise<EntryRow[]> {
   const pList = (tData.participantIds != null
     ? allParticipants.filter(p => tData.participantIds!.includes(p.id))
     : allParticipants).filter(p => !p.disabled)
@@ -51,7 +49,7 @@ async function fetchEntries(
       hadData
     }
   }))
-  return { entryRows, dayNum }
+  return entryRows
 }
 
 export default function ClubDashboard() {
@@ -71,6 +69,7 @@ export default function ClubDashboard() {
   const [tournament, setTournament] = useState<Tournament | null>(null)
   const [participants, setParticipants] = useState<Participant[]>([])
   const [todayDay, setTodayDay] = useState<number | null>(null)
+  const [selectedDay, setSelectedDay] = useState<number | null>(null)
   const [todayDate, setTodayDate] = useState('')
   const [entries, setEntries] = useState<EntryRow[]>([])
   const [saving, setSaving] = useState(false)
@@ -140,14 +139,21 @@ export default function ClubDashboard() {
             const tData = activeList[0]
             setTournament(tData)
             setEntriesLoading(true)
-            const { entryRows, dayNum } = await fetchEntries(clubData.id, tData, participantsRef.current, today)
+            const nonGap = tData.raceDays?.filter(rd => !rd.isGap) ?? []
+            const todayRD = nonGap.find(rd => rd.date === today)
+            const todayNum = todayRD?.dayNumber ?? null
+            const accessible = nonGap.filter(rd => rd.date <= today)
+            const defaultDayNum = todayNum ?? accessible[accessible.length - 1]?.dayNumber ?? null
+            setTodayDay(todayNum)
+            setSelectedDay(defaultDayNum)
+            const entryRows = await fetchEntries(clubData.id, tData, participantsRef.current, defaultDayNum)
             if (!active) return
-            setTodayDay(dayNum)
             setEntries(entryRows)
             setEntriesLoading(false)
           } else {
             setTournament(null)
             setTodayDay(null)
+            setSelectedDay(null)
             setEntries([])
           }
 
@@ -203,33 +209,49 @@ export default function ClubDashboard() {
     if (!selected) return
     setTournament(selected); setSaved(false); setEntriesLoading(true)
     const today = new Date().toISOString().split('T')[0]
-    const { entryRows, dayNum } = await fetchEntries(club.id, selected, participants, today)
-    setTodayDay(dayNum); setEntries(entryRows); setEntriesLoading(false)
+    const nonGap = selected.raceDays?.filter(rd => !rd.isGap) ?? []
+    const todayRD = nonGap.find(rd => rd.date === today)
+    const todayNum = todayRD?.dayNumber ?? null
+    const accessible = nonGap.filter(rd => rd.date <= today)
+    const defaultDayNum = todayNum ?? accessible[accessible.length - 1]?.dayNumber ?? null
+    setTodayDay(todayNum)
+    setSelectedDay(defaultDayNum)
+    const rows = await fetchEntries(club.id, selected, participants, defaultDayNum)
+    setEntries(rows); setEntriesLoading(false)
+  }
+
+  const handleDaySelect = async (dayNum: number) => {
+    if (!club || !tournament) return
+    setSelectedDay(dayNum); setSaved(false); setEntriesLoading(true)
+    const rows = await fetchEntries(club.id, tournament, participants, dayNum)
+    setEntries(rows); setEntriesLoading(false)
   }
 
   const saveEntries = async () => {
-    if (!club || !tournament || !todayDay) return
+    if (!club || !tournament || !selectedDay) return
+    const selectedRD = tournament.raceDays?.find(rd => rd.dayNumber === selectedDay)
+    const selectedDate = selectedRD?.date ?? ''
     setSaving(true)
     try {
       const otherActive = activeTournaments.filter(t =>
-        t.id !== tournament.id && t.raceDays?.some(rd => rd.date === todayDate)
+        t.id !== tournament.id && t.raceDays?.some(rd => rd.date === selectedDate)
       )
       for (const entry of entries) {
         if (!entry.pigeons.some(pg => pg.landingTime)) {
           if (entry.hadData) {
-            await deleteDoc(doc(db, 'clubs', club.id, 'tournaments', tournament.id, 'entries', `${entry.participantId}_day${todayDay}`))
+            await deleteDoc(doc(db, 'clubs', club.id, 'tournaments', tournament.id, 'entries', `${entry.participantId}_day${selectedDay}`))
           }
           continue
         }
-        await setDoc(doc(db, 'clubs', club.id, 'tournaments', tournament.id, 'entries', `${entry.participantId}_day${todayDay}`), {
-          participantId: entry.participantId, dayNumber: todayDay,
+        await setDoc(doc(db, 'clubs', club.id, 'tournaments', tournament.id, 'entries', `${entry.participantId}_day${selectedDay}`), {
+          participantId: entry.participantId, dayNumber: selectedDay,
           startTime: entry.startTime, pigeons: entry.pigeons,
           totalHours: entry.totalHours, pigeonCount: tournament.pigeonCount,
           savedAt: new Date().toISOString(),
         })
         for (const otherT of otherActive) {
           if (otherT.participantIds?.length && !otherT.participantIds.includes(entry.participantId)) continue
-          const otherRD = otherT.raceDays.find(rd => rd.date === todayDate)
+          const otherRD = otherT.raceDays.find(rd => rd.date === selectedDate)
           if (!otherRD) continue
           const otherRef = doc(db, 'clubs', club.id, 'tournaments', otherT.id, 'entries', `${entry.participantId}_day${otherRD.dayNumber}`)
           const otherSnap = await getDoc(otherRef)
@@ -620,7 +642,7 @@ export default function ClubDashboard() {
           ) : (
             <>
               {/* Tournament selector */}
-              <div className="bg-surface border border-secondary rounded-xl p-4 mb-5">
+              <div className="bg-surface border border-secondary rounded-xl p-4 mb-4">
                 <div className="mb-1">
                   {activeTournaments.length > 1 ? (
                     <select value={tournament?.id} onChange={e => handleTournamentChange(e.target.value)}
@@ -633,7 +655,15 @@ export default function ClubDashboard() {
                 </div>
                 <div className="flex items-center justify-between mt-1">
                   <p className="text-green-400 text-sm">
-                    {todayDay ? `Day ${tournament?.raceDays?.filter(r => !r.isGap && r.dayNumber <= todayDay).length ?? todayDay} · ${todayDate}` : `Today (${todayDate}) is not a race day`}
+                    {selectedDay
+                      ? (() => {
+                          const rd = tournament?.raceDays?.find(r => r.dayNumber === selectedDay)
+                          const dispNum = tournament?.raceDays?.filter(r => !r.isGap && r.dayNumber <= selectedDay).length ?? selectedDay
+                          const isToday = rd?.date === todayDate
+                          return `Day ${dispNum} · ${rd?.date ?? ''}${isToday ? ' · Today' : ''}`
+                        })()
+                      : 'No race days accessible yet'
+                    }
                   </p>
                   {tournament?.defaultEndTime && (
                     <p className="text-green-600 text-xs">Cutoff: {tournament.defaultEndTime}</p>
@@ -641,16 +671,48 @@ export default function ClubDashboard() {
                 </div>
               </div>
 
+              {/* Day selector — past + today only */}
+              {(() => {
+                const accessibleDays = tournament?.raceDays?.filter(rd => !rd.isGap && rd.date <= todayDate) ?? []
+                if (accessibleDays.length === 0) return null
+                return (
+                  <div className="bg-surface border border-green-800 rounded-xl overflow-hidden mb-4">
+                    <div className="overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+                      <div className="flex p-2.5 gap-2 w-max">
+                        {accessibleDays.map(rd => {
+                          const isToday = rd.date === todayDate
+                          const isSelected = rd.dayNumber === selectedDay
+                          const dispNum = tournament!.raceDays.filter(r => !r.isGap && r.dayNumber <= rd.dayNumber).length
+                          return (
+                            <button key={rd.dayNumber} onClick={() => handleDaySelect(rd.dayNumber)}
+                              className={`px-3 py-2 rounded-lg text-xs font-semibold transition text-center min-w-[58px] border ${
+                                isSelected ? 'bg-secondary text-dark border-secondary'
+                                : isToday ? 'bg-primary border-secondary text-secondary'
+                                : 'bg-primary border-green-700 text-green-300 hover:border-secondary'
+                              }`}>
+                              <span className="block font-bold">D{dispNum}</span>
+                              <span className={`block text-xs mt-0.5 ${isSelected ? 'opacity-60' : isToday ? 'text-secondary' : 'text-green-600'}`}>{rd.date.slice(5)}</span>
+                              {isToday && !isSelected && <span className="block text-secondary text-xs leading-none">●</span>}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
+
               {timeError && (
                 <div className="bg-red-900 border border-red-600 text-red-200 px-4 py-2 rounded-lg mb-4 text-sm">
                   ⚠️ {timeError}
                 </div>
               )}
 
-              {!todayDay ? (
+              {!selectedDay ? (
                 <div className="bg-surface border border-green-800 rounded-xl p-8 text-center">
                   <p className="text-3xl mb-3">📅</p>
-                  <p className="text-white font-bold">No Race Today</p>
+                  <p className="text-white font-bold">No Race Days Yet</p>
+                  <p className="text-green-400 text-sm mt-1">Race days will appear here once they begin.</p>
                 </div>
               ) : entriesLoading ? (
                 <div className="bg-surface border border-green-800 rounded-xl p-8 text-center">
