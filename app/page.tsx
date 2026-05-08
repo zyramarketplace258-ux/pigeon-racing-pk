@@ -22,6 +22,7 @@ interface HighlightStat {
   icon: string; label: string; value: string
   name: string; tournament: string; clubSlug: string; tournamentId: string
 }
+interface WinnerEntry { rank: number; name: string; landingTime: string; hoursFlown: string; tournament: string; clubSlug: string; tournamentId: string }
 interface ActiveTournament {
   id: string; name: string; pigeonCount: number
   defaultStartTime: string; defaultEndTime: string
@@ -39,6 +40,7 @@ export default function HomePage() {
   const [highlights, setHighlights] = useState<HighlightStat[]>([])
   const [totalLandedToday, setTotalLandedToday] = useState(0)
   const [totalStillFlying, setTotalStillFlying] = useState(0)
+  const [winnerPigeons, setWinnerPigeons] = useState<WinnerEntry[]>([])
   const [totalLotsCompeting, setTotalLotsCompeting] = useState(0)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'home' | 'clubs' | 'gallery'>('home')
@@ -118,6 +120,8 @@ export default function HomePage() {
       infos.forEach(info => {
         liveStore.set(info.base.id, { topEntries: [], totalLanded: 0, totalPigeons: info.enrolledCount * info.base.pigeonCount })
       })
+      type PigeonRec = { name: string; hoursFlown: string; landingTime: string }
+      const pigeonStore = new Map<string, PigeonRec[]>()
 
       const initializedIds = new Set<string>()
 
@@ -160,6 +164,22 @@ export default function HomePage() {
         setTotalStillFlying(gStillFlying)
         setTotalLotsCompeting(gLots)
         setHighlights(([topScore, longestFlight, lastLanded] as (HighlightStat | null)[]).filter((h): h is HighlightStat => h !== null))
+
+        // Build cross-tournament winner pigeon ranking
+        const allPR: (PigeonRec & { tournament: string; clubSlug: string; tournamentId: string })[] = []
+        infos.forEach(info => {
+          ;(pigeonStore.get(info.base.id) || []).forEach(p => {
+            allPR.push({ ...p, tournament: info.base.name, clubSlug: info.base.clubSlug, tournamentId: info.base.id })
+          })
+        })
+        allPR.sort((a, b) => compareHours(a.hoursFlown, b.hoursFlown))
+        const wp: WinnerEntry[] = []
+        let prevHW = '', rankW = 0
+        for (const p of allPR) {
+          if (p.hoursFlown !== prevHW) { rankW++; if (rankW > 3) break; prevHW = p.hoursFlown }
+          wp.push({ ...p, rank: rankW })
+        }
+        setWinnerPigeons(wp)
       }
 
       const markInit = (id: string) => {
@@ -168,7 +188,12 @@ export default function HomePage() {
       }
 
       infos.forEach(info => {
-        if (!info.suffix) { liveStore.set(info.base.id, { topEntries: [], totalLanded: 0, totalPigeons: info.enrolledCount * info.base.pigeonCount }); markInit(info.base.id); return }
+        if (!info.suffix) {
+          liveStore.set(info.base.id, { topEntries: [], totalLanded: 0, totalPigeons: info.enrolledCount * info.base.pigeonCount })
+          pigeonStore.set(info.base.id, [])
+          markInit(info.base.id)
+          return
+        }
 
         const unsub = onSnapshot(
           collection(db, 'clubs', info.base.clubId, 'tournaments', info.base.id, 'entries'),
@@ -197,6 +222,22 @@ export default function HomePage() {
               if (entry.totalHours !== prevH) { rankCount++; if (rankCount > 3) break; prevH = entry.totalHours }
               top.push(entry)
             }
+
+            // Collect ALL individual pigeon records (every participant, not just top 3) for winner pigeon ranking
+            const precs: PigeonRec[] = []
+            snapshot.docs
+              .filter(d => d.id.endsWith(info.suffix))
+              .forEach(d => {
+                const pId = d.id.slice(0, -info.suffix.length)
+                if (!(pId in info.nameMap)) return
+                ;(d.data().pigeons || []).forEach((pg: Record<string, string>) => {
+                  if (pg.hoursFlown && pg.landingTime) {
+                    precs.push({ name: info.nameMap[pId], hoursFlown: pg.hoursFlown, landingTime: pg.landingTime })
+                  }
+                })
+              })
+            pigeonStore.set(info.base.id, precs)
+
             liveStore.set(info.base.id, { topEntries: top, totalLanded, totalPigeons: info.enrolledCount * info.base.pigeonCount })
             rebuildAndPublish()
             markInit(info.base.id)
@@ -457,6 +498,36 @@ export default function HomePage() {
                   </div>
                 </Link>
               ))}
+            </div>
+          </div>
+        )}
+
+        {!loading && winnerPigeons.length > 0 && (
+          <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden mb-4">
+            <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-2">
+              <p className="text-green-200 text-xs font-bold uppercase tracking-widest">🏆 Winner Pigeon Today</p>
+            </div>
+            <div className="divide-y divide-[#f0f0f0]">
+              {winnerPigeons.map((w, i) => {
+                const medal = w.rank === 1 ? '🥇' : w.rank === 2 ? '🥈' : '🥉'
+                const rankLabel = w.rank === 1 ? '1st' : w.rank === 2 ? '2nd' : '3rd'
+                return (
+                  <Link key={i} href={`/${w.clubSlug}/${w.tournamentId}`} className="flex items-center gap-3 px-4 py-3 hover:bg-[#f9fdf9] transition">
+                    <div className="shrink-0 text-center w-10">
+                      <span className="text-xl">{medal}</span>
+                      <p className="text-[10px] font-bold text-[#888] leading-none mt-0.5">{rankLabel}</p>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm text-[#1a1a1a] truncate">{w.name}</p>
+                      <p className="text-[#999] text-xs truncate">{w.tournament}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="font-bold text-base text-[#1b5e20]">{formatTimeDisplay(w.hoursFlown)}</p>
+                      <p className="text-[#888] text-xs">landed {w.landingTime}</p>
+                    </div>
+                  </Link>
+                )
+              })}
             </div>
           </div>
         )}

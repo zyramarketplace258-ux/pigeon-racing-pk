@@ -77,6 +77,13 @@ export default function ClubDetailPage() {
     ))
   }
 
+  const setInactiveTournament = async (tournamentId: string) => {
+    await updateDoc(doc(db, 'clubs', clubId, 'tournaments', tournamentId), { status: 'inactive' })
+    setTournaments(prev => prev.map(t =>
+      t.id === tournamentId ? { ...t, status: 'inactive' } : t
+    ))
+  }
+
   const completeTournament = async (tournamentId: string) => {
     await updateDoc(doc(db, 'clubs', clubId, 'tournaments', tournamentId), { status: 'completed' })
     setTournaments(prev => prev.map(t =>
@@ -248,12 +255,20 @@ export default function ClubDetailPage() {
                       </button>
                     )}
                     {t.status === 'active' && (
-                      <button
-                        onClick={() => completeTournament(t.id)}
-                        className="bg-blue-800 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg transition"
-                      >
-                        Mark Completed
-                      </button>
+                      <>
+                        <button
+                          onClick={() => setInactiveTournament(t.id)}
+                          className="bg-gray-600 hover:bg-gray-500 text-white text-xs px-4 py-2 rounded-lg transition"
+                        >
+                          Set Inactive
+                        </button>
+                        <button
+                          onClick={() => completeTournament(t.id)}
+                          className="bg-blue-800 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg transition"
+                        >
+                          Mark Completed
+                        </button>
+                      </>
                     )}
                     <Link
                       href={`/admin/clubs/${clubId}/tournaments/${t.id}`}
