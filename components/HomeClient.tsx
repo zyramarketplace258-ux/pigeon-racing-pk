@@ -254,14 +254,14 @@ export default function HomeClient({ initialData, tInfos }: Props) {
       {/* Header */}
       <div className="relative overflow-hidden bg-gradient-to-r from-[#1b5e20] to-[#2e7d32] px-4 py-3">
         {([
-          { delay: '0s',   dur: '7s',   top: 10, size: 22 },
-          { delay: '2.8s', dur: '5.5s', top: 40, size: 13 },
-          { delay: '1.2s', dur: '9s',   top: 6,  size: 17 },
-          { delay: '4s',   dur: '6s',   top: 44, size: 11 },
-          { delay: '0.6s', dur: '8s',   top: 26, size: 19 },
-          { delay: '3.3s', dur: '7.5s', top: 14, size: 14 },
-          { delay: '1.9s', dur: '10s',  top: 48, size: 16 },
-          { delay: '5s',   dur: '6.5s', top: 4,  size: 21 },
+          { delay: '0s',   dur: '18s', top: 10, size: 22 },
+          { delay: '5s',   dur: '14s', top: 40, size: 13 },
+          { delay: '2.5s', dur: '22s', top: 6,  size: 17 },
+          { delay: '9s',   dur: '16s', top: 44, size: 11 },
+          { delay: '1s',   dur: '20s', top: 26, size: 19 },
+          { delay: '7s',   dur: '18s', top: 14, size: 14 },
+          { delay: '4s',   dur: '24s', top: 48, size: 16 },
+          { delay: '11s',  dur: '15s', top: 4,  size: 21 },
         ] as { delay: string; dur: string; top: number; size: number }[]).map((p, i) => (
           <span key={i} className="pigeon-fly" style={{ top: p.top, animationDuration: p.dur, animationDelay: p.delay, fontSize: p.size, opacity: 0.18 + (i % 4) * 0.06, zIndex: 0 }}>
             🕊️
