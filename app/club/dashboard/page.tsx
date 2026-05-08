@@ -1,15 +1,17 @@
 'use client'
 export const dynamic = 'force-dynamic'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import {
   collection, query, where, getDocs, doc, setDoc, getDoc,
   addDoc, deleteDoc, updateDoc, serverTimestamp
 } from 'firebase/firestore'
-import { auth, db } from '@/lib/firebase'
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { auth, db, storage } from '@/lib/firebase'
 import { calculateHoursFlown, calculateGrandTotal, formatTimeDisplay } from '@/lib/timeUtils'
+import ProfileCropModal from '@/components/ProfileCropModal'
 
 interface Club { id: string; name: string; slug: string; city: string; logoUrl?: string }
 interface RaceDay { dayNumber: number; date: string; isGap?: boolean }
@@ -75,6 +77,13 @@ export default function ClubDashboard() {
   const [assignedIds, setAssignedIds] = useState<Set<string>>(new Set())
   const [savingAssignment, setSavingAssignment] = useState(false)
   const [savedAssignment, setSavedAssignment] = useState(false)
+
+  // Photo upload / crop
+  const [cropFile, setCropFile] = useState<File | null>(null)
+  const [cropTarget, setCropTarget] = useState<'logo' | string | null>(null)
+  const [photoUploading, setPhotoUploading] = useState(false)
+  const logoInputRef = useRef<HTMLInputElement>(null)
+  const memberInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
   useEffect(() => {
     let unsubscribe: () => void = () => {}
@@ -269,6 +278,29 @@ export default function ClubDashboard() {
     setSavingAssignment(false); setSavedAssignment(true)
   }
 
+  const handleCropSave = async (blob: Blob) => {
+    if (!club || !cropTarget) return
+    setPhotoUploading(true)
+    try {
+      if (cropTarget === 'logo') {
+        const sRef = storageRef(storage, `clubs/${club.id}/logo.jpg`)
+        await uploadBytes(sRef, blob)
+        const url = await getDownloadURL(sRef)
+        await updateDoc(doc(db, 'clubs', club.id), { logoUrl: url })
+        setClub(prev => prev ? { ...prev, logoUrl: url } : prev)
+      } else {
+        const sRef = storageRef(storage, `clubs/${club.id}/participants/${cropTarget}.jpg`)
+        await uploadBytes(sRef, blob)
+        const url = await getDownloadURL(sRef)
+        await updateDoc(doc(db, 'clubs', club.id, 'participants', cropTarget), { photoUrl: url })
+        setParticipants(prev => prev.map(p => p.id === cropTarget ? { ...p, photoUrl: url } : p))
+      }
+    } finally {
+      setCropFile(null)
+      setCropTarget(null)
+      setPhotoUploading(false)
+    }
+  }
 
   if (loading) return (
     <main className="min-h-screen bg-dark flex items-center justify-center">
@@ -283,9 +315,16 @@ export default function ClubDashboard() {
       <header className="bg-primary border-b border-secondary px-4 py-3 relative">
         <a href="/" className="absolute left-4 top-1/2 -translate-y-1/2 text-green-400 hover:text-secondary text-xs font-medium transition">← Home</a>
         <div className="text-center">
-          <img src={club?.logoUrl || '/pigeon.png'} alt="Logo" className="w-10 h-10 object-cover rounded-full drop-shadow mx-auto border border-green-700" />
+          <div className="relative inline-block cursor-pointer group" onClick={() => logoInputRef.current?.click()}>
+            <img src={club?.logoUrl || '/pigeon.png'} alt="Logo" className="w-10 h-10 object-cover rounded-full drop-shadow border border-green-700" />
+            <div className="absolute inset-0 rounded-full bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
+              <span className="text-white text-xs">📷</span>
+            </div>
+          </div>
           <h1 className="text-sm font-bold text-secondary leading-tight mt-0.5">{club?.name}</h1>
         </div>
+        <input ref={logoInputRef} type="file" accept="image/*" className="hidden"
+          onChange={e => { const f = e.target.files?.[0]; if (f) { setCropTarget('logo'); setCropFile(f) }; e.target.value = '' }} />
         <button
           onClick={async () => { await signOut(auth); router.push('/club/login') }}
           className="absolute right-4 top-1/2 -translate-y-1/2 text-xs bg-red-900 hover:bg-red-700 text-white px-3 py-1.5 rounded transition"
@@ -422,9 +461,22 @@ export default function ClubDashboard() {
                   {participants.map((p, i) => (
                     <div key={p.id} className={`flex items-center gap-3 px-4 py-3 transition ${p.disabled ? 'opacity-50' : 'hover:bg-primary'}`}>
                       <span className="text-green-600 text-xs w-5 shrink-0">{i + 1}</span>
-                      <div className={`w-10 h-10 rounded-full border flex items-center justify-center font-bold text-sm shrink-0 ${p.disabled ? 'bg-primary border-green-900 text-green-700' : 'bg-primary border-green-700 text-secondary'}`}>
-                        {p.name.charAt(0)}
+                      <div
+                        className="relative w-10 h-10 rounded-full border overflow-hidden shrink-0 cursor-pointer group"
+                        style={{ borderColor: p.disabled ? '#1a3a1a' : '#4ade80' }}
+                        onClick={() => { setCropTarget(p.id); memberInputRefs.current[p.id]?.click() }}
+                      >
+                        {p.photoUrl
+                          ? <img src={p.photoUrl} alt={p.name} className="w-full h-full object-cover" />
+                          : <div className={`w-full h-full flex items-center justify-center font-bold text-sm ${p.disabled ? 'bg-primary text-green-700' : 'bg-primary text-secondary'}`}>{p.name.charAt(0)}</div>
+                        }
+                        <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition rounded-full">
+                          <span className="text-white text-xs">📷</span>
+                        </div>
                       </div>
+                      <input type="file" accept="image/*" className="hidden"
+                        ref={el => { memberInputRefs.current[p.id] = el }}
+                        onChange={e => { const f = e.target.files?.[0]; if (f) setCropFile(f); e.target.value = '' }} />
                       <div className="flex-1 min-w-0">
                         <p className={`font-semibold text-sm truncate ${p.disabled ? 'text-green-700 line-through' : 'text-white'}`}>{p.name}</p>
                         <p className="text-green-600 text-xs">{p.area}{p.disabled ? ' · Disabled' : ''}</p>
@@ -619,6 +671,23 @@ export default function ClubDashboard() {
 
       </div>
 
+      {/* Profile crop modal */}
+      {cropFile && cropTarget && (
+        <ProfileCropModal
+          file={cropFile}
+          onSave={handleCropSave}
+          onCancel={() => { setCropFile(null); setCropTarget(null) }}
+        />
+      )}
+
+      {/* Upload in-progress overlay */}
+      {photoUploading && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="bg-surface border border-green-700 rounded-xl px-8 py-5 text-center">
+            <p className="text-green-400 text-sm">Uploading photo...</p>
+          </div>
+        </div>
+      )}
 
     </main>
   )

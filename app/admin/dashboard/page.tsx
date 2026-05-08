@@ -271,7 +271,9 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {galleryPosts.map(post => (
                   <div key={post.id} className="bg-surface border border-green-800 rounded-xl overflow-hidden">
-                    <img src={post.imageUrl} alt={post.title} className="w-full h-40 object-cover" />
+                    <div className="w-full bg-[#111] flex items-center justify-center" style={{ height: 160 }}>
+                      <img src={post.imageUrl} alt={post.title} className="max-w-full max-h-full object-contain" style={{ maxHeight: 160 }} />
+                    </div>
                     <div className="p-4">
                       <p className="text-white font-bold text-sm mb-1 truncate">{post.title}</p>
                       {post.description && <p className="text-green-400 text-xs line-clamp-2 mb-3">{post.description}</p>}

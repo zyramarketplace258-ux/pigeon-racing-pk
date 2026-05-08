@@ -336,12 +336,15 @@ export default function HomePage() {
             <div className="space-y-4">
               {galleryPosts.map(post => (
                 <div key={post.id} className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
-                  <img
-                    src={post.imageUrl}
-                    alt={post.title}
-                    className="w-full object-cover max-h-72"
-                    onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-                  />
+                  <div className="w-full bg-[#1a1a1a] flex items-center justify-center" style={{ height: 260 }}>
+                    <img
+                      src={post.imageUrl}
+                      alt={post.title}
+                      className="max-w-full max-h-full object-contain"
+                      style={{ maxHeight: 260 }}
+                      onError={e => { (e.target as HTMLImageElement).parentElement!.style.display = 'none' }}
+                    />
+                  </div>
                   <div className="p-4">
                     <p className="text-[#1b5e20] font-bold text-base mb-1">{post.title}</p>
                     {post.description && <p className="text-[#444] text-sm leading-relaxed">{post.description}</p>}
