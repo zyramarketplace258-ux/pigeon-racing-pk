@@ -3,7 +3,8 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import { collection, getDocs, query, where, onSnapshot, orderBy } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
+import { onAuthStateChanged, signOut } from 'firebase/auth'
+import { db, auth } from '@/lib/firebase'
 import { compareHours, formatTimeDisplay } from '@/lib/timeUtils'
 import Link from 'next/link'
 import { Playfair_Display } from 'next/font/google'
@@ -42,6 +43,7 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState<'home' | 'clubs' | 'gallery'>('home')
   const [galleryPosts, setGalleryPosts] = useState<GalleryPost[]>([])
   const [galleryLoading, setGalleryLoading] = useState(false)
+  const [loggedInClub, setLoggedInClub] = useState<Club | null>(null)
 
   useEffect(() => {
     let active = true
@@ -207,6 +209,16 @@ export default function HomePage() {
       .catch(() => setGalleryLoading(false))
   }, [activeTab])
 
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (!user) { setLoggedInClub(null); return }
+      const snap = await getDocs(query(collection(db, 'clubs'), where('loginEmail', '==', user.email)))
+      if (!snap.empty) setLoggedInClub({ id: snap.docs[0].id, ...snap.docs[0].data() } as Club)
+      else setLoggedInClub(null)
+    })
+    return () => unsub()
+  }, [])
+
   const rankRingClass = (i: number) => {
     if (i === 0) return 'text-white shadow-md'
     if (i === 1) return 'text-white shadow'
@@ -231,9 +243,25 @@ export default function HomePage() {
             <p className="text-green-300 text-xs tracking-widest uppercase">{t('loveForTheLoft')}</p>
           </div>
           <img src="/pigeon.png" alt="Pigeon" className="absolute left-1/2 -translate-x-1/2 w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-lg" />
-          <Link href="/club/login" className="text-xs text-green-200 border border-green-600 px-2.5 py-1.5 rounded hover:bg-green-800 transition font-medium">
-            {t('clubLogin')}
-          </Link>
+          {loggedInClub ? (
+            <div className="flex items-center gap-2">
+              <Link href="/club/dashboard" className="flex items-center gap-1.5 text-xs text-green-200 border border-green-600 px-2.5 py-1.5 rounded hover:bg-green-800 transition font-medium">
+                <img src={loggedInClub.logoUrl || '/pigeon.png'} alt="" className="w-5 h-5 rounded-full object-cover border border-green-500" />
+                <span className="hidden sm:inline max-w-[80px] truncate">{loggedInClub.name}</span>
+                <span className="sm:hidden">Dashboard</span>
+              </Link>
+              <button
+                onClick={() => signOut(auth)}
+                className="text-xs text-red-300 border border-red-700 px-2 py-1.5 rounded hover:bg-red-900 transition font-medium"
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <Link href="/club/login" className="text-xs text-green-200 border border-green-600 px-2.5 py-1.5 rounded hover:bg-green-800 transition font-medium">
+              {t('clubLogin')}
+            </Link>
+          )}
         </div>
       </div>
       <nav className="bg-[#292929] px-4">
