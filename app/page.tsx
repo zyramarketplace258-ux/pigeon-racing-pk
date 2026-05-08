@@ -219,13 +219,7 @@ export default function HomePage() {
               })
               .sort((a, b) => compareHours(a.totalHours, b.totalHours))
 
-            // Include all entries through rank 3, keeping ties together
-            const top: TopEntry[] = []
-            let prevH = '', rankCount = 0
-            for (const entry of entries) {
-              if (entry.totalHours !== prevH) { rankCount++; if (rankCount > 3) break; prevH = entry.totalHours }
-              top.push(entry)
-            }
+            const top = entries.slice(0, 3)
 
             // Collect all individual pigeon records + daily scores from every participant
             const precs: PigeonRec[] = []
