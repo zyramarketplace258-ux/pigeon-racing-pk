@@ -52,6 +52,46 @@ interface Props {
   tInfos: TInfoClient[]
 }
 
+function FlyingPigeon({ size }: { size: number }) {
+  const wStyle = (delay = '0s'): React.CSSProperties => ({
+    transformBox: 'fill-box' as React.CSSProperties['transformBox'],
+    transformOrigin: 'right center',
+    animation: `wingFlapUp 0.44s ease-in-out infinite ${delay}`,
+  })
+  return (
+    <svg width={Math.round(size * 2.6)} height={size} viewBox="0 0 70 35" style={{ display: 'block' }}>
+      {/* Tail */}
+      <ellipse cx="62" cy="22" rx="10" ry="3.5" fill="#78909C"
+        style={{ transformBox: 'fill-box' as React.CSSProperties['transformBox'], transformOrigin: 'left center', animation: 'tailWag 0.5s ease-in-out infinite' }} />
+      {/* Body */}
+      <ellipse cx="37" cy="21" rx="20" ry="10" fill="#90A4AE" />
+      {/* Breast */}
+      <ellipse cx="20" cy="20" rx="9" ry="8" fill="#B0BEC5" />
+      {/* Iridescent neck patch */}
+      <ellipse cx="16" cy="18" rx="5" ry="4" fill="#7E57C2" opacity="0.3" />
+      {/* Head */}
+      <circle cx="10" cy="13" r="8" fill="#9E9E9E" />
+      {/* Cere */}
+      <ellipse cx="4" cy="11.5" rx="2.2" ry="1.2" fill="#E0E0E0" />
+      {/* Beak */}
+      <polygon points="2,11 0,13.5 3.5,14" fill="#FFCC80" />
+      {/* Eye ring */}
+      <circle cx="8" cy="11" r="2.8" fill="#EF6C00" />
+      {/* Pupil */}
+      <circle cx="8" cy="11" r="1.5" fill="#1A1A1A" />
+      {/* Eye shine */}
+      <circle cx="8.6" cy="10.4" r="0.45" fill="white" />
+      {/* Under wing shadow */}
+      <ellipse cx="35" cy="25" rx="16" ry="4" fill="#455A64" opacity="0.45"
+        style={{ transformBox: 'fill-box' as React.CSSProperties['transformBox'], transformOrigin: 'right center', animation: 'wingFlapDown 0.44s ease-in-out infinite' }} />
+      {/* Upper wing */}
+      <ellipse cx="35" cy="14" rx="18" ry="6" fill="#607D8B" style={wStyle()} />
+      {/* Primary feathers */}
+      <ellipse cx="26" cy="8" rx="13" ry="3" fill="#455A64" style={wStyle('0.07s')} />
+    </svg>
+  )
+}
+
 export default function HomeClient({ initialData, tInfos }: Props) {
   const { lang, toggle } = useLanguage()
   const t = useT()
@@ -254,17 +294,17 @@ export default function HomeClient({ initialData, tInfos }: Props) {
       {/* Header */}
       <div className="relative overflow-hidden bg-gradient-to-r from-[#1b5e20] to-[#2e7d32] px-4 py-3">
         {([
-          { delay: '0s',   dur: '17s', bob: '2.1s', top: 10, size: 22 },
-          { delay: '5s',   dur: '19s', bob: '1.8s', top: 40, size: 13 },
-          { delay: '2.5s', dur: '16s', bob: '2.4s', top: 6,  size: 17 },
-          { delay: '9s',   dur: '18s', bob: '1.6s', top: 44, size: 11 },
-          { delay: '1s',   dur: '20s', bob: '2.2s', top: 26, size: 19 },
-          { delay: '7s',   dur: '17s', bob: '1.9s', top: 14, size: 14 },
-          { delay: '4s',   dur: '19s', bob: '2.3s', top: 48, size: 16 },
-          { delay: '11s',  dur: '16s', bob: '2s',   top: 4,  size: 21 },
+          { delay: '0s',   dur: '17s', bob: '2.1s', top: 8,  size: 34 },
+          { delay: '5s',   dur: '19s', bob: '1.8s', top: 38, size: 22 },
+          { delay: '2.5s', dur: '16s', bob: '2.4s', top: 4,  size: 28 },
+          { delay: '9s',   dur: '18s', bob: '1.6s', top: 42, size: 20 },
+          { delay: '1s',   dur: '20s', bob: '2.2s', top: 20, size: 30 },
+          { delay: '7s',   dur: '17s', bob: '1.9s', top: 12, size: 24 },
+          { delay: '4s',   dur: '19s', bob: '2.3s', top: 46, size: 26 },
+          { delay: '11s',  dur: '16s', bob: '2s',   top: 2,  size: 32 },
         ] as { delay: string; dur: string; bob: string; top: number; size: number }[]).map((p, i) => (
-          <span key={i} className="pigeon-fly" style={{ top: p.top, animationDuration: `${p.dur}, ${p.bob}`, animationDelay: `${p.delay}, 0s`, fontSize: p.size, opacity: 0.18 + (i % 4) * 0.06, zIndex: 0 }}>
-            🕊️
+          <span key={i} className="pigeon-fly" style={{ top: p.top, animationDuration: `${p.dur}, ${p.bob}`, animationDelay: `${p.delay}, 0s`, opacity: 0.22 + (i % 4) * 0.06, zIndex: 0 }}>
+            <FlyingPigeon size={p.size} />
           </span>
         ))}
         <div className="max-w-5xl mx-auto relative z-10 flex items-center justify-between">
@@ -308,13 +348,13 @@ export default function HomeClient({ initialData, tInfos }: Props) {
       {/* Stats Bar */}
       <div className="relative overflow-hidden bg-[#2e7d32] px-4 py-3">
         {([
-          { delay: '0.5s', dur: '17s', bob: '2s',   top: 8,  size: 14 },
-          { delay: '3s',   dur: '19s', bob: '1.8s', top: 42, size: 11 },
-          { delay: '1.5s', dur: '16s', bob: '2.3s', top: 22, size: 16 },
-          { delay: '5s',   dur: '18s', bob: '2.1s', top: 54, size: 12 },
+          { delay: '0.5s', dur: '17s', bob: '2s',   top: 6,  size: 24 },
+          { delay: '3s',   dur: '19s', bob: '1.8s', top: 42, size: 20 },
+          { delay: '1.5s', dur: '16s', bob: '2.3s', top: 20, size: 28 },
+          { delay: '5s',   dur: '18s', bob: '2.1s', top: 54, size: 22 },
         ] as { delay: string; dur: string; bob: string; top: number; size: number }[]).map((p, i) => (
-          <span key={i} className="pigeon-fly" style={{ top: p.top, animationDuration: `${p.dur}, ${p.bob}`, animationDelay: `${p.delay}, 0s`, fontSize: p.size, opacity: 0.15 + i * 0.04, zIndex: 0 }}>
-            🕊️
+          <span key={i} className="pigeon-fly" style={{ top: p.top, animationDuration: `${p.dur}, ${p.bob}`, animationDelay: `${p.delay}, 0s`, opacity: 0.18 + i * 0.05, zIndex: 0 }}>
+            <FlyingPigeon size={p.size} />
           </span>
         ))}
         <div className="relative z-10">
