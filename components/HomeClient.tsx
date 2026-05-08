@@ -306,7 +306,18 @@ export default function HomeClient({ initialData, tInfos }: Props) {
       </nav>
 
       {/* Stats Bar */}
-      <div className="bg-[#2e7d32] px-4 py-3">
+      <div className="relative overflow-hidden bg-[#2e7d32] px-4 py-3">
+        {([
+          { delay: '0.5s', dur: '8s',  top: 8,  size: 14 },
+          { delay: '3s',   dur: '6s',  top: 42, size: 11 },
+          { delay: '1.5s', dur: '10s', top: 22, size: 16 },
+          { delay: '5s',   dur: '7s',  top: 54, size: 12 },
+        ] as { delay: string; dur: string; top: number; size: number }[]).map((p, i) => (
+          <span key={i} className="pigeon-fly" style={{ top: p.top, animationDuration: p.dur, animationDelay: p.delay, fontSize: p.size, opacity: 0.15 + i * 0.04, zIndex: 0 }}>
+            🕊️
+          </span>
+        ))}
+        <div className="relative z-10">
         <p className="text-green-200 text-xs font-bold uppercase tracking-widest text-center mb-2">{t('todaysStats')}</p>
         <div className="grid grid-cols-2 gap-2 max-w-sm mx-auto">
           <div className="bg-[#1b5e20] bg-opacity-60 rounded-lg py-2 px-3 text-center">
@@ -325,6 +336,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
             <p className="text-white font-bold text-xl leading-none">{totalStillFlying}</p>
             <p className="text-green-300 text-xs mt-0.5">{t('stillFlying')}</p>
           </div>
+        </div>
         </div>
       </div>
 
