@@ -22,10 +22,19 @@ export default async function HomePage() {
     const db = getAdminDb()
     const today = new Date().toISOString().split('T')[0]
 
-    // 1. Fetch all clubs
+    // 1. Fetch all clubs — extract only needed fields to avoid Firestore Timestamps in serialized props
     const clubsSnap = await db.collection('clubs').get()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const clubs = clubsSnap.docs.map(d => ({ id: d.id, ...(d.data() as any) })) as InitialHomeData['clubs']
+    const clubs: InitialHomeData['clubs'] = clubsSnap.docs.map(d => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = d.data() as any
+      return {
+        id: d.id,
+        name: String(data.name || ''),
+        slug: String(data.slug || ''),
+        city: String(data.city || ''),
+        ...(data.logoUrl ? { logoUrl: String(data.logoUrl) } : {}),
+      }
+    })
 
     // 2. Fetch active tournaments + participants per club (all parallel)
     const perClub = await Promise.all(clubs.map(async (club) => {
@@ -52,7 +61,8 @@ export default async function HomePage() {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       for (const t of tournaments as any[]) {
-        const raceDays: RaceDay[] = t.raceDays || []
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const raceDays: RaceDay[] = (t.raceDays || []).map((rd: any) => ({ dayNumber: Number(rd.dayNumber), date: String(rd.date), ...(rd.isGap ? { isGap: true } : {}) }))
         const nonGap = raceDays.filter(rd => !rd.isGap)
         const passed = nonGap.filter(rd => rd.date <= today).length
         const participantIds: string[] | null = t.participantIds ?? null
