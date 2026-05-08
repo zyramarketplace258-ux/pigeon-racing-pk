@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import {
   collection, query, where, getDocs, doc, setDoc, getDoc,
-  addDoc, deleteDoc, updateDoc, serverTimestamp
+  addDoc, deleteDoc, updateDoc, serverTimestamp, onSnapshot
 } from 'firebase/firestore'
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { auth, db, storage } from '@/lib/firebase'
@@ -56,7 +56,13 @@ async function fetchEntries(
 
 export default function ClubDashboard() {
   const router = useRouter()
-  const [tab, setTab] = useState<'add-time' | 'members' | 'tournaments' | 'history'>('add-time')
+  const [tab, setTab] = useState<'add-time' | 'members' | 'tournaments' | 'history'>(() => {
+    if (typeof window !== 'undefined') {
+      const s = sessionStorage.getItem('club-tab')
+      if (s === 'add-time' || s === 'members' || s === 'tournaments' || s === 'history') return s
+    }
+    return 'add-time'
+  })
   const [club, setClub] = useState<Club | null>(null)
   const [loading, setLoading] = useState(true)
   const [entriesLoading, setEntriesLoading] = useState(false)
@@ -86,9 +92,11 @@ export default function ClubDashboard() {
   const [photoUploading, setPhotoUploading] = useState(false)
   const logoInputRef = useRef<HTMLInputElement>(null)
   const memberInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+  const participantsRef = useRef<Participant[]>([])
 
   useEffect(() => {
     let unsubscribe: () => void = () => {}
+    let tUnsub: (() => void) | null = null
     let active = true
     auth.authStateReady().then(() => {
       if (!active) return
@@ -103,36 +111,54 @@ export default function ClubDashboard() {
         setClub(clubData)
         const today = new Date().toISOString().split('T')[0]
         setTodayDate(today)
-        const [pSnap, tSnap] = await Promise.all([
-          getDocs(collection(db, 'clubs', clubData.id, 'participants')),
-          getDocs(collection(db, 'clubs', clubData.id, 'tournaments')),
-        ])
+        const pSnap = await getDocs(collection(db, 'clubs', clubData.id, 'participants'))
         if (!active) return
         const allParticipants = pSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Participant[]
+        participantsRef.current = allParticipants
         setParticipants(allParticipants)
-        const allTournaments = tSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Tournament[]
-        setTournaments(allTournaments)
-        const activeList = allTournaments.filter(t => t.status === 'active')
-        setActiveTournaments(activeList)
-        const assignable = allTournaments.filter(t => t.status !== 'completed')
-        if (assignable.length > 0) {
-          const firstT = assignable[0]
-          setAssignTournamentId(firstT.id)
-          setAssignedIds(new Set(firstT.participantIds != null ? firstT.participantIds : allParticipants.map(p => p.id)))
-        }
-        if (activeList.length > 0) {
-          const tData = activeList[0]
-          setTournament(tData)
-          const { entryRows, dayNum } = await fetchEntries(clubData.id, tData, allParticipants, today)
+
+        let firstFire = true
+        tUnsub?.()
+        tUnsub = onSnapshot(collection(db, 'clubs', clubData.id, 'tournaments'), async (tSnap) => {
           if (!active) return
-          setTodayDay(dayNum)
-          setEntries(entryRows)
-        }
-        setLoading(false)
+          const allTournaments = tSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Tournament[]
+          setTournaments(allTournaments)
+          const activeList = allTournaments.filter(t => t.status === 'active')
+          setActiveTournaments(activeList)
+
+          if (firstFire) {
+            const assignable = allTournaments.filter(t => t.status !== 'completed')
+            if (assignable.length > 0) {
+              const firstT = assignable[0]
+              setAssignTournamentId(firstT.id)
+              setAssignedIds(new Set(firstT.participantIds != null ? firstT.participantIds : participantsRef.current.map(p => p.id)))
+            }
+            firstFire = false
+          }
+
+          if (activeList.length > 0) {
+            const tData = activeList[0]
+            setTournament(tData)
+            setEntriesLoading(true)
+            const { entryRows, dayNum } = await fetchEntries(clubData.id, tData, participantsRef.current, today)
+            if (!active) return
+            setTodayDay(dayNum)
+            setEntries(entryRows)
+            setEntriesLoading(false)
+          } else {
+            setTournament(null)
+            setTodayDay(null)
+            setEntries([])
+          }
+
+          setLoading(false)
+        })
       })
     })
-    return () => { active = false; unsubscribe() }
+    return () => { active = false; unsubscribe(); tUnsub?.() }
   }, [router])
+
+  const handleTabChange = (t: typeof tab) => { setTab(t); sessionStorage.setItem('club-tab', t) }
 
   const toMins = (t: string) => { const [h, m] = (t || '0:0').split(':').map(Number); return h * 60 + m }
 
@@ -247,14 +273,22 @@ export default function ClubDashboard() {
     const docRef = await addDoc(collection(db, 'clubs', club.id, 'participants'), {
       name: trimName, area: trimArea, createdAt: serverTimestamp()
     })
-    setParticipants(prev => [...prev, { id: docRef.id, name: trimName, area: trimArea }])
+    setParticipants(prev => {
+      const updated = [...prev, { id: docRef.id, name: trimName, area: trimArea }]
+      participantsRef.current = updated
+      return updated
+    })
     setMemberName(''); setMemberArea(''); setNameError(''); setAreaError(''); setAddingMember(false)
   }
 
   const removeMember = async (id: string) => {
     if (!club || !confirm('Permanently delete this member?')) return
     await deleteDoc(doc(db, 'clubs', club.id, 'participants', id))
-    setParticipants(prev => prev.filter(p => p.id !== id))
+    setParticipants(prev => {
+      const updated = prev.filter(p => p.id !== id)
+      participantsRef.current = updated
+      return updated
+    })
     setAssignedIds(prev => { const next = new Set(prev); next.delete(id); return next })
   }
 
@@ -262,7 +296,11 @@ export default function ClubDashboard() {
     if (!club) return
     const newVal = !p.disabled
     await updateDoc(doc(db, 'clubs', club.id, 'participants', p.id), { disabled: newVal })
-    setParticipants(prev => prev.map(m => m.id === p.id ? { ...m, disabled: newVal } : m))
+    setParticipants(prev => {
+      const updated = prev.map(m => m.id === p.id ? { ...m, disabled: newVal } : m)
+      participantsRef.current = updated
+      return updated
+    })
   }
 
   const handleAssignTournamentSelect = (tournamentId: string) => {
@@ -328,10 +366,10 @@ export default function ClubDashboard() {
       <header className="bg-primary border-b border-secondary px-4 py-3 relative">
         <a href="/" className="absolute left-4 top-1/2 -translate-y-1/2 text-green-400 hover:text-secondary text-xs font-medium transition">← Home</a>
         <div className="text-center">
-          <div className="relative inline-block cursor-pointer group" onClick={() => logoInputRef.current?.click()}>
+          <div className="relative inline-block cursor-pointer" onClick={() => logoInputRef.current?.click()}>
             <img src={club?.logoUrl || '/pigeon.png'} alt="Logo" className="w-10 h-10 object-cover rounded-full drop-shadow border border-green-700" />
-            <div className="absolute inset-0 rounded-full bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
-              <span className="text-white text-xs">📷</span>
+            <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-green-700 rounded-full flex items-center justify-center border-2 border-primary shadow">
+              <span className="text-white text-[9px] leading-none">📷</span>
             </div>
           </div>
           <h1 className="text-sm font-bold text-secondary leading-tight mt-0.5">{club?.name}</h1>
@@ -350,7 +388,7 @@ export default function ClubDashboard() {
       <nav className="bg-[#292929] px-4 border-b border-green-900">
         <div className="flex items-center h-10">
           {(['tournaments', 'members', 'add-time', 'history'] as const).map(t => (
-            <button key={t} onClick={() => setTab(t)}
+            <button key={t} onClick={() => handleTabChange(t)}
               className={`px-4 h-full text-sm font-semibold transition border-b-2 ${
                 tab === t ? 'text-white border-[#66bb6a]' : 'text-gray-400 border-transparent hover:text-white'
               }`}
@@ -399,7 +437,7 @@ export default function ClubDashboard() {
                 {participants.length === 0 ? (
                   <p className="text-green-600 text-sm">
                     Add members first in the{' '}
-                    <button onClick={() => setTab('members')} className="text-secondary underline">Members</button> tab.
+                    <button onClick={() => handleTabChange('members')} className="text-secondary underline">Members</button> tab.
                   </p>
                 ) : (
                   <>
@@ -494,16 +532,17 @@ export default function ClubDashboard() {
                     <div key={p.id} className={`flex items-center gap-3 px-4 py-3 transition ${p.disabled ? 'opacity-50' : 'hover:bg-primary'}`}>
                       <span className="text-green-600 text-xs w-5 shrink-0">{i + 1}</span>
                       <div
-                        className="relative w-10 h-10 rounded-full border overflow-hidden shrink-0 cursor-pointer group"
-                        style={{ borderColor: p.disabled ? '#1a3a1a' : '#4ade80' }}
+                        className="relative w-10 h-10 shrink-0 cursor-pointer"
                         onClick={() => { setCropTarget(p.id); memberInputRefs.current[p.id]?.click() }}
                       >
-                        {p.photoUrl
-                          ? <img src={p.photoUrl} alt={p.name} className="w-full h-full object-cover" />
-                          : <div className={`w-full h-full flex items-center justify-center font-bold text-sm ${p.disabled ? 'bg-primary text-green-700' : 'bg-primary text-secondary'}`}>{p.name.charAt(0)}</div>
-                        }
-                        <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition rounded-full">
-                          <span className="text-white text-xs">📷</span>
+                        <div className="w-10 h-10 rounded-full border overflow-hidden" style={{ borderColor: p.disabled ? '#1a3a1a' : '#4ade80' }}>
+                          {p.photoUrl
+                            ? <img src={p.photoUrl} alt={p.name} className="w-full h-full object-cover" />
+                            : <div className={`w-full h-full flex items-center justify-center font-bold text-sm ${p.disabled ? 'bg-primary text-green-700' : 'bg-primary text-secondary'}`}>{p.name.charAt(0)}</div>
+                          }
+                        </div>
+                        <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-green-700 rounded-full flex items-center justify-center border-2 border-surface shadow z-10">
+                          <span className="text-white text-[9px] leading-none">📷</span>
                         </div>
                       </div>
                       <input type="file" accept="image/*" className="hidden"
@@ -621,7 +660,7 @@ export default function ClubDashboard() {
                 <div className="bg-surface border border-green-800 rounded-xl p-8 text-center">
                   <p className="text-3xl mb-3">👥</p>
                   <p className="text-white font-bold">No Participants</p>
-                  <button onClick={() => setTab('members')}
+                  <button onClick={() => handleTabChange('members')}
                     className="bg-secondary hover:bg-accent text-dark font-bold px-6 py-2 rounded-lg text-sm transition mt-3 inline-block">
                     + Add Members
                   </button>

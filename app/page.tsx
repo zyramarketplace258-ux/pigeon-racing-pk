@@ -17,7 +17,7 @@ interface Club { id: string; name: string; slug: string; city: string; logoUrl?:
 interface GalleryPost { id: string; imageUrl: string; title: string; description: string; postedBy: string; createdAt?: { seconds: number } }
 interface RaceDay { dayNumber: number; date: string; isGap?: boolean }
 interface PigeonChip { landingTime: string; hoursFlown: string }
-interface TopEntry { name: string; area: string; pigeons: PigeonChip[]; totalHours: string }
+interface TopEntry { name: string; area: string; photoUrl?: string; pigeons: PigeonChip[]; totalHours: string }
 interface HighlightStat {
   icon: string; label: string; value: string
   name: string; tournament: string; clubSlug: string; tournamentId: string
@@ -38,6 +38,7 @@ export default function HomePage() {
   const [activeTournaments, setActiveTournaments] = useState<ActiveTournament[]>([])
   const [highlights, setHighlights] = useState<HighlightStat[]>([])
   const [totalLandedToday, setTotalLandedToday] = useState(0)
+  const [totalStillFlying, setTotalStillFlying] = useState(0)
   const [totalLotsCompeting, setTotalLotsCompeting] = useState(0)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'home' | 'clubs' | 'gallery'>('home')
@@ -60,7 +61,7 @@ export default function HomePage() {
 
       type TInfo = {
         base: Omit<ActiveTournament, 'topEntries' | 'totalLanded' | 'totalPigeons'>
-        nameMap: Record<string, string>; areaMap: Record<string, string>
+        nameMap: Record<string, string>; areaMap: Record<string, string>; photoMap: Record<string, string>
         enrolledCount: number; suffix: string
       }
       const infos: TInfo[] = []
@@ -73,7 +74,8 @@ export default function HomePage() {
         if (!active) return
         const nm: Record<string, string> = {}
         const am: Record<string, string> = {}
-        pSnap.docs.forEach(d => { nm[d.id] = d.data().name; am[d.id] = d.data().area || '' })
+        const pm: Record<string, string> = {}
+        pSnap.docs.forEach(d => { nm[d.id] = d.data().name; am[d.id] = d.data().area || ''; pm[d.id] = d.data().photoUrl || '' })
 
         tSnap.docs.forEach(d => {
           const data = d.data()
@@ -84,7 +86,8 @@ export default function HomePage() {
           const enrolledIds = participantIds != null ? participantIds : pSnap.docs.map(p => p.id)
           const filteredNm: Record<string, string> = {}
           const filteredAm: Record<string, string> = {}
-          enrolledIds.forEach(id => { filteredNm[id] = nm[id] || ''; filteredAm[id] = am[id] || '' })
+          const filteredPm: Record<string, string> = {}
+          enrolledIds.forEach(id => { filteredNm[id] = nm[id] || ''; filteredAm[id] = am[id] || ''; filteredPm[id] = pm[id] || '' })
           const todayRD = nonGap.find(rd => rd.date === today)
           const currentDayNum = todayRD?.dayNumber ?? nonGap[nonGap.length - 1]?.dayNumber
           infos.push({
@@ -98,7 +101,7 @@ export default function HomePage() {
               currentDay: Math.min(passed, nonGap.length) || 1,
               totalRaceDays: nonGap.length,
             },
-            nameMap: filteredNm, areaMap: filteredAm,
+            nameMap: filteredNm, areaMap: filteredAm, photoMap: filteredPm,
             enrolledCount: enrolledIds.length,
             suffix: currentDayNum ? `_day${currentDayNum}` : '',
           })
@@ -125,13 +128,14 @@ export default function HomePage() {
         }))
         setActiveTournaments(enriched)
 
-        let gLanded = 0, gLots = 0
+        let gLanded = 0, gLots = 0, gStillFlying = 0
         let topScoreRaw = '', longestFlightRaw = '', lastLandedTime = ''
         let topScore: HighlightStat | null = null, longestFlight: HighlightStat | null = null, lastLanded: HighlightStat | null = null
 
         enriched.forEach(tr => {
           gLanded += tr.totalLanded
           gLots += tr.totalPigeons / tr.pigeonCount
+          gStillFlying += Math.max(0, tr.totalPigeons - tr.totalLanded)
           if (tr.topEntries[0]?.totalHours && toMins(tr.topEntries[0].totalHours) > toMins(topScoreRaw)) {
             topScoreRaw = tr.topEntries[0].totalHours
             topScore = { icon: '🏆', label: strings[lang].topScoreToday, value: formatTimeDisplay(tr.topEntries[0].totalHours), name: tr.topEntries[0].name, tournament: tr.name, clubSlug: tr.clubSlug, tournamentId: tr.id }
@@ -153,6 +157,7 @@ export default function HomePage() {
         })
 
         setTotalLandedToday(gLanded)
+        setTotalStillFlying(gStillFlying)
         setTotalLotsCompeting(gLots)
         setHighlights(([topScore, longestFlight, lastLanded] as (HighlightStat | null)[]).filter((h): h is HighlightStat => h !== null))
       }
@@ -181,7 +186,7 @@ export default function HomePage() {
                   landingTime: pg.landingTime || '', hoursFlown: pg.hoursFlown || '',
                 }))
                 pigeons.forEach(pg => { if (pg.landingTime) totalLanded++ })
-                return [{ name: info.nameMap[pId], area: info.areaMap[pId] || '', pigeons, totalHours: data.totalHours }]
+                return [{ name: info.nameMap[pId], area: info.areaMap[pId] || '', photoUrl: info.photoMap[pId] || '', pigeons, totalHours: data.totalHours }]
               })
               .sort((a, b) => compareHours(a.totalHours, b.totalHours))
 
@@ -301,6 +306,9 @@ export default function HomePage() {
             <span className="text-green-600 mx-2">·</span>
             <strong className="text-white">{totalLandedToday}</strong>
             <span className="text-green-300"> {t('pigeonsLandedToday')}</span>
+            <span className="text-green-600 mx-2">·</span>
+            <strong className="text-white">{totalStillFlying}</strong>
+            <span className="text-green-300"> {t('stillFlying')}</span>
           </span>
         )}
       </div>
@@ -519,15 +527,32 @@ export default function HomePage() {
                         className="flex items-center gap-3 px-3 py-2.5 border-b border-[#e9ecef] last:border-b-0"
                         style={{ background: rank === 0 ? '#dff0d8' : i % 2 === 1 ? '#f6faf6' : '#fff' }}
                       >
-                        <div
-                          className={`w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-sm font-bold ${rankRingClass(rank)}`}
-                          style={rankRingStyle(rank)}
-                        >
-                          {rank + 1}
+                        <div className="relative w-9 h-9 shrink-0">
+                          {entry.photoUrl ? (
+                            <>
+                              <img src={entry.photoUrl} alt={entry.name} className="w-9 h-9 rounded-full object-cover" style={{ border: `2px solid ${rank === 0 ? '#c8900a' : rank === 1 ? '#9e9e9e' : '#bbb'}` }} />
+                              <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold ${rankRingClass(rank)}`} style={rankRingStyle(rank)}>
+                                {rank + 1}
+                              </div>
+                            </>
+                          ) : (
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold ${rankRingClass(rank)}`} style={rankRingStyle(rank)}>
+                              {rank + 1}
+                            </div>
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-sm text-[#1a1a1a] truncate">{entry.name}</p>
                           <p className="text-[#777] text-xs">{entry.area}</p>
+                          {entry.pigeons.some(pg => pg.landingTime) && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {entry.pigeons.filter(pg => pg.landingTime).map((pg, pi) => (
+                                <span key={pi} className="text-[10px] bg-[#e8f5e9] text-[#2e7d32] px-1.5 py-0.5 rounded font-medium leading-tight">
+                                  🐦 {pg.landingTime}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                         <p className="font-bold text-xl text-[#1a1a1a] shrink-0">{formatTimeDisplay(entry.totalHours)}</p>
                       </div>
