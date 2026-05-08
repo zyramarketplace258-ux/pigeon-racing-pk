@@ -20,9 +20,9 @@ const strings = {
     tabGallery: 'Gallery',
     todaysStats: "Today's Stats",
     loadingLiveData: 'Loading live data...',
-    tournamentsLive: 'tournaments live',
-    loftsCompeting: 'lofts competing',
-    pigeonsLandedToday: 'pigeons landed today',
+    tournamentsLive: 'Tournaments Live',
+    loftsCompeting: 'Lofts Competing',
+    pigeonsLandedToday: 'Pigeons Landed Today',
     todaysHighlights: "Today's Highlights",
     topScoreToday: 'Top score today',
     longestFlight: 'Longest single flight',
@@ -36,7 +36,7 @@ const strings = {
     noResultsYet: 'No results submitted yet for today',
     fullResults: 'Full results',
     landed: 'landed',
-    stillFlying: 'still flying',
+    stillFlying: 'Still Flying',
 
     // Club public page
     clubNotFound: 'Club Not Found',
