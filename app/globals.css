@@ -26,9 +26,15 @@ body {
   to   { left: -60px; }
 }
 
+@keyframes pigeonBob {
+  0%, 100% { transform: translateY(0px); }
+  30%       { transform: translateY(-7px); }
+  60%       { transform: translateY(-3px); }
+}
+
 .pigeon-fly {
   position: absolute;
-  animation-name: pigeonFly;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
+  animation-name: pigeonFly, pigeonBob;
+  animation-timing-function: linear, ease-in-out;
+  animation-iteration-count: infinite, infinite;
 }

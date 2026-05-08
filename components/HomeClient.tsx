@@ -254,16 +254,16 @@ export default function HomeClient({ initialData, tInfos }: Props) {
       {/* Header */}
       <div className="relative overflow-hidden bg-gradient-to-r from-[#1b5e20] to-[#2e7d32] px-4 py-3">
         {([
-          { delay: '0s',   dur: '18s', top: 10, size: 22 },
-          { delay: '5s',   dur: '14s', top: 40, size: 13 },
-          { delay: '2.5s', dur: '22s', top: 6,  size: 17 },
-          { delay: '9s',   dur: '16s', top: 44, size: 11 },
-          { delay: '1s',   dur: '20s', top: 26, size: 19 },
-          { delay: '7s',   dur: '18s', top: 14, size: 14 },
-          { delay: '4s',   dur: '24s', top: 48, size: 16 },
-          { delay: '11s',  dur: '15s', top: 4,  size: 21 },
-        ] as { delay: string; dur: string; top: number; size: number }[]).map((p, i) => (
-          <span key={i} className="pigeon-fly" style={{ top: p.top, animationDuration: p.dur, animationDelay: p.delay, fontSize: p.size, opacity: 0.18 + (i % 4) * 0.06, zIndex: 0 }}>
+          { delay: '0s',   dur: '17s', bob: '2.1s', top: 10, size: 22 },
+          { delay: '5s',   dur: '19s', bob: '1.8s', top: 40, size: 13 },
+          { delay: '2.5s', dur: '16s', bob: '2.4s', top: 6,  size: 17 },
+          { delay: '9s',   dur: '18s', bob: '1.6s', top: 44, size: 11 },
+          { delay: '1s',   dur: '20s', bob: '2.2s', top: 26, size: 19 },
+          { delay: '7s',   dur: '17s', bob: '1.9s', top: 14, size: 14 },
+          { delay: '4s',   dur: '19s', bob: '2.3s', top: 48, size: 16 },
+          { delay: '11s',  dur: '16s', bob: '2s',   top: 4,  size: 21 },
+        ] as { delay: string; dur: string; bob: string; top: number; size: number }[]).map((p, i) => (
+          <span key={i} className="pigeon-fly" style={{ top: p.top, animationDuration: `${p.dur}, ${p.bob}`, animationDelay: `${p.delay}, 0s`, fontSize: p.size, opacity: 0.18 + (i % 4) * 0.06, zIndex: 0 }}>
             🕊️
           </span>
         ))}
@@ -308,12 +308,12 @@ export default function HomeClient({ initialData, tInfos }: Props) {
       {/* Stats Bar */}
       <div className="relative overflow-hidden bg-[#2e7d32] px-4 py-3">
         {([
-          { delay: '0.5s', dur: '8s',  top: 8,  size: 14 },
-          { delay: '3s',   dur: '6s',  top: 42, size: 11 },
-          { delay: '1.5s', dur: '10s', top: 22, size: 16 },
-          { delay: '5s',   dur: '7s',  top: 54, size: 12 },
-        ] as { delay: string; dur: string; top: number; size: number }[]).map((p, i) => (
-          <span key={i} className="pigeon-fly" style={{ top: p.top, animationDuration: p.dur, animationDelay: p.delay, fontSize: p.size, opacity: 0.15 + i * 0.04, zIndex: 0 }}>
+          { delay: '0.5s', dur: '17s', bob: '2s',   top: 8,  size: 14 },
+          { delay: '3s',   dur: '19s', bob: '1.8s', top: 42, size: 11 },
+          { delay: '1.5s', dur: '16s', bob: '2.3s', top: 22, size: 16 },
+          { delay: '5s',   dur: '18s', bob: '2.1s', top: 54, size: 12 },
+        ] as { delay: string; dur: string; bob: string; top: number; size: number }[]).map((p, i) => (
+          <span key={i} className="pigeon-fly" style={{ top: p.top, animationDuration: `${p.dur}, ${p.bob}`, animationDelay: `${p.delay}, 0s`, fontSize: p.size, opacity: 0.15 + i * 0.04, zIndex: 0 }}>
             🕊️
           </span>
         ))}
