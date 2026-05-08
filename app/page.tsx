@@ -338,23 +338,29 @@ export default function HomePage() {
       </nav>
 
       {/* Stats Bar */}
-      <div className="bg-[#2e7d32] text-center py-2 text-sm">
+      <div className="bg-[#2e7d32] px-4 py-3">
+        <p className="text-green-200 text-xs font-bold uppercase tracking-widest text-center mb-2">{t('todaysStats')}</p>
         {loading ? (
-          <span className="text-green-400 text-xs">{t('loadingLiveData')}</span>
+          <p className="text-green-400 text-xs text-center">{t('loadingLiveData')}</p>
         ) : (
-          <span className="text-green-100">
-            <strong className="text-white">{activeTournaments.length}</strong>
-            <span className="text-green-300"> {t('tournamentsLive')}</span>
-            <span className="text-green-600 mx-2">·</span>
-            <strong className="text-white">{totalLotsCompeting}</strong>
-            <span className="text-green-300"> {t('loftsCompeting')}</span>
-            <span className="text-green-600 mx-2">·</span>
-            <strong className="text-white">{totalLandedToday}</strong>
-            <span className="text-green-300"> {t('pigeonsLandedToday')}</span>
-            <span className="text-green-600 mx-2">·</span>
-            <strong className="text-white">{totalStillFlying}</strong>
-            <span className="text-green-300"> {t('stillFlying')}</span>
-          </span>
+          <div className="grid grid-cols-2 gap-2 max-w-sm mx-auto">
+            <div className="bg-[#1b5e20] bg-opacity-60 rounded-lg py-2 px-3 text-center">
+              <p className="text-white font-bold text-xl leading-none">{activeTournaments.length}</p>
+              <p className="text-green-300 text-xs mt-0.5">{t('tournamentsLive')}</p>
+            </div>
+            <div className="bg-[#1b5e20] bg-opacity-60 rounded-lg py-2 px-3 text-center">
+              <p className="text-white font-bold text-xl leading-none">{totalLotsCompeting}</p>
+              <p className="text-green-300 text-xs mt-0.5">{t('loftsCompeting')}</p>
+            </div>
+            <div className="bg-[#1b5e20] bg-opacity-60 rounded-lg py-2 px-3 text-center">
+              <p className="text-white font-bold text-xl leading-none">{totalLandedToday}</p>
+              <p className="text-green-300 text-xs mt-0.5">{t('pigeonsLandedToday')}</p>
+            </div>
+            <div className="bg-[#1b5e20] bg-opacity-60 rounded-lg py-2 px-3 text-center">
+              <p className="text-white font-bold text-xl leading-none">{totalStillFlying}</p>
+              <p className="text-green-300 text-xs mt-0.5">{t('stillFlying')}</p>
+            </div>
+          </div>
         )}
       </div>
 
