@@ -24,10 +24,10 @@ export default function NewTournamentPage() {
 
   const [form, setForm] = useState({
     name: '',
-    totalDays: 10,
+    totalDays: 0,
     defaultStartTime: '06:00',
     defaultEndTime: '20:00',
-    pigeonCount: 5,
+    pigeonCount: 0,
     startDate: '',
   })
 
@@ -135,16 +135,21 @@ export default function NewTournamentPage() {
             <div>
               <label className="block text-green-300 text-sm mb-2">
                 Total Days
-                <span className="text-green-600 ml-2 text-xs">(1 to 100)</span>
+                <span className="text-green-600 ml-2 text-xs">(1 – 100)</span>
               </label>
               <input
-                type="number"
-                value={form.totalDays}
-                onChange={e => setForm(f => ({ ...f, totalDays: parseInt(e.target.value) || 1 }))}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                placeholder="e.g. 10"
+                value={form.totalDays || ''}
+                onFocus={e => e.target.select()}
+                onChange={e => {
+                  const v = parseInt(e.target.value.replace(/\D/g, ''))
+                  setForm(f => ({ ...f, totalDays: isNaN(v) ? 0 : Math.min(100, v) }))
+                }}
                 required
-                min={1}
-                max={100}
-                className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-secondary"
+                className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-secondary placeholder-green-700"
               />
             </div>
 
@@ -175,12 +180,18 @@ export default function NewTournamentPage() {
             <div>
               <label className="block text-green-300 text-sm mb-2">Number of Pigeons Flying</label>
               <input
-                type="number"
-                value={form.pigeonCount}
-                onChange={e => setForm(f => ({ ...f, pigeonCount: parseInt(e.target.value) || 1 }))}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                placeholder="e.g. 5"
+                value={form.pigeonCount || ''}
+                onFocus={e => e.target.select()}
+                onChange={e => {
+                  const v = parseInt(e.target.value.replace(/\D/g, ''))
+                  setForm(f => ({ ...f, pigeonCount: isNaN(v) ? 0 : v }))
+                }}
                 required
-                min={1}
-                className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-secondary"
+                className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-secondary placeholder-green-700"
               />
             </div>
 
@@ -213,7 +224,7 @@ export default function NewTournamentPage() {
 
             <button
               type="submit"
-              disabled={loading || raceDays.length === 0}
+              disabled={loading || raceDays.length === 0 || !form.pigeonCount}
               className="w-full bg-secondary hover:bg-accent text-dark font-bold py-3 rounded-lg transition disabled:opacity-50 mt-2"
             >
               {loading ? 'Creating...' : 'Create Tournament'}
