@@ -118,7 +118,7 @@ export default function HomePage() {
       })
       type PigeonRec = { participantKey: string; name: string; hoursFlown: string; landingTime: string }
       const pigeonStore = new Map<string, PigeonRec[]>()
-      type ScoreRec = { name: string; area: string; photoUrl: string; totalHours: string }
+      type ScoreRec = { participantKey: string; name: string; area: string; photoUrl: string; totalHours: string }
       const scoreStore = new Map<string, ScoreRec[]>()
 
       const initializedIds = new Set<string>()
@@ -148,9 +148,15 @@ export default function HomePage() {
           })
         })
         allScorers.sort((a, b) => compareHours(a.totalHours, b.totalHours))
+        const bestScoreMap = new Map<string, typeof allScorers[0]>()
+        allScorers.forEach(s => {
+          const ex = bestScoreMap.get(s.participantKey)
+          if (!ex || compareHours(s.totalHours, ex.totalHours) < 0) bestScoreMap.set(s.participantKey, s)
+        })
+        const dedupedScorers = Array.from(bestScoreMap.values()).sort((a, b) => compareHours(a.totalHours, b.totalHours))
         const ts: TopScorer[] = []
         let prevHTS = '', rankTS = 0
-        for (const s of allScorers) {
+        for (const s of dedupedScorers) {
           if (s.totalHours !== prevHTS) { rankTS++; if (rankTS > 3) break; prevHTS = s.totalHours }
           ts.push({ ...s, rank: rankTS })
         }
@@ -173,7 +179,7 @@ export default function HomePage() {
         const wp: WinnerEntry[] = []
         let prevHW = '', rankW = 0
         for (const p of sorted) {
-          if (p.hoursFlown !== prevHW) { rankW++; if (rankW > 3) break; prevHW = p.hoursFlown }
+          if (p.hoursFlown !== prevHW) { rankW++; if (rankW > 1) break; prevHW = p.hoursFlown }
           wp.push({ name: p.name, landingTime: p.landingTime, hoursFlown: p.hoursFlown, tournament: p.tournament, clubSlug: p.clubSlug, tournamentId: p.tournamentId, rank: rankW })
         }
         setWinnerPigeons(wp)
@@ -231,7 +237,7 @@ export default function HomePage() {
                 if (!(pId in info.nameMap)) return
                 const ddata = d.data()
                 if (ddata.totalHours) {
-                  srecs.push({ name: info.nameMap[pId], area: info.areaMap[pId] || '', photoUrl: info.photoMap[pId] || '', totalHours: ddata.totalHours })
+                  srecs.push({ participantKey: `${info.base.clubId}::${pId}`, name: info.nameMap[pId], area: info.areaMap[pId] || '', photoUrl: info.photoMap[pId] || '', totalHours: ddata.totalHours })
                 }
                 ;(ddata.pigeons || []).forEach((pg: Record<string, string>) => {
                   if (pg.hoursFlown && pg.landingTime) {
@@ -505,7 +511,7 @@ export default function HomePage() {
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm text-[#1a1a1a] truncate">{s.name}</p>
-                      <p className="text-[#999] text-xs truncate">{s.tournament}</p>
+                      <p className="text-[#888] text-xs truncate">{s.area && `${s.area} · `}{s.tournament}</p>
                     </div>
                     <p className="font-bold text-lg text-[#1b5e20] shrink-0">{formatTimeDisplay(s.totalHours)}</p>
                   </Link>
