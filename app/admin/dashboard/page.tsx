@@ -61,6 +61,23 @@ export default function AdminDashboard() {
     else setImagePreview(null)
   }
 
+  const compressImage = (file: File, maxPx = 1200, quality = 0.78): Promise<Blob> =>
+    new Promise((resolve, reject) => {
+      const img = new Image()
+      const url = URL.createObjectURL(file)
+      img.onload = () => {
+        URL.revokeObjectURL(url)
+        const scale = Math.min(1, maxPx / Math.max(img.width, img.height))
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.round(img.width * scale)
+        canvas.height = Math.round(img.height * scale)
+        canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+        canvas.toBlob(b => b ? resolve(b) : reject(new Error('Compression failed')), 'image/jpeg', quality)
+      }
+      img.onerror = reject
+      img.src = url
+    })
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!imageFile) { setError('Please select an image.'); return }
@@ -69,9 +86,10 @@ export default function AdminDashboard() {
     setSubmitting(true)
 
     try {
-      const storagePath = `gallery/${Date.now()}_${imageFile.name}`
+      const compressed = await compressImage(imageFile)
+      const storagePath = `gallery/${Date.now()}.jpg`
       const storageRef = ref(storage, storagePath)
-      const uploadTask = uploadBytesResumable(storageRef, imageFile)
+      const uploadTask = uploadBytesResumable(storageRef, compressed)
 
       await new Promise<void>((resolve, reject) => {
         uploadTask.on(

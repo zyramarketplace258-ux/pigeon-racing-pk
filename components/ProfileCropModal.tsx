@@ -9,7 +9,7 @@ interface Props {
 }
 
 const SIZE = 260
-const OUTPUT = 400
+const OUTPUT = 250   // 250×250px — plenty for a profile circle, keeps file ~15–30 KB
 
 export default function ProfileCropModal({ file, onSave, onCancel }: Props) {
   const [src, setSrc] = useState('')
@@ -71,7 +71,7 @@ export default function ProfileCropModal({ file, onSave, onCancel }: Props) {
     const ctx = canvas.getContext('2d')!
     const s = OUTPUT / SIZE
     ctx.drawImage(img, (OUTPUT - rW * s) / 2 + cx * s, (OUTPUT - rH * s) / 2 + cy * s, rW * s, rH * s)
-    canvas.toBlob(b => { if (b) onSave(b) }, 'image/jpeg', 0.92)
+    canvas.toBlob(b => { if (b) onSave(b) }, 'image/jpeg', 0.78)
   }
 
   return (
