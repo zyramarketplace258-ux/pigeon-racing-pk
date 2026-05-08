@@ -72,6 +72,8 @@ export default function ClubDashboard() {
   const [timeError, setTimeError] = useState('')
   const [memberName, setMemberName] = useState('')
   const [memberArea, setMemberArea] = useState('')
+  const [nameError, setNameError] = useState('')
+  const [areaError, setAreaError] = useState('')
   const [addingMember, setAddingMember] = useState(false)
   const [assignTournamentId, setAssignTournamentId] = useState('')
   const [assignedIds, setAssignedIds] = useState<Set<string>>(new Set())
@@ -112,8 +114,9 @@ export default function ClubDashboard() {
         setTournaments(allTournaments)
         const activeList = allTournaments.filter(t => t.status === 'active')
         setActiveTournaments(activeList)
-        if (allTournaments.length > 0) {
-          const firstT = allTournaments[0]
+        const assignable = allTournaments.filter(t => t.status !== 'completed')
+        if (assignable.length > 0) {
+          const firstT = assignable[0]
           setAssignTournamentId(firstT.id)
           setAssignedIds(new Set(firstT.participantIds != null ? firstT.participantIds : allParticipants.map(p => p.id)))
         }
@@ -230,12 +233,22 @@ export default function ClubDashboard() {
   const addMember = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!club) return
+    const trimName = memberName.trim()
+    const trimArea = memberArea.trim()
+    let valid = true
+    if (trimName.length < 3) { setNameError('Minimum 3 letters required'); valid = false }
+    if (trimArea.length < 2) { setAreaError('Minimum 2 characters required'); valid = false }
+    if (!valid) return
+    const duplicate = participants.find(
+      p => p.name.toLowerCase() === trimName.toLowerCase() && p.area.toLowerCase() === trimArea.toLowerCase()
+    )
+    if (duplicate && !window.confirm(`A member named "${trimName}" from "${trimArea}" already exists. Add again?`)) return
     setAddingMember(true)
     const docRef = await addDoc(collection(db, 'clubs', club.id, 'participants'), {
-      name: memberName, area: memberArea, createdAt: serverTimestamp()
+      name: trimName, area: trimArea, createdAt: serverTimestamp()
     })
-    setParticipants(prev => [...prev, { id: docRef.id, name: memberName, area: memberArea }])
-    setMemberName(''); setMemberArea(''); setAddingMember(false)
+    setParticipants(prev => [...prev, { id: docRef.id, name: trimName, area: trimArea }])
+    setMemberName(''); setMemberArea(''); setNameError(''); setAreaError(''); setAddingMember(false)
   }
 
   const removeMember = async (id: string) => {
@@ -351,13 +364,15 @@ export default function ClubDashboard() {
       <div className="px-4 py-6">
 
         {/* ── TOURNAMENTS TAB — participant assignment ── */}
-        {tab === 'tournaments' && (
+        {tab === 'tournaments' && (() => {
+          const assignableTournaments = tournaments.filter(t => t.status !== 'completed')
+          return (
           <div className="max-w-2xl mx-auto">
-            {tournaments.length === 0 ? (
+            {assignableTournaments.length === 0 ? (
               <div className="bg-surface border border-green-800 rounded-xl p-10 text-center">
                 <p className="text-4xl mb-3">🏆</p>
-                <p className="text-white font-bold">No tournaments yet</p>
-                <p className="text-green-400 text-sm mt-2">Ask your admin to create tournaments.</p>
+                <p className="text-white font-bold">No active tournaments</p>
+                <p className="text-green-400 text-sm mt-2">Ask your admin to create or activate a tournament.</p>
               </div>
             ) : (
               <div className="bg-surface border border-green-800 rounded-xl p-6">
@@ -365,7 +380,7 @@ export default function ClubDashboard() {
                 <p className="text-green-400 text-xs mb-4">Select which members are enrolled in each tournament.</p>
 
                 <div className="flex flex-wrap gap-2 mb-5">
-                  {tournaments.map(t => (
+                  {assignableTournaments.map(t => (
                     <button key={t.id} onClick={() => handleAssignTournamentSelect(t.id)}
                       className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition ${
                         t.id === assignTournamentId
@@ -423,26 +438,43 @@ export default function ClubDashboard() {
             )}
 
           </div>
-        )}
+        )})()}
 
         {/* ── MEMBERS TAB ── */}
         {tab === 'members' && (
           <div className="max-w-2xl mx-auto space-y-5">
             <div className="bg-surface border border-green-800 rounded-xl p-6">
               <h2 className="text-secondary font-bold mb-4">+ Add Member</h2>
-              <form onSubmit={addMember} className="flex flex-col sm:flex-row gap-3">
-                <input type="text" value={memberName}
-                  onChange={e => setMemberName(e.target.value.replace(/[^a-zA-Z؀-ۿݐ-ݿ\s]/g, ''))}
-                  required placeholder="Name"
-                  className="flex-1 bg-primary border border-green-700 text-white rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-secondary placeholder-green-700" />
-                <input type="text" value={memberArea}
-                  onChange={e => setMemberArea(e.target.value.replace(/[^a-zA-Z0-9؀-ۿݐ-ݿ\s]/g, ''))}
-                  required placeholder="Area (letters & numbers)"
-                  className="flex-1 bg-primary border border-green-700 text-white rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-secondary placeholder-green-700" />
-                <button type="submit" disabled={addingMember}
-                  className="bg-secondary hover:bg-accent text-dark font-bold px-5 py-2 rounded-lg text-sm transition disabled:opacity-50 sm:w-auto w-full">
-                  Add
-                </button>
+              <form onSubmit={addMember} className="space-y-2">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="flex-1">
+                    <input type="text" value={memberName}
+                      onChange={e => {
+                        const val = e.target.value.replace(/[^a-zA-Z؀-ۿݐ-ݿ\s]/g, '')
+                        setMemberName(val)
+                        setNameError(val.trim().length > 0 && val.trim().length < 3 ? 'Minimum 3 letters' : '')
+                      }}
+                      placeholder="Name (letters only)"
+                      className={`w-full bg-primary border text-white rounded-lg px-4 py-2 text-sm focus:outline-none placeholder-green-700 ${nameError ? 'border-red-500 focus:border-red-400' : 'border-green-700 focus:border-secondary'}`} />
+                    {nameError && <p className="text-red-400 text-xs mt-0.5 px-1">{nameError}</p>}
+                  </div>
+                  <div className="flex-1">
+                    <input type="text" value={memberArea}
+                      onChange={e => {
+                        const val = e.target.value.replace(/[^a-zA-Z0-9؀-ۿݐ-ݿ\s]/g, '')
+                        setMemberArea(val)
+                        setAreaError(val.trim().length > 0 && val.trim().length < 2 ? 'Minimum 2 characters' : '')
+                      }}
+                      placeholder="Village/Area"
+                      className={`w-full bg-primary border text-white rounded-lg px-4 py-2 text-sm focus:outline-none placeholder-green-700 ${areaError ? 'border-red-500 focus:border-red-400' : 'border-green-700 focus:border-secondary'}`} />
+                    {areaError && <p className="text-red-400 text-xs mt-0.5 px-1">{areaError}</p>}
+                  </div>
+                  <button type="submit" disabled={addingMember}
+                    className="bg-secondary hover:bg-accent text-dark font-bold px-5 py-2 rounded-lg text-sm transition disabled:opacity-50 sm:w-auto w-full self-start">
+                    Add
+                  </button>
+                </div>
+                <p className="text-green-700 text-xs">Name: letters only, min 3 · Village: letters &amp; numbers, min 2</p>
               </form>
             </div>
 

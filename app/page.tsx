@@ -185,7 +185,14 @@ export default function HomePage() {
               })
               .sort((a, b) => compareHours(a.totalHours, b.totalHours))
 
-            liveStore.set(info.base.id, { topEntries: entries.slice(0, 3), totalLanded, totalPigeons: info.enrolledCount * info.base.pigeonCount })
+            // Include all entries through rank 3, keeping ties together
+            const top: TopEntry[] = []
+            let prevH = '', rankCount = 0
+            for (const entry of entries) {
+              if (entry.totalHours !== prevH) { rankCount++; if (rankCount > 3) break; prevH = entry.totalHours }
+              top.push(entry)
+            }
+            liveStore.set(info.base.id, { topEntries: top, totalLanded, totalPigeons: info.enrolledCount * info.base.pigeonCount })
             rebuildAndPublish()
             markInit(info.base.id)
           }
@@ -219,14 +226,19 @@ export default function HomePage() {
     return () => unsub()
   }, [])
 
-  const rankRingClass = (i: number) => {
-    if (i === 0) return 'text-white shadow-md'
-    if (i === 1) return 'text-white shadow'
+  const getRank = (entry: TopEntry, entries: TopEntry[]) => {
+    const seen: string[] = []
+    entries.forEach(e => { if (!seen.includes(e.totalHours)) seen.push(e.totalHours) })
+    return seen.indexOf(entry.totalHours)
+  }
+  const rankRingClass = (rank: number) => {
+    if (rank === 0) return 'text-white shadow-md'
+    if (rank === 1) return 'text-white shadow'
     return 'bg-[#eee] text-[#6c757d]'
   }
-  const rankRingStyle = (i: number): React.CSSProperties => {
-    if (i === 0) return { background: 'linear-gradient(145deg,#ffe066,#c8900a)' }
-    if (i === 1) return { background: 'linear-gradient(145deg,#e8e8e8,#8a8a8a)' }
+  const rankRingStyle = (rank: number): React.CSSProperties => {
+    if (rank === 0) return { background: 'linear-gradient(145deg,#ffe066,#c8900a)' }
+    if (rank === 1) return { background: 'linear-gradient(145deg,#e8e8e8,#8a8a8a)' }
     return {}
   }
 
@@ -499,17 +511,19 @@ export default function HomePage() {
 
                 {tr.topEntries.length > 0 ? (
                   <div>
-                    {tr.topEntries.map((entry, i) => (
+                    {tr.topEntries.map((entry, i) => {
+                      const rank = getRank(entry, tr.topEntries)
+                      return (
                       <div
                         key={i}
                         className="flex items-center gap-3 px-3 py-2.5 border-b border-[#e9ecef] last:border-b-0"
-                        style={{ background: i === 0 ? '#dff0d8' : i % 2 === 1 ? '#f6faf6' : '#fff' }}
+                        style={{ background: rank === 0 ? '#dff0d8' : i % 2 === 1 ? '#f6faf6' : '#fff' }}
                       >
                         <div
-                          className={`w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-sm font-bold ${rankRingClass(i)}`}
-                          style={rankRingStyle(i)}
+                          className={`w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-sm font-bold ${rankRingClass(rank)}`}
+                          style={rankRingStyle(rank)}
                         >
-                          {i + 1}
+                          {rank + 1}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-sm text-[#1a1a1a] truncate">{entry.name}</p>
@@ -517,7 +531,7 @@ export default function HomePage() {
                         </div>
                         <p className="font-bold text-xl text-[#1a1a1a] shrink-0">{formatTimeDisplay(entry.totalHours)}</p>
                       </div>
-                    ))}
+                    )})}
                   </div>
                 ) : (
                   <div className="px-4 py-6 text-center text-gray-400 text-sm bg-[#f9fdf9]">
