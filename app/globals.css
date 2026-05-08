@@ -22,8 +22,8 @@ body {
 }
 
 @keyframes pigeonFly {
-  from { left: -60px; }
-  to   { left: calc(100% + 60px); }
+  from { left: calc(100% + 60px); }
+  to   { left: -60px; }
 }
 
 .pigeon-fly {
