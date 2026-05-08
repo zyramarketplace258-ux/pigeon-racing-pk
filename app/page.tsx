@@ -342,53 +342,79 @@ export default function HomePage() {
 
         {/* GALLERY TAB */}
         {activeTab === 'gallery' && (
-          galleryLoading ? (
-            <div className="space-y-4">
-              {[1, 2].map(i => (
-                <div key={i} className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden animate-pulse">
-                  <div className="h-48 bg-green-100" />
-                  <div className="p-4 space-y-2">
-                    <div className="h-3 bg-green-100 rounded w-2/3" />
-                    <div className="h-2.5 bg-green-100 rounded w-full" />
-                  </div>
-                </div>
-              ))}
+          <>
+            {/* Gallery header */}
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-[#1b5e20] font-bold text-lg leading-tight">📸 Event Gallery</h2>
+                {!galleryLoading && galleryPosts.length > 0 && (
+                  <p className="text-[#888] text-xs mt-0.5">{galleryPosts.length} post{galleryPosts.length !== 1 ? 's' : ''}</p>
+                )}
+              </div>
             </div>
-          ) : galleryPosts.length === 0 ? (
-            <div className="bg-white rounded-xl border border-[#d4edda] p-10 text-center shadow-sm">
-              <p className="text-4xl mb-3">🖼️</p>
-              <p className="text-gray-700 font-bold">{t('noGalleryPosts')}</p>
-              <p className="text-gray-400 text-sm mt-1">{t('noGalleryDesc')}</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {galleryPosts.map(post => (
-                <div key={post.id} className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
-                  <div className="w-full bg-[#1a1a1a] flex items-center justify-center" style={{ height: 260 }}>
-                    <img
-                      src={post.imageUrl}
-                      alt={post.title}
-                      className="max-w-full max-h-full object-contain"
-                      style={{ maxHeight: 260 }}
-                      onError={e => { (e.target as HTMLImageElement).parentElement!.style.display = 'none' }}
-                    />
-                  </div>
-                  <div className="p-4">
-                    <p className="text-[#1b5e20] font-bold text-base mb-1">{post.title}</p>
-                    {post.description && <p className="text-[#444] text-sm leading-relaxed">{post.description}</p>}
-                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#f0f0f0]">
-                      <p className="text-[#888] text-xs font-medium">{post.postedBy}</p>
-                      {post.createdAt && (
-                        <p className="text-[#aaa] text-xs" dir="ltr">
-                          {new Date(post.createdAt.seconds * 1000).toLocaleDateString()}
-                        </p>
-                      )}
+
+            {galleryLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className="bg-white rounded-2xl shadow-sm overflow-hidden animate-pulse">
+                    <div className="bg-[#e8f5e9]" style={{ paddingBottom: '75%' }} />
+                    <div className="p-4 space-y-2">
+                      <div className="h-3 bg-green-100 rounded w-3/4" />
+                      <div className="h-2.5 bg-green-100 rounded w-full" />
+                      <div className="h-2.5 bg-green-100 rounded w-2/3" />
                     </div>
                   </div>
+                ))}
+              </div>
+            ) : galleryPosts.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-[#d4edda] p-12 text-center shadow-sm">
+                <div className="w-16 h-16 rounded-full bg-[#e8f5e9] flex items-center justify-center mx-auto mb-4">
+                  <span className="text-3xl">🖼️</span>
                 </div>
-              ))}
-            </div>
-          )
+                <p className="text-[#222] font-bold text-base">{t('noGalleryPosts')}</p>
+                <p className="text-[#999] text-sm mt-1">{t('noGalleryDesc')}</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                {galleryPosts.map(post => (
+                  <div key={post.id} className="bg-white rounded-2xl shadow-md overflow-hidden border border-[#e8f5e9] flex flex-col">
+                    {/* Image — 4:3 letterbox */}
+                    <div className="relative w-full bg-[#111] overflow-hidden" style={{ paddingBottom: '75%' }}>
+                      <img
+                        src={post.imageUrl}
+                        alt={post.title}
+                        className="absolute inset-0 w-full h-full object-contain"
+                        onError={e => { (e.target as HTMLImageElement).closest('div')!.style.display = 'none' }}
+                      />
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-4 flex flex-col flex-1">
+                      <p className="font-bold text-[#1a1a1a] text-sm leading-snug mb-1.5">{post.title}</p>
+                      {post.description && (
+                        <p className="text-[#666] text-xs leading-relaxed flex-1" style={{ display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {post.description}
+                        </p>
+                      )}
+
+                      {/* Footer */}
+                      <div className="flex items-center gap-2.5 mt-3 pt-3 border-t border-[#f0f0f0]">
+                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#1b5e20] to-[#388e3c] flex items-center justify-center shrink-0">
+                          <span className="text-white text-xs font-bold">{(post.postedBy || 'P').charAt(0).toUpperCase()}</span>
+                        </div>
+                        <p className="text-[#444] text-xs font-semibold flex-1 truncate">{post.postedBy}</p>
+                        {post.createdAt && (
+                          <p className="text-[#bbb] text-xs shrink-0" dir="ltr">
+                            {new Date(post.createdAt.seconds * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
 
         {/* HOME TAB */}
