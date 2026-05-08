@@ -19,7 +19,7 @@ interface RaceDay { dayNumber: number; date: string; isGap?: boolean }
 interface PigeonChip { landingTime: string; hoursFlown: string }
 interface TopEntry { name: string; area: string; photoUrl?: string; pigeons: PigeonChip[]; totalHours: string }
 interface TopScorer { rank: number; name: string; area: string; photoUrl?: string; totalHours: string; tournament: string; clubSlug: string; tournamentId: string }
-interface WinnerEntry { rank: number; name: string; landingTime: string; hoursFlown: string; tournament: string; clubSlug: string; tournamentId: string }
+interface WinnerEntry { rank: number; name: string; area: string; landingTime: string; hoursFlown: string; tournament: string; clubSlug: string; tournamentId: string }
 interface ActiveTournament {
   id: string; name: string; pigeonCount: number
   defaultStartTime: string; defaultEndTime: string
@@ -116,7 +116,7 @@ export default function HomePage() {
       infos.forEach(info => {
         liveStore.set(info.base.id, { topEntries: [], totalLanded: 0, totalPigeons: info.enrolledCount * info.base.pigeonCount })
       })
-      type PigeonRec = { participantKey: string; name: string; hoursFlown: string; landingTime: string }
+      type PigeonRec = { participantKey: string; name: string; area: string; hoursFlown: string; landingTime: string }
       const pigeonStore = new Map<string, PigeonRec[]>()
       type ScoreRec = { participantKey: string; name: string; area: string; photoUrl: string; totalHours: string }
       const scoreStore = new Map<string, ScoreRec[]>()
@@ -180,7 +180,7 @@ export default function HomePage() {
         let prevHW = '', rankW = 0
         for (const p of sorted) {
           if (p.hoursFlown !== prevHW) { rankW++; if (rankW > 1) break; prevHW = p.hoursFlown }
-          wp.push({ name: p.name, landingTime: p.landingTime, hoursFlown: p.hoursFlown, tournament: p.tournament, clubSlug: p.clubSlug, tournamentId: p.tournamentId, rank: rankW })
+          wp.push({ name: p.name, area: p.area, landingTime: p.landingTime, hoursFlown: p.hoursFlown, tournament: p.tournament, clubSlug: p.clubSlug, tournamentId: p.tournamentId, rank: rankW })
         }
         setWinnerPigeons(wp)
       }
@@ -235,7 +235,7 @@ export default function HomePage() {
                 }
                 ;(ddata.pigeons || []).forEach((pg: Record<string, string>) => {
                   if (pg.hoursFlown && pg.landingTime) {
-                    precs.push({ participantKey: `${info.base.clubId}::${pId}`, name: info.nameMap[pId], hoursFlown: pg.hoursFlown, landingTime: pg.landingTime })
+                    precs.push({ participantKey: `${info.base.clubId}::${pId}`, name: info.nameMap[pId], area: info.areaMap[pId] || '', hoursFlown: pg.hoursFlown, landingTime: pg.landingTime })
                   }
                 })
               })
@@ -505,7 +505,7 @@ export default function HomePage() {
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm text-[#1a1a1a] truncate">{s.name}</p>
-                      <p className="text-[#888] text-xs truncate">{s.area && `${s.area} · `}{s.tournament}</p>
+                      <p className="text-[#888] text-xs truncate">{s.area || '—'}</p>
                     </div>
                     <p className="font-bold text-lg text-[#1b5e20] shrink-0">{formatTimeDisplay(s.totalHours)}</p>
                   </Link>
@@ -532,7 +532,7 @@ export default function HomePage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm text-[#1a1a1a] truncate">{w.name}</p>
-                      <p className="text-[#999] text-xs truncate">{w.tournament}</p>
+                      <p className="text-[#999] text-xs truncate">{w.area || '—'}</p>
                     </div>
                     <div className="shrink-0 text-right">
                       <p className="font-bold text-base text-[#1b5e20]">{formatTimeDisplay(w.hoursFlown)}</p>
