@@ -169,6 +169,7 @@ export default function TournamentClient({
       }
     )
     return () => unsub()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [club?.id, tournament?.id])
 
   // Presence tracking
@@ -179,6 +180,7 @@ export default function TournamentClient({
     const heartbeat = setInterval(() => setDoc(viewerRef, { lastSeen: serverTimestamp() }), 30000)
     const unsubscribe = onSnapshot(collection(db, 'clubs', club.id, 'tournaments', tournament.id, 'viewers'), snap => setViewerCount(snap.size))
     return () => { clearInterval(heartbeat); deleteDoc(viewerRef); unsubscribe() }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [club?.id, tournament?.id])
 
   const [, setTick] = useState(0)

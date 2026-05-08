@@ -68,7 +68,6 @@ export default function ClubDashboard() {
   const [activeTournaments, setActiveTournaments] = useState<Tournament[]>([])
   const [tournament, setTournament] = useState<Tournament | null>(null)
   const [participants, setParticipants] = useState<Participant[]>([])
-  const [todayDay, setTodayDay] = useState<number | null>(null)
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
   const [todayDate, setTodayDate] = useState('')
   const [entries, setEntries] = useState<EntryRow[]>([])
@@ -144,7 +143,6 @@ export default function ClubDashboard() {
             const todayNum = todayRD?.dayNumber ?? null
             const accessible = nonGap.filter(rd => rd.date <= today)
             const defaultDayNum = todayNum ?? accessible[accessible.length - 1]?.dayNumber ?? null
-            setTodayDay(todayNum)
             setSelectedDay(defaultDayNum)
             const entryRows = await fetchEntries(clubData.id, tData, participantsRef.current, defaultDayNum)
             if (!active) return
@@ -152,7 +150,6 @@ export default function ClubDashboard() {
             setEntriesLoading(false)
           } else {
             setTournament(null)
-            setTodayDay(null)
             setSelectedDay(null)
             setEntries([])
           }
@@ -214,7 +211,6 @@ export default function ClubDashboard() {
     const todayNum = todayRD?.dayNumber ?? null
     const accessible = nonGap.filter(rd => rd.date <= today)
     const defaultDayNum = todayNum ?? accessible[accessible.length - 1]?.dayNumber ?? null
-    setTodayDay(todayNum)
     setSelectedDay(defaultDayNum)
     const rows = await fetchEntries(club.id, selected, participants, defaultDayNum)
     setEntries(rows); setEntriesLoading(false)

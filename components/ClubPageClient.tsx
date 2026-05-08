@@ -74,6 +74,7 @@ export default function ClubPageClient({
     })
 
     return () => { active = false; unsub() }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [club?.id])
 
   const getDayProgress = (tr: Tournament) => {
