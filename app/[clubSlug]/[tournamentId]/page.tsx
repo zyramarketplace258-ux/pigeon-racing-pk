@@ -348,7 +348,7 @@ export default function TournamentResultsPage() {
                         : 'bg-white border-[#e9ecef] text-[#555] hover:border-[#388e3c]'
                     }`}
                   >
-                    <span className="block font-bold" dir="ltr">D{rd.dayNumber}</span>
+                    <span className="block font-bold" dir="ltr">D{tournament.raceDays.filter(r => !r.isGap && r.dayNumber <= rd.dayNumber).length}</span>
                     <span className={`block text-xs mt-0.5 ${isSelected ? 'opacity-70' : isToday ? 'text-[#388e3c]' : 'text-[#aaa]'}`} dir="ltr">{rd.date.slice(5)}</span>
                     {isToday && !isSelected && <span className="block text-[#388e3c] text-xs leading-none">●</span>}
                   </button>
@@ -410,7 +410,7 @@ export default function TournamentResultsPage() {
                       {row.dayTotals.map(dt => (
                         <div key={dt.dayNumber} className="shrink-0 rounded border px-1.5 py-1 text-center"
                           style={{ background: dt.hours ? '#f0fdf4' : '#fafafa', borderColor: dt.hours ? '#86efac' : '#e9ecef', borderStyle: dt.hours ? 'solid' : 'dashed' }}>
-                          <span className="block text-[#999] leading-none" style={{ fontSize: '0.6rem' }} dir="ltr">D{dt.dayNumber}</span>
+                          <span className="block text-[#999] leading-none" style={{ fontSize: '0.6rem' }} dir="ltr">D{tournament.raceDays.filter(r => !r.isGap && r.dayNumber <= dt.dayNumber).length}</span>
                           <span className="block font-mono leading-tight mt-0.5" style={{ fontSize: '0.78rem', color: dt.hours ? '#166534' : '#ccc' }} dir="ltr">
                             {dt.hours ? formatTimeDisplay(dt.hours) : '—'}
                           </span>

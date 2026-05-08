@@ -203,7 +203,7 @@ export default function NewTournamentPage() {
                           : 'bg-primary border-green-700 text-white hover:border-secondary'
                       }`}
                     >
-                      <span className="block font-bold">{d.isGap ? 'GAP' : `D${d.dayNumber}`}</span>
+                      <span className="block font-bold">{d.isGap ? 'GAP' : `D${raceDays.filter(r => !r.isGap && r.dayNumber <= d.dayNumber).length}`}</span>
                       <span className="block text-xs opacity-70 mt-0.5">{d.date.slice(5)}</span>
                     </button>
                   ))}

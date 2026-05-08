@@ -183,8 +183,8 @@ export default function TournamentManagePage() {
             </span>
           </div>
           <div>
-            <p className="text-green-400 text-xs mb-1">Total Days</p>
-            <p className="text-white font-bold">{tournament?.totalDays}</p>
+            <p className="text-green-400 text-xs mb-1">Race Days</p>
+            <p className="text-white font-bold">{tournament?.raceDays?.filter(rd => !rd.isGap).length ?? tournament?.totalDays}</p>
           </div>
           <div>
             <p className="text-green-400 text-xs mb-1">Pigeons / Participant</p>
@@ -290,7 +290,7 @@ export default function TournamentManagePage() {
               >
                 {tournament?.raceDays?.filter(rd => !rd.isGap).map(rd => (
                   <option key={rd.dayNumber} value={rd.dayNumber}>
-                    Day {rd.dayNumber} — {rd.date}
+                    Day {tournament.raceDays.filter(r => !r.isGap && r.dayNumber <= rd.dayNumber).length} — {rd.date}
                   </option>
                 ))}
               </select>
@@ -301,7 +301,7 @@ export default function TournamentManagePage() {
             ) : !hasEntries ? (
               <div className="bg-surface border border-green-800 rounded-xl p-10 text-center">
                 <p className="text-3xl mb-3">📋</p>
-                <p className="text-white font-bold">No entries for Day {selectedDay}</p>
+                <p className="text-white font-bold">No entries for Day {tournament?.raceDays?.filter(r => !r.isGap && r.dayNumber <= (selectedDay ?? 0)).length}</p>
                 <p className="text-green-400 text-sm mt-1">The club hasn&apos;t submitted data for this race day yet.</p>
               </div>
             ) : (

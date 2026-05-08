@@ -510,7 +510,7 @@ export default function ClubDashboard() {
                 </div>
                 <div className="flex items-center justify-between mt-1">
                   <p className="text-green-400 text-sm">
-                    {todayDay ? `Day ${todayDay} · ${todayDate}` : `Today (${todayDate}) is not a race day`}
+                    {todayDay ? `Day ${tournament?.raceDays?.filter(r => !r.isGap && r.dayNumber <= todayDay).length ?? todayDay} · ${todayDate}` : `Today (${todayDate}) is not a race day`}
                   </p>
                   {tournament?.defaultEndTime && (
                     <p className="text-green-600 text-xs">Cutoff: {tournament.defaultEndTime}</p>
