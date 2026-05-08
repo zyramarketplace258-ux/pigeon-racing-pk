@@ -22,7 +22,7 @@ const strings = {
     loadingLiveData: 'Loading live data...',
     tournamentsLive: 'Tournaments Live',
     loftsCompeting: 'Lofts Competing',
-    pigeonsLandedToday: 'Pigeons Landed Today',
+    pigeonsLandedToday: 'Pigeons Landed',
     todaysHighlights: "Today's Highlights",
     topScoreToday: 'Top score today',
     longestFlight: 'Longest single flight',
