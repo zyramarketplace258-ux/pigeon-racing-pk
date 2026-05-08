@@ -32,21 +32,6 @@ body {
   60%       { transform: translateY(-3px); }
 }
 
-@keyframes wingFlapUp {
-  0%, 100% { transform: rotate(0deg); }
-  50%       { transform: rotate(-32deg); }
-}
-
-@keyframes wingFlapDown {
-  0%, 100% { transform: rotate(0deg); }
-  50%       { transform: rotate(20deg); }
-}
-
-@keyframes tailWag {
-  0%, 100% { transform: rotate(-4deg); }
-  50%       { transform: rotate(5deg); }
-}
-
 .pigeon-fly {
   position: absolute;
   animation-name: pigeonFly, pigeonBob;

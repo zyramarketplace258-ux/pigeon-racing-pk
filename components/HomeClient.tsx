@@ -53,42 +53,14 @@ interface Props {
 }
 
 function FlyingPigeon({ size }: { size: number }) {
-  const wStyle = (delay = '0s'): React.CSSProperties => ({
-    transformBox: 'fill-box' as React.CSSProperties['transformBox'],
-    transformOrigin: 'right center',
-    animation: `wingFlapUp 0.44s ease-in-out infinite ${delay}`,
-  })
   return (
-    <svg width={Math.round(size * 2.6)} height={size} viewBox="0 0 70 35" style={{ display: 'block' }}>
-      {/* Tail */}
-      <ellipse cx="62" cy="22" rx="10" ry="3.5" fill="#78909C"
-        style={{ transformBox: 'fill-box' as React.CSSProperties['transformBox'], transformOrigin: 'left center', animation: 'tailWag 0.5s ease-in-out infinite' }} />
-      {/* Body */}
-      <ellipse cx="37" cy="21" rx="20" ry="10" fill="#90A4AE" />
-      {/* Breast */}
-      <ellipse cx="20" cy="20" rx="9" ry="8" fill="#B0BEC5" />
-      {/* Iridescent neck patch */}
-      <ellipse cx="16" cy="18" rx="5" ry="4" fill="#7E57C2" opacity="0.3" />
-      {/* Head */}
-      <circle cx="10" cy="13" r="8" fill="#9E9E9E" />
-      {/* Cere */}
-      <ellipse cx="4" cy="11.5" rx="2.2" ry="1.2" fill="#E0E0E0" />
-      {/* Beak */}
-      <polygon points="2,11 0,13.5 3.5,14" fill="#FFCC80" />
-      {/* Eye ring */}
-      <circle cx="8" cy="11" r="2.8" fill="#EF6C00" />
-      {/* Pupil */}
-      <circle cx="8" cy="11" r="1.5" fill="#1A1A1A" />
-      {/* Eye shine */}
-      <circle cx="8.6" cy="10.4" r="0.45" fill="white" />
-      {/* Under wing shadow */}
-      <ellipse cx="35" cy="25" rx="16" ry="4" fill="#455A64" opacity="0.45"
-        style={{ transformBox: 'fill-box' as React.CSSProperties['transformBox'], transformOrigin: 'right center', animation: 'wingFlapDown 0.44s ease-in-out infinite' }} />
-      {/* Upper wing */}
-      <ellipse cx="35" cy="14" rx="18" ry="6" fill="#607D8B" style={wStyle()} />
-      {/* Primary feathers */}
-      <ellipse cx="26" cy="8" rx="13" ry="3" fill="#455A64" style={wStyle('0.07s')} />
-    </svg>
+    <img
+      src="/pigeon-fly.gif"
+      alt=""
+      width={size}
+      height={size}
+      style={{ display: 'block', mixBlendMode: 'multiply' }}
+    />
   )
 }
 
