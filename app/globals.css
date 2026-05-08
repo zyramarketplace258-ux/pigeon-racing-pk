@@ -21,8 +21,3 @@ body {
   font-family: 'Noto Nastaliq Urdu', serif;
 }
 
-@keyframes pigeonRelease {
-  0%   { transform: translate(0, 0) scale(1); opacity: 1; }
-  10%  { transform: translate(-50px, -60px) scale(1.05); opacity: 1; }
-  100% { transform: translate(-110vw, -320px) scale(0.3); opacity: 0.5; }
-}
