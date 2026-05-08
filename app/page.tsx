@@ -48,7 +48,6 @@ export default function HomePage() {
   useEffect(() => {
     let active = true
     const unsubscribers: (() => void)[] = []
-    const toMins = (t: string) => { const [h, m] = (t || '0:0').split(':').map(Number); return h * 60 + m }
 
     const init = async () => {
       const today = new Date().toISOString().split('T')[0]
