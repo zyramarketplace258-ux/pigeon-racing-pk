@@ -21,20 +21,8 @@ body {
   font-family: 'Noto Nastaliq Urdu', serif;
 }
 
-@keyframes pigeonFly {
-  from { left: calc(100% + 60px); }
-  to   { left: -60px; }
-}
-
-@keyframes pigeonBob {
-  0%, 100% { transform: translateY(0px); }
-  30%       { transform: translateY(-7px); }
-  60%       { transform: translateY(-3px); }
-}
-
-.pigeon-fly {
-  position: absolute;
-  animation-name: pigeonFly, pigeonBob;
-  animation-timing-function: linear, ease-in-out;
-  animation-iteration-count: infinite, infinite;
+@keyframes pigeonRelease {
+  0%   { transform: translate(0, 0) scale(1); opacity: 1; }
+  10%  { transform: translate(-50px, -60px) scale(1.05); opacity: 1; }
+  100% { transform: translate(-110vw, -320px) scale(0.3); opacity: 0.5; }
 }

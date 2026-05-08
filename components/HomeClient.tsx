@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { collection, getDocs, query, where, onSnapshot, orderBy } from 'firebase/firestore'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { db, auth } from '@/lib/firebase'
@@ -52,18 +52,6 @@ interface Props {
   tInfos: TInfoClient[]
 }
 
-function FlyingPigeon({ size }: { size: number }) {
-  return (
-    <img
-      src="/pigeon-fly.gif"
-      alt=""
-      width={size}
-      height={size}
-      style={{ display: 'block', mixBlendMode: 'multiply' }}
-    />
-  )
-}
-
 export default function HomeClient({ initialData, tInfos }: Props) {
   const { lang, toggle } = useLanguage()
   const t = useT()
@@ -79,6 +67,26 @@ export default function HomeClient({ initialData, tInfos }: Props) {
   const [galleryPosts, setGalleryPosts] = useState<GalleryPost[]>([])
   const [galleryLoading, setGalleryLoading] = useState(false)
   const [loggedInClub, setLoggedInClub] = useState<Club | null>(null)
+  const statsRef = useRef<HTMLDivElement>(null)
+  const [showPigeon, setShowPigeon] = useState(false)
+  const [pigeonPos, setPigeonPos] = useState({ bottom: 0, right: 0 })
+
+  useEffect(() => {
+    const trigger = () => {
+      if (statsRef.current) {
+        const rect = statsRef.current.getBoundingClientRect()
+        setPigeonPos({
+          bottom: window.innerHeight - rect.bottom,
+          right: window.innerWidth - rect.right,
+        })
+      }
+      setShowPigeon(true)
+      setTimeout(() => setShowPigeon(false), 5000)
+    }
+    const first = setTimeout(trigger, 2000)
+    const iv = setInterval(trigger, 30000)
+    return () => { clearTimeout(first); clearInterval(iv) }
+  }, [])
 
   // Set up real-time listeners — structural data already provided by SSR
   useEffect(() => {
@@ -264,22 +272,8 @@ export default function HomeClient({ initialData, tInfos }: Props) {
     <main className={`min-h-screen bg-[#e8f5e9] ${isUrdu ? 'font-urdu' : ''}`} dir={isUrdu ? 'rtl' : 'ltr'}>
 
       {/* Header */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-[#1b5e20] to-[#2e7d32] px-4 py-3">
-        {([
-          { delay: '0s',   dur: '17s', bob: '2.1s', top: 8,  size: 34 },
-          { delay: '5s',   dur: '19s', bob: '1.8s', top: 38, size: 22 },
-          { delay: '2.5s', dur: '16s', bob: '2.4s', top: 4,  size: 28 },
-          { delay: '9s',   dur: '18s', bob: '1.6s', top: 42, size: 20 },
-          { delay: '1s',   dur: '20s', bob: '2.2s', top: 20, size: 30 },
-          { delay: '7s',   dur: '17s', bob: '1.9s', top: 12, size: 24 },
-          { delay: '4s',   dur: '19s', bob: '2.3s', top: 46, size: 26 },
-          { delay: '11s',  dur: '16s', bob: '2s',   top: 2,  size: 32 },
-        ] as { delay: string; dur: string; bob: string; top: number; size: number }[]).map((p, i) => (
-          <span key={i} className="pigeon-fly" style={{ top: p.top, animationDuration: `${p.dur}, ${p.bob}`, animationDelay: `${p.delay}, 0s`, opacity: 0.22 + (i % 4) * 0.06, zIndex: 0 }}>
-            <FlyingPigeon size={p.size} />
-          </span>
-        ))}
-        <div className="max-w-5xl mx-auto relative z-10 flex items-center justify-between">
+      <div className="bg-gradient-to-r from-[#1b5e20] to-[#2e7d32] px-4 py-3">
+        <div className="max-w-5xl mx-auto relative flex items-center justify-between">
           <div>
             <h1 className={`${!isUrdu ? playfair.className : ''} text-white text-xl sm:text-2xl leading-tight`}>{t('pakistanPigeon')}</h1>
             <p className="text-green-300 text-xs tracking-widest uppercase">{t('loveForTheLoft')}</p>
@@ -318,18 +312,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
       </nav>
 
       {/* Stats Bar */}
-      <div className="relative overflow-hidden bg-[#2e7d32] px-4 py-3">
-        {([
-          { delay: '0.5s', dur: '17s', bob: '2s',   top: 6,  size: 24 },
-          { delay: '3s',   dur: '19s', bob: '1.8s', top: 42, size: 20 },
-          { delay: '1.5s', dur: '16s', bob: '2.3s', top: 20, size: 28 },
-          { delay: '5s',   dur: '18s', bob: '2.1s', top: 54, size: 22 },
-        ] as { delay: string; dur: string; bob: string; top: number; size: number }[]).map((p, i) => (
-          <span key={i} className="pigeon-fly" style={{ top: p.top, animationDuration: `${p.dur}, ${p.bob}`, animationDelay: `${p.delay}, 0s`, opacity: 0.18 + i * 0.05, zIndex: 0 }}>
-            <FlyingPigeon size={p.size} />
-          </span>
-        ))}
-        <div className="relative z-10">
+      <div ref={statsRef} className="bg-[#2e7d32] px-4 py-3">
         <p className="text-green-200 text-xs font-bold uppercase tracking-widest text-center mb-2">{t('todaysStats')}</p>
         <div className="grid grid-cols-2 gap-2 max-w-sm mx-auto">
           <div className="bg-[#1b5e20] bg-opacity-60 rounded-lg py-2 px-3 text-center">
@@ -348,7 +331,6 @@ export default function HomeClient({ initialData, tInfos }: Props) {
             <p className="text-white font-bold text-xl leading-none">{totalStillFlying}</p>
             <p className="text-green-300 text-xs mt-0.5">{t('stillFlying')}</p>
           </div>
-        </div>
         </div>
       </div>
 
@@ -635,6 +617,12 @@ export default function HomeClient({ initialData, tInfos }: Props) {
       <footer className="text-center py-4 text-gray-400 text-xs border-t border-[#d4edda] bg-white">
         {t('footerFull')}
       </footer>
+
+      {showPigeon && (
+        <div style={{ position: 'fixed', bottom: pigeonPos.bottom, right: pigeonPos.right, animation: 'pigeonRelease 4.5s ease-out forwards', zIndex: 100, pointerEvents: 'none' }}>
+          <img src="/pigeon-fly.gif" width={160} height={160} alt="" style={{ display: 'block', transform: 'scaleX(-1)' }} />
+        </div>
+      )}
 
     </main>
   )
