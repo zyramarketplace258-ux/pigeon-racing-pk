@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { signOut } from 'firebase/auth'
-import { collection, getDocs, addDoc, deleteDoc, doc, serverTimestamp, query, orderBy } from 'firebase/firestore'
+import { collection, getDocs } from 'firebase/firestore'
 import { auth, db } from '@/lib/firebase'
 import AdminGuard from '@/components/admin/AdminGuard'
 import Link from 'next/link'
@@ -18,24 +18,10 @@ interface Club {
   logoUrl?: string
 }
 
-interface GalleryPost {
-  id: string
-  imageUrl: string
-  title: string
-  description: string
-  postedBy: string
-}
-
 export default function AdminDashboard() {
   const router = useRouter()
   const [clubs, setClubs] = useState<Club[]>([])
   const [loading, setLoading] = useState(true)
-
-  const [galleryPosts, setGalleryPosts] = useState<GalleryPost[]>([])
-  const [galleryLoading, setGalleryLoading] = useState(true)
-  const [galleryForm, setGalleryForm] = useState({ imageUrl: '', title: '', description: '', postedBy: '' })
-  const [gallerySubmitting, setGallerySubmitting] = useState(false)
-  const [galleryError, setGalleryError] = useState('')
 
   useEffect(() => {
     const load = async () => {
@@ -44,34 +30,8 @@ export default function AdminDashboard() {
       setClubs(clubList)
       setLoading(false)
     }
-    const loadGallery = async () => {
-      const snap = await getDocs(query(collection(db, 'gallery'), orderBy('createdAt', 'desc')))
-      setGalleryPosts(snap.docs.map(d => ({ id: d.id, ...d.data() })) as GalleryPost[])
-      setGalleryLoading(false)
-    }
     load()
-    loadGallery()
   }, [])
-
-  const addGalleryPost = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!galleryForm.imageUrl || !galleryForm.title) { setGalleryError('Image URL and title are required.'); return }
-    setGallerySubmitting(true)
-    setGalleryError('')
-    try {
-      const docRef = await addDoc(collection(db, 'gallery'), { ...galleryForm, createdAt: serverTimestamp() })
-      setGalleryPosts(prev => [{ id: docRef.id, ...galleryForm }, ...prev])
-      setGalleryForm({ imageUrl: '', title: '', description: '', postedBy: '' })
-    } catch {
-      setGalleryError('Failed to save post.')
-    }
-    setGallerySubmitting(false)
-  }
-
-  const deleteGalleryPost = async (id: string) => {
-    await deleteDoc(doc(db, 'gallery', id))
-    setGalleryPosts(prev => prev.filter(p => p.id !== id))
-  }
 
   const handleLogout = async () => {
     await signOut(auth)
@@ -159,87 +119,6 @@ export default function AdminDashboard() {
               ))}
             </div>
           )}
-          {/* Gallery Management */}
-          <div className="mt-10">
-            <h2 className="text-secondary font-bold text-lg uppercase tracking-widest mb-4">🖼️ Gallery Posts</h2>
-
-            <div className="bg-surface border border-green-800 rounded-xl p-6 mb-6">
-              <p className="text-green-400 text-sm mb-4">Add an event post with an image URL and description.</p>
-              {galleryError && (
-                <div className="bg-red-900 border border-red-600 text-red-200 px-4 py-2 rounded-lg mb-4 text-sm">{galleryError}</div>
-              )}
-              <form onSubmit={addGalleryPost} className="space-y-3">
-                <input
-                  type="url"
-                  placeholder="Image URL (https://...)"
-                  value={galleryForm.imageUrl}
-                  onChange={e => setGalleryForm(f => ({ ...f, imageUrl: e.target.value }))}
-                  required
-                  className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-secondary placeholder-green-700"
-                />
-                <input
-                  type="text"
-                  placeholder="Title (e.g. Spring Championship 2026)"
-                  value={galleryForm.title}
-                  onChange={e => setGalleryForm(f => ({ ...f, title: e.target.value }))}
-                  required
-                  className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-secondary placeholder-green-700"
-                />
-                <textarea
-                  placeholder="Description / event details..."
-                  value={galleryForm.description}
-                  onChange={e => setGalleryForm(f => ({ ...f, description: e.target.value }))}
-                  rows={3}
-                  className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-secondary placeholder-green-700 resize-none"
-                />
-                <input
-                  type="text"
-                  placeholder="Posted by (e.g. Lahore Pigeon Club)"
-                  value={galleryForm.postedBy}
-                  onChange={e => setGalleryForm(f => ({ ...f, postedBy: e.target.value }))}
-                  className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-secondary placeholder-green-700"
-                />
-                <button
-                  type="submit"
-                  disabled={gallerySubmitting}
-                  className="bg-secondary hover:bg-accent text-dark font-bold px-6 py-2.5 rounded-lg text-sm transition disabled:opacity-50"
-                >
-                  {gallerySubmitting ? 'Posting...' : '+ Add Post'}
-                </button>
-              </form>
-            </div>
-
-            {galleryLoading ? (
-              <p className="text-green-400 text-sm">Loading posts...</p>
-            ) : galleryPosts.length === 0 ? (
-              <p className="text-green-600 text-sm">No gallery posts yet.</p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {galleryPosts.map(post => (
-                  <div key={post.id} className="bg-surface border border-green-800 rounded-xl overflow-hidden">
-                    <img
-                      src={post.imageUrl}
-                      alt={post.title}
-                      className="w-full h-40 object-cover"
-                      onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-                    />
-                    <div className="p-4">
-                      <p className="text-white font-bold text-sm mb-1 truncate">{post.title}</p>
-                      {post.description && <p className="text-green-400 text-xs line-clamp-2 mb-3">{post.description}</p>}
-                      {post.postedBy && <p className="text-green-600 text-xs mb-3">By: {post.postedBy}</p>}
-                      <button
-                        onClick={() => deleteGalleryPost(post.id)}
-                        className="text-xs text-red-400 hover:text-red-300 transition"
-                      >
-                        🗑 Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
         </div>
       </main>
     </AdminGuard>
