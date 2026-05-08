@@ -20,3 +20,15 @@ body {
 .font-urdu {
   font-family: 'Noto Nastaliq Urdu', serif;
 }
+
+@keyframes pigeonFly {
+  from { left: -60px; }
+  to   { left: calc(100% + 60px); }
+}
+
+.pigeon-fly {
+  position: absolute;
+  animation-name: pigeonFly;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}

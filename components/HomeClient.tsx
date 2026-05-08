@@ -291,6 +291,34 @@ export default function HomeClient({ initialData, tInfos }: Props) {
         </div>
       </nav>
 
+      {/* Pigeon animation strip */}
+      <div className="relative overflow-hidden bg-gradient-to-b from-[#1d6b24] to-[#2e7d32]" style={{ height: 68 }}>
+        {([
+          { delay: '0s',    dur: '7s',   top: 10, size: 22 },
+          { delay: '2.8s',  dur: '5.5s', top: 40, size: 13 },
+          { delay: '1.2s',  dur: '9s',   top: 6,  size: 17 },
+          { delay: '4s',    dur: '6s',   top: 44, size: 11 },
+          { delay: '0.6s',  dur: '8s',   top: 26, size: 19 },
+          { delay: '3.3s',  dur: '7.5s', top: 14, size: 14 },
+          { delay: '1.9s',  dur: '10s',  top: 48, size: 16 },
+          { delay: '5s',    dur: '6.5s', top: 4,  size: 21 },
+        ] as { delay: string; dur: string; top: number; size: number }[]).map((p, i) => (
+          <span
+            key={i}
+            className="pigeon-fly"
+            style={{
+              top: p.top,
+              animationDuration: p.dur,
+              animationDelay: p.delay,
+              fontSize: p.size,
+              opacity: 0.65 + (i % 4) * 0.08,
+            }}
+          >
+            🕊️
+          </span>
+        ))}
+      </div>
+
       {/* Stats Bar */}
       <div className="bg-[#2e7d32] px-4 py-3">
         <p className="text-green-200 text-xs font-bold uppercase tracking-widest text-center mb-2">{t('todaysStats')}</p>
