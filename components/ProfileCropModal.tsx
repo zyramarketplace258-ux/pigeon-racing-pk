@@ -9,7 +9,7 @@ interface Props {
 }
 
 const SIZE = 260
-const OUTPUT = 250   // 250×250px — plenty for a profile circle, keeps file ~15–30 KB
+const OUTPUT = 250
 
 export default function ProfileCropModal({ file, onSave, onCancel }: Props) {
   const [src, setSrc] = useState('')
@@ -22,6 +22,8 @@ export default function ProfileCropModal({ file, onSave, onCancel }: Props) {
   useEffect(() => {
     const url = URL.createObjectURL(file)
     setSrc(url)
+    setZoom(1)
+    setOffset({ x: 0, y: 0 })
     return () => URL.revokeObjectURL(url)
   }, [file])
 
@@ -35,6 +37,8 @@ export default function ProfileCropModal({ file, onSave, onCancel }: Props) {
   const maxY = Math.max(0, (rH - SIZE) / 2)
   const cx = Math.max(-maxX, Math.min(maxX, offset.x))
   const cy = Math.max(-maxY, Math.min(maxY, offset.y))
+  const imgLeft = (SIZE - rW) / 2 + cx
+  const imgTop = (SIZE - rH) / 2 + cy
 
   const startDrag = (clientX: number, clientY: number) => {
     drag.current = { sx: clientX, sy: clientY, ox: cx, oy: cy }
@@ -70,7 +74,7 @@ export default function ProfileCropModal({ file, onSave, onCancel }: Props) {
     canvas.height = OUTPUT
     const ctx = canvas.getContext('2d')!
     const s = OUTPUT / SIZE
-    ctx.drawImage(img, (OUTPUT - rW * s) / 2 + cx * s, (OUTPUT - rH * s) / 2 + cy * s, rW * s, rH * s)
+    ctx.drawImage(img, imgLeft * s, imgTop * s, rW * s, rH * s)
     canvas.toBlob(b => { if (b) onSave(b) }, 'image/jpeg', 0.78)
   }
 
@@ -80,9 +84,8 @@ export default function ProfileCropModal({ file, onSave, onCancel }: Props) {
         <h3 className="text-white font-bold text-center mb-1">Adjust Photo</h3>
         <p className="text-green-500 text-xs text-center mb-4">Drag to reposition · Slider to zoom</p>
 
-        {/* Circle crop area */}
         <div
-          className="mx-auto cursor-grab active:cursor-grabbing select-none overflow-hidden"
+          className="relative mx-auto cursor-grab active:cursor-grabbing select-none overflow-hidden"
           style={{ width: SIZE, height: SIZE, borderRadius: '50%', background: '#2a2a2a', border: '3px solid #4ade80' }}
           onMouseDown={e => startDrag(e.clientX, e.clientY)}
           onTouchStart={e => startDrag(e.touches[0].clientX, e.touches[0].clientY)}
@@ -98,25 +101,23 @@ export default function ProfileCropModal({ file, onSave, onCancel }: Props) {
               }}
               draggable={false}
               style={{
-                position: 'relative',
+                position: 'absolute',
                 width: rW,
                 height: rH,
-                left: '50%',
-                top: '50%',
-                transform: `translate(calc(-50% + ${cx}px), calc(-50% + ${cy}px))`,
+                left: imgLeft,
+                top: imgTop,
                 pointerEvents: 'none',
               }}
             />
           )}
         </div>
 
-        {/* Zoom */}
         <div className="mt-5 px-1">
           <div className="flex items-center gap-2">
             <span className="text-green-500 text-xs">🔍</span>
             <input
               type="range" min={1} max={3} step={0.02} value={zoom}
-              onChange={e => { setZoom(Number(e.target.value)); setOffset({ x: 0, y: 0 }) }}
+              onChange={e => setZoom(Number(e.target.value))}
               className="flex-1 accent-yellow-400"
             />
             <span className="text-green-500 text-xs">{zoom.toFixed(1)}×</span>
