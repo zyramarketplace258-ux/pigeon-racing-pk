@@ -11,7 +11,9 @@ import Link from 'next/link'
 interface Club {
   id: string
   name: string
+  nameUrdu?: string
   city: string
+  cityUrdu?: string
   slug: string
   loginEmail: string
   logoUrl?: string
@@ -36,6 +38,14 @@ export default function ClubDetailPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([])
   const [loading, setLoading] = useState(true)
   const [tTab, setTTab] = useState<'active' | 'inactive' | 'completed'>('active')
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [editingClub, setEditingClub] = useState(false)
+  const [editName, setEditName] = useState('')
+  const [editNameUrdu, setEditNameUrdu] = useState('')
+  const [editCity, setEditCity] = useState('')
+  const [editCityUrdu, setEditCityUrdu] = useState('')
+  const [savingClub, setSavingClub] = useState(false)
+  const [savedClub, setSavedClub] = useState(false)
 
   useEffect(() => {
     let unsubscribe: () => void = () => {}
@@ -71,24 +81,36 @@ export default function ClubDetailPage() {
   }, [clubId, router])
 
   const setActiveTournament = async (tournamentId: string) => {
+    setActionLoading(`active-${tournamentId}`)
     await updateDoc(doc(db, 'clubs', clubId, 'tournaments', tournamentId), { status: 'active' })
-    setTournaments(prev => prev.map(t =>
-      t.id === tournamentId ? { ...t, status: 'active' } : t
-    ))
+    setTournaments(prev => prev.map(t => t.id === tournamentId ? { ...t, status: 'active' } : t))
+    setActionLoading(null)
   }
 
   const setInactiveTournament = async (tournamentId: string) => {
+    setActionLoading(`inactive-${tournamentId}`)
     await updateDoc(doc(db, 'clubs', clubId, 'tournaments', tournamentId), { status: 'inactive' })
-    setTournaments(prev => prev.map(t =>
-      t.id === tournamentId ? { ...t, status: 'inactive' } : t
-    ))
+    setTournaments(prev => prev.map(t => t.id === tournamentId ? { ...t, status: 'inactive' } : t))
+    setActionLoading(null)
   }
 
   const completeTournament = async (tournamentId: string) => {
+    setActionLoading(`complete-${tournamentId}`)
     await updateDoc(doc(db, 'clubs', clubId, 'tournaments', tournamentId), { status: 'completed' })
-    setTournaments(prev => prev.map(t =>
-      t.id === tournamentId ? { ...t, status: 'completed' } : t
-    ))
+    setTournaments(prev => prev.map(t => t.id === tournamentId ? { ...t, status: 'completed' } : t))
+    setActionLoading(null)
+  }
+
+  const saveClubInfo = async () => {
+    if (!club || !editName.trim() || !editCity.trim()) return
+    setSavingClub(true)
+    const updates: Record<string, string> = { name: editName.trim(), city: editCity.trim() }
+    if (editNameUrdu.trim()) updates.nameUrdu = editNameUrdu.trim()
+    if (editCityUrdu.trim()) updates.cityUrdu = editCityUrdu.trim()
+    await updateDoc(doc(db, 'clubs', clubId), updates)
+    setClub(prev => prev ? { ...prev, ...updates } : prev)
+    setSavingClub(false); setSavedClub(true); setEditingClub(false)
+    setTimeout(() => setSavedClub(false), 3000)
   }
 
   const deleteTournament = async (tournamentId: string, tournamentName: string) => {
@@ -141,32 +163,74 @@ export default function ClubDetailPage() {
       <div className="px-6 py-8 max-w-5xl mx-auto">
 
         {/* Club Info Card */}
-        <div className="bg-surface border border-green-800 rounded-xl p-5 mb-8 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-primary border border-secondary overflow-hidden">
-              <img src={club?.logoUrl || '/pigeon.png'} alt={club?.name} className="w-full h-full object-cover" />
+        <div className="bg-surface border border-green-800 rounded-xl p-5 mb-8">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-primary border border-secondary overflow-hidden">
+                <img src={club?.logoUrl || '/pigeon.png'} alt={club?.name} className="w-full h-full object-cover" />
+              </div>
+              <div>
+                <h2 className="text-white font-bold text-lg">{club?.name}</h2>
+                {club?.nameUrdu && <p className="text-green-300 text-sm font-urdu" dir="rtl">{club.nameUrdu}</p>}
+                <p className="text-green-400 text-sm">{club?.city}{club?.cityUrdu ? ` · ${club.cityUrdu}` : ''}</p>
+                <p className="text-green-600 text-xs font-mono">{club?.loginEmail}</p>
+                {savedClub && <p className="text-green-400 text-xs mt-1">✅ Saved!</p>}
+              </div>
             </div>
-            <div>
-              <h2 className="text-white font-bold text-lg">{club?.name}</h2>
-              <p className="text-green-400 text-sm">{club?.city}</p>
-              <p className="text-green-600 text-xs font-mono">{club?.loginEmail}</p>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => { setEditName(club?.name || ''); setEditNameUrdu(club?.nameUrdu || ''); setEditCity(club?.city || ''); setEditCityUrdu(club?.cityUrdu || ''); setEditingClub(v => !v) }}
+                className="bg-green-800 hover:bg-green-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition"
+              >
+                {editingClub ? 'Cancel' : 'Edit Info'}
+              </button>
+              <Link
+                href={`/${club?.slug}`}
+                target="_blank"
+                className="bg-secondary hover:bg-accent text-dark text-xs font-bold px-4 py-2 rounded-lg transition"
+              >
+                View Public Page
+              </Link>
+              <button
+                onClick={deleteClub}
+                className="bg-red-900 hover:bg-red-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition"
+              >
+                Delete Club
+              </button>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Link
-              href={`/${club?.slug}`}
-              target="_blank"
-              className="bg-secondary hover:bg-accent text-dark text-xs font-bold px-4 py-2 rounded-lg transition"
-            >
-              View Public Page
-            </Link>
-            <button
-              onClick={deleteClub}
-              className="bg-red-900 hover:bg-red-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition"
-            >
-              Delete Club
-            </button>
-          </div>
+
+          {editingClub && (
+            <div className="mt-4 pt-4 border-t border-green-800 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-green-400 text-xs mb-1 block">Club Name (English)</label>
+                <input value={editName} onChange={e => setEditName(e.target.value)} placeholder="Club name"
+                  className="w-full bg-primary border border-green-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-secondary" />
+              </div>
+              <div>
+                <label className="text-green-400 text-xs mb-1 block">نام (اردو، اختیاری)</label>
+                <input value={editNameUrdu} onChange={e => setEditNameUrdu(e.target.value)} dir="rtl" placeholder="کلب کا نام"
+                  className="w-full bg-primary border border-green-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-secondary font-urdu" />
+              </div>
+              <div>
+                <label className="text-green-400 text-xs mb-1 block">City / Area (English)</label>
+                <input value={editCity} onChange={e => setEditCity(e.target.value)} placeholder="City"
+                  className="w-full bg-primary border border-green-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-secondary" />
+              </div>
+              <div>
+                <label className="text-green-400 text-xs mb-1 block">شہر (اردو، اختیاری)</label>
+                <input value={editCityUrdu} onChange={e => setEditCityUrdu(e.target.value)} dir="rtl" placeholder="شہر"
+                  className="w-full bg-primary border border-green-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-secondary font-urdu" />
+              </div>
+              <div className="sm:col-span-2">
+                <button onClick={saveClubInfo} disabled={savingClub || !editName.trim() || !editCity.trim()}
+                  className="bg-secondary hover:bg-accent text-dark font-bold px-6 py-2 rounded-lg text-sm transition disabled:opacity-50 flex items-center gap-2">
+                  {savingClub && <span className="inline-block w-3 h-3 border-2 border-dark border-t-transparent rounded-full animate-spin" />}
+                  {savingClub ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Tournaments */}
@@ -249,8 +313,10 @@ export default function ClubDetailPage() {
                     {t.status === 'inactive' && (
                       <button
                         onClick={() => setActiveTournament(t.id)}
-                        className="bg-green-700 hover:bg-green-600 text-white text-xs px-4 py-2 rounded-lg transition"
+                        disabled={actionLoading === `active-${t.id}`}
+                        className="bg-green-700 hover:bg-green-600 text-white text-xs px-4 py-2 rounded-lg transition disabled:opacity-60 flex items-center gap-1.5"
                       >
+                        {actionLoading === `active-${t.id}` && <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />}
                         Set Active
                       </button>
                     )}
@@ -258,14 +324,18 @@ export default function ClubDetailPage() {
                       <>
                         <button
                           onClick={() => setInactiveTournament(t.id)}
-                          className="bg-gray-600 hover:bg-gray-500 text-white text-xs px-4 py-2 rounded-lg transition"
+                          disabled={actionLoading === `inactive-${t.id}`}
+                          className="bg-gray-600 hover:bg-gray-500 text-white text-xs px-4 py-2 rounded-lg transition disabled:opacity-60 flex items-center gap-1.5"
                         >
+                          {actionLoading === `inactive-${t.id}` && <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />}
                           Set Inactive
                         </button>
                         <button
                           onClick={() => completeTournament(t.id)}
-                          className="bg-blue-800 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg transition"
+                          disabled={actionLoading === `complete-${t.id}`}
+                          className="bg-blue-800 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg transition disabled:opacity-60 flex items-center gap-1.5"
                         >
+                          {actionLoading === `complete-${t.id}` && <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />}
                           Mark Completed
                         </button>
                       </>

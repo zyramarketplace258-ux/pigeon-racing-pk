@@ -5,6 +5,8 @@ import { collection, getDocs, query, where, onSnapshot, orderBy } from 'firebase
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { db, auth } from '@/lib/firebase'
 import { compareHours, formatTimeDisplay } from '@/lib/timeUtils'
+import { getPKTDate, getPKTClock } from '@/lib/pkt'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Playfair_Display } from 'next/font/google'
 import { useLanguage } from '@/lib/language-context'
@@ -16,9 +18,9 @@ export interface Club { id: string; name: string; slug: string; city: string; lo
 interface GalleryPost { id: string; imageUrl: string; title: string; description: string; postedBy: string; createdAt?: { seconds: number } }
 export interface RaceDay { dayNumber: number; date: string; isGap?: boolean }
 interface PigeonChip { landingTime: string; hoursFlown: string }
-interface TopEntry { name: string; area: string; photoUrl?: string; pigeons: PigeonChip[]; totalHours: string }
-interface TopScorer { rank: number; name: string; area: string; photoUrl?: string; totalHours: string; tournament: string; clubSlug: string; tournamentId: string }
-interface WinnerEntry { rank: number; name: string; area: string; landingTime: string; hoursFlown: string; tournament: string; clubSlug: string; tournamentId: string }
+interface TopEntry { name: string; nameUrdu: string; area: string; areaUrdu: string; photoUrl?: string; pigeons: PigeonChip[]; totalHours: string }
+interface TopScorer { rank: number; name: string; nameUrdu?: string; area: string; areaUrdu?: string; photoUrl?: string; totalHours: string; tournament: string; clubSlug: string; tournamentId: string }
+interface WinnerEntry { rank: number; name: string; nameUrdu?: string; area: string; areaUrdu?: string; landingTime: string; hoursFlown: string; tournament: string; clubSlug: string; tournamentId: string }
 export interface ActiveTournament {
   id: string; name: string; pigeonCount: number
   defaultStartTime: string; defaultEndTime: string
@@ -33,6 +35,8 @@ export interface TInfoClient {
   nameMap: Record<string, string>
   areaMap: Record<string, string>
   photoMap: Record<string, string>
+  nameUrduMap: Record<string, string>
+  areaUrduMap: Record<string, string>
   enrolledCount: number
   suffix: string
 }
@@ -53,6 +57,7 @@ interface Props {
 }
 
 export default function HomeClient({ initialData, tInfos }: Props) {
+  const router = useRouter()
   const { lang, toggle } = useLanguage()
   const t = useT()
 
@@ -64,6 +69,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
   const [winnerPigeons, setWinnerPigeons] = useState<WinnerEntry[]>(initialData.winnerPigeons)
   const [totalLotsCompeting, setTotalLotsCompeting] = useState(initialData.totalLotsCompeting)
   const [activeTab, setActiveTab] = useState<'home' | 'clubs' | 'gallery'>('home')
+  const [navLoading, setNavLoading] = useState<string | null>(null)
   const [galleryPosts, setGalleryPosts] = useState<GalleryPost[]>([])
   const [galleryLoading, setGalleryLoading] = useState(false)
   const [loggedInClub, setLoggedInClub] = useState<Club | null>(null)
@@ -84,8 +90,8 @@ export default function HomeClient({ initialData, tInfos }: Props) {
       }
     })
 
-    type PigeonRec = { participantKey: string; name: string; area: string; hoursFlown: string; landingTime: string }
-    type ScoreRec = { participantKey: string; name: string; area: string; photoUrl: string; totalHours: string }
+    type PigeonRec = { participantKey: string; name: string; nameUrdu: string; area: string; areaUrdu: string; hoursFlown: string; landingTime: string }
+    type ScoreRec = { participantKey: string; name: string; nameUrdu: string; area: string; areaUrdu: string; photoUrl: string; totalHours: string }
     const pigeonStore = new Map<string, PigeonRec[]>()
     const scoreStore = new Map<string, ScoreRec[]>()
 
@@ -171,7 +177,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                 landingTime: pg.landingTime || '', hoursFlown: pg.hoursFlown || '',
               }))
               pigeons.forEach(pg => { if (pg.landingTime) totalLanded++ })
-              return [{ name: info.nameMap[pId], area: info.areaMap[pId] || '', photoUrl: info.photoMap[pId] || '', pigeons, totalHours: data.totalHours }]
+              return [{ name: info.nameMap[pId], nameUrdu: info.nameUrduMap[pId] || '', area: info.areaMap[pId] || '', areaUrdu: info.areaUrduMap[pId] || '', photoUrl: info.photoMap[pId] || '', pigeons, totalHours: data.totalHours }]
             })
             .sort((a, b) => compareHours(a.totalHours, b.totalHours))
 
@@ -186,11 +192,11 @@ export default function HomeClient({ initialData, tInfos }: Props) {
               if (!(pId in info.nameMap)) return
               const ddata = d.data()
               if (ddata.totalHours) {
-                srecs.push({ participantKey: `${info.base.clubId}::${pId}`, name: info.nameMap[pId], area: info.areaMap[pId] || '', photoUrl: info.photoMap[pId] || '', totalHours: ddata.totalHours })
+                srecs.push({ participantKey: `${info.base.clubId}::${pId}`, name: info.nameMap[pId], nameUrdu: info.nameUrduMap[pId] || '', area: info.areaMap[pId] || '', areaUrdu: info.areaUrduMap[pId] || '', photoUrl: info.photoMap[pId] || '', totalHours: ddata.totalHours })
               }
               ;(ddata.pigeons || []).forEach((pg: Record<string, string>) => {
                 if (pg.hoursFlown && pg.landingTime) {
-                  precs.push({ participantKey: `${info.base.clubId}::${pId}`, name: info.nameMap[pId], area: info.areaMap[pId] || '', hoursFlown: pg.hoursFlown, landingTime: pg.landingTime })
+                  precs.push({ participantKey: `${info.base.clubId}::${pId}`, name: info.nameMap[pId], nameUrdu: info.nameUrduMap[pId] || '', area: info.areaMap[pId] || '', areaUrdu: info.areaUrduMap[pId] || '', hoursFlown: pg.hoursFlown, landingTime: pg.landingTime })
                 }
               })
             })
@@ -247,20 +253,14 @@ export default function HomeClient({ initialData, tInfos }: Props) {
 
   const isUrdu = lang === 'ur'
 
-  const formatClock = () => {
-    const now = new Date()
-    return now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) +
-      ' · ' + now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-  }
-  const [clockLabel, setClockLabel] = useState(formatClock)
+  const [clockLabel, setClockLabel] = useState(getPKTClock)
   useEffect(() => {
-    const iv = setInterval(() => setClockLabel(formatClock()), 60000)
+    const iv = setInterval(() => setClockLabel(getPKTClock()), 60000)
     return () => clearInterval(iv)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const raceDateLabel = useMemo(() => {
-    const todayStr = new Date().toISOString().split('T')[0]
+    const todayStr = getPKTDate()
     const allDays = activeTournaments.flatMap(tr => (tr.raceDays || []).filter(rd => !rd.isGap))
     const past = allDays.filter(rd => rd.date <= todayStr).sort((a, b) => b.date.localeCompare(a.date))
     const ref = past[0] ?? allDays.filter(rd => rd.date > todayStr).sort((a, b) => a.date.localeCompare(b.date))[0]
@@ -350,19 +350,22 @@ export default function HomeClient({ initialData, tInfos }: Props) {
             ) : (
               <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {clubs.map(club => (
-                  <Link
+                  <button
                     key={club.id}
-                    href={`/${club.slug}`}
-                    className="flex items-center gap-3 p-3 border border-[#d4edda] rounded-lg hover:border-[#388e3c] hover:bg-[#f1faf2] transition group"
+                    onClick={() => { setNavLoading(`club-${club.id}`); router.push(`/${club.slug}`) }}
+                    className="flex items-center gap-3 p-3 border border-[#d4edda] rounded-lg hover:border-[#388e3c] hover:bg-[#f1faf2] transition group text-left w-full"
                   >
                     <div className="w-10 h-10 shrink-0 rounded-full bg-white border border-[#d4edda] overflow-hidden">
-                      <img src={club.logoUrl || '/pigeon.png'} alt={club.name} className="w-full h-full object-cover" />
+                      {navLoading === `club-${club.id}`
+                        ? <div className="w-full h-full flex items-center justify-center"><span className="inline-block w-4 h-4 border-2 border-[#388e3c] border-t-transparent rounded-full animate-spin" /></div>
+                        : <img src={club.logoUrl || '/pigeon.png'} alt={club.name} className="w-full h-full object-cover" />
+                      }
                     </div>
                     <div className="min-w-0">
                       <p className="text-[#1a1a1a] font-semibold text-sm truncate group-hover:text-[#1b5e20] transition">{club.name}</p>
                       <p className="text-[#777] text-xs">{club.city}</p>
                     </div>
-                  </Link>
+                  </button>
                 ))}
               </div>
             )}
@@ -462,8 +465,8 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm text-[#1a1a1a] truncate">{s.name}</p>
-                      <p className="text-[#888] text-xs truncate">{s.area || '—'}</p>
+                      <p className="font-semibold text-sm text-[#1a1a1a] truncate">{isUrdu && s.nameUrdu ? s.nameUrdu : s.name}</p>
+                      <p className="text-[#888] text-xs truncate">{(isUrdu && s.areaUrdu ? s.areaUrdu : s.area) || '—'}</p>
                     </div>
                     <p className="font-bold text-lg text-[#1b5e20] shrink-0">{formatTimeDisplay(s.totalHours)}</p>
                   </Link>
@@ -489,8 +492,8 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                       <p className="text-[10px] font-bold text-[#888] leading-none mt-0.5">{rankLabel}</p>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm text-[#1a1a1a] truncate">{w.name}</p>
-                      <p className="text-[#999] text-xs truncate">{w.area || '—'}</p>
+                      <p className="font-semibold text-sm text-[#1a1a1a] truncate">{isUrdu && w.nameUrdu ? w.nameUrdu : w.name}</p>
+                      <p className="text-[#999] text-xs truncate">{(isUrdu && w.areaUrdu ? w.areaUrdu : w.area) || '—'}</p>
                     </div>
                     <div className="shrink-0 text-right">
                       <p className="font-bold text-base text-[#1b5e20]">{formatTimeDisplay(w.hoursFlown)}</p>
@@ -569,8 +572,8 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm text-[#1a1a1a] truncate">{entry.name}</p>
-                          <p className="text-[#777] text-xs">{entry.area}</p>
+                          <p className="font-semibold text-sm text-[#1a1a1a] truncate">{isUrdu && entry.nameUrdu ? entry.nameUrdu : entry.name}</p>
+                          <p className="text-[#777] text-xs">{isUrdu && entry.areaUrdu ? entry.areaUrdu : entry.area}</p>
                           {entry.pigeons.some(pg => pg.landingTime) && (
                             <div className="flex flex-wrap gap-1 mt-1">
                               {entry.pigeons.filter(pg => pg.landingTime).map((pg, pi) => (
@@ -591,12 +594,13 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                   </div>
                 )}
 
-                <Link
-                  href={`/${tr.clubSlug}/${tr.id}`}
-                  className="flex items-center justify-center gap-2 py-3 text-sm font-semibold text-[#23592b] bg-[#f1faf2] border-t border-[#d4edda] hover:bg-[#e8f5e9] transition"
+                <button
+                  onClick={() => { setNavLoading(`${tr.clubId}-${tr.id}`); router.push(`/${tr.clubSlug}/${tr.id}`) }}
+                  className="flex items-center justify-center gap-2 py-3 text-sm font-semibold text-[#23592b] bg-[#f1faf2] border-t border-[#d4edda] hover:bg-[#e8f5e9] transition w-full"
                 >
+                  {navLoading === `${tr.clubId}-${tr.id}` ? <span className="inline-block w-3 h-3 border-2 border-[#23592b] border-t-transparent rounded-full animate-spin" /> : null}
                   {t('fullResults')} <span>→</span>
-                </Link>
+                </button>
               </div>
             ))}
           </div>

@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useMemo } from 'react'
 import { collection, doc, onSnapshot, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { compareHours, formatTimeDisplay, calculateGrandTotal } from '@/lib/timeUtils'
+import { getPKTDate, getPKTClock } from '@/lib/pkt'
 import Link from 'next/link'
 import { useLanguage } from '@/lib/language-context'
 import { useT, fDayHeader, fDaysFlown, fDaysShort, fFlewCount, fParticipants, fLandedAt } from '@/lib/translations'
@@ -14,18 +15,18 @@ export interface Tournament {
   defaultStartTime: string; pigeonCount: number
   raceDays: RaceDay[]; participantIds?: string[]
 }
-export interface Participant { id: string; name: string; area: string; photoUrl?: string }
+export interface Participant { id: string; name: string; nameUrdu?: string; area: string; areaUrdu?: string; photoUrl?: string }
 export interface EntryDoc {
   id: string; startTime: string; totalHours: string
   pigeons: { landingTime: string; hoursFlown: string }[]
 }
 
 interface DayEntry {
-  rank: number; participantId: string; name: string; area: string; photoUrl?: string
+  rank: number; participantId: string; name: string; nameUrdu?: string; area: string; areaUrdu?: string; photoUrl?: string
   startTime: string; pigeons: { landingTime: string; hoursFlown: string }[]; totalHours: string; hasData: boolean
 }
 interface TotalRow {
-  rank: number; participantId: string; name: string; area: string; photoUrl?: string
+  rank: number; participantId: string; name: string; nameUrdu?: string; area: string; areaUrdu?: string; photoUrl?: string
   daysFlown: number; grandTotal: string
   dayTotals: { dayNumber: number; hours: string }[]
 }
@@ -65,9 +66,9 @@ function buildDayEntries(
   const rows: DayEntry[] = participants.map(p => {
     const ed = docMap.get(`${p.id}_day${selectedDay}`)
     if (ed) {
-      return { rank: 0, participantId: p.id, name: p.name, area: p.area, photoUrl: p.photoUrl, startTime: ed.startTime || '', pigeons: ed.pigeons || [], totalHours: ed.totalHours || '', hasData: true }
+      return { rank: 0, participantId: p.id, name: p.name, nameUrdu: p.nameUrdu, area: p.area, areaUrdu: p.areaUrdu, photoUrl: p.photoUrl, startTime: ed.startTime || '', pigeons: ed.pigeons || [], totalHours: ed.totalHours || '', hasData: true }
     }
-    return { rank: 0, participantId: p.id, name: p.name, area: p.area, photoUrl: p.photoUrl, startTime: tournament.defaultStartTime, pigeons: Array.from({ length: tournament.pigeonCount }, () => ({ landingTime: '', hoursFlown: '' })), totalHours: '', hasData: false }
+    return { rank: 0, participantId: p.id, name: p.name, nameUrdu: p.nameUrdu, area: p.area, areaUrdu: p.areaUrdu, photoUrl: p.photoUrl, startTime: tournament.defaultStartTime, pigeons: Array.from({ length: tournament.pigeonCount }, () => ({ landingTime: '', hoursFlown: '' })), totalHours: '', hasData: false }
   })
   const withData = rows.filter(r => r.hasData && r.totalHours).sort((a, b) => compareHours(a.totalHours, b.totalHours))
   const noData = rows.filter(r => !r.hasData || !r.totalHours)
@@ -94,7 +95,7 @@ function buildTotalRows(
       if (h) { hours.push(h); daysFlown++ }
     }
     dayTotals.sort((a, b) => a.dayNumber - b.dayNumber)
-    return { rank: 0, participantId: p.id, name: p.name, area: p.area, photoUrl: p.photoUrl, daysFlown, grandTotal: hours.length > 0 ? calculateGrandTotal(hours) : '', dayTotals }
+    return { rank: 0, participantId: p.id, name: p.name, nameUrdu: p.nameUrdu, area: p.area, areaUrdu: p.areaUrdu, photoUrl: p.photoUrl, daysFlown, grandTotal: hours.length > 0 ? calculateGrandTotal(hours) : '', dayTotals }
   })
   const withData = rows.filter(r => r.grandTotal).sort((a, b) => compareHours(a.grandTotal, b.grandTotal))
   const noData = rows.filter(r => !r.grandTotal)
@@ -117,7 +118,7 @@ export default function TournamentClient({
   const tournament = initialData.tournament
   const participants = initialData.participants
 
-  const todayDate = new Date().toISOString().split('T')[0]
+  const todayDate = getPKTDate()
   const nonGapRaceDays = tournament?.raceDays?.filter(rd => !rd.isGap) ?? []
   const allDaysPast = nonGapRaceDays.length > 0 && nonGapRaceDays.every(rd => rd.date < todayDate)
 
@@ -139,13 +140,13 @@ export default function TournamentClient({
   }, [allEntryDocs, participants, tournament])
 
   const winnerPigeon = useMemo(() => {
-    let best: { name: string; area: string; landingTime: string; hoursFlown: string } | null = null
+    let best: { name: string; nameUrdu?: string; area: string; areaUrdu?: string; landingTime: string; hoursFlown: string } | null = null
     for (const entry of dayEntries) {
       if (!entry.hasData) continue
       for (const pg of entry.pigeons) {
         if (!pg.landingTime || !pg.hoursFlown) continue
         if (best === null || compareHours(pg.hoursFlown, best.hoursFlown) < 0)
-          best = { name: entry.name, area: entry.area, landingTime: pg.landingTime, hoursFlown: pg.hoursFlown }
+          best = { name: entry.name, nameUrdu: entry.nameUrdu, area: entry.area, areaUrdu: entry.areaUrdu, landingTime: pg.landingTime, hoursFlown: pg.hoursFlown }
       }
     }
     return best
@@ -187,15 +188,9 @@ export default function TournamentClient({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [club?.id, tournament?.id])
 
-  const [, setTick] = useState(0)
-  const formatClock = () => {
-    const now = new Date()
-    return now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) +
-      ' · ' + now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-  }
-  const [clockLabel, setClockLabel] = useState(formatClock)
+  const [clockLabel, setClockLabel] = useState(getPKTClock)
   useEffect(() => {
-    const interval = setInterval(() => { setTick(tk => tk + 1); setClockLabel(formatClock()) }, 15000)
+    const interval = setInterval(() => setClockLabel(getPKTClock()), 15000)
     return () => clearInterval(interval)
   }, [])
 
@@ -273,8 +268,8 @@ export default function TournamentClient({
               {totalRows[0]?.grandTotal && (
                 <div className="flex flex-col items-center mb-5">
                   <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-lg mb-2" style={{ background: 'linear-gradient(145deg,#ffe066,#c8900a)' }}>1</div>
-                  <p className="text-[#1a1a1a] font-bold text-lg leading-tight text-center">{totalRows[0].name}</p>
-                  <p className="text-[#777] text-xs text-center mb-1">{totalRows[0].area}</p>
+                  <p className="text-[#1a1a1a] font-bold text-lg leading-tight text-center">{isUrdu && totalRows[0].nameUrdu ? totalRows[0].nameUrdu : totalRows[0].name}</p>
+                  <p className="text-[#777] text-xs text-center mb-1">{isUrdu && totalRows[0].areaUrdu ? totalRows[0].areaUrdu : totalRows[0].area}</p>
                   <p className="text-[#1b5e20] font-extrabold text-3xl">{formatTimeDisplay(totalRows[0].grandTotal)}</p>
                   <p className="text-[#999] text-xs">{fDaysFlown(lang, totalRows[0].daysFlown)}</p>
                 </div>
@@ -287,8 +282,8 @@ export default function TournamentClient({
                       style={{ background: i === 0 ? 'linear-gradient(145deg,#e8e8e8,#8a8a8a)' : '#cd7f32' }}>
                       {i + 2}
                     </div>
-                    <p className="text-[#1a1a1a] font-bold text-sm truncate">{row.name}</p>
-                    <p className="text-[#777] text-xs truncate mb-1">{row.area}</p>
+                    <p className="text-[#1a1a1a] font-bold text-sm truncate">{isUrdu && row.nameUrdu ? row.nameUrdu : row.name}</p>
+                    <p className="text-[#777] text-xs truncate mb-1">{isUrdu && row.areaUrdu ? row.areaUrdu : row.area}</p>
                     <p className="text-[#1b5e20] font-bold text-lg">{formatTimeDisplay(row.grandTotal)}</p>
                     <p className="text-[#999] text-xs">{fDaysShort(lang, row.daysFlown)}</p>
                   </div>
@@ -333,8 +328,8 @@ export default function TournamentClient({
             <div className="px-4 py-3 flex items-center gap-3">
               <div className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center font-bold text-white text-sm shadow-md" style={{ background: 'linear-gradient(145deg,#ffe066,#c8900a)' }}>1</div>
               <div className="min-w-0">
-                <p className="text-[#1a1a1a] font-bold truncate">{winnerPigeon.name}</p>
-                <p className="text-[#777] text-xs truncate">{winnerPigeon.area} · {fLandedAt(lang, winnerPigeon.landingTime, formatTimeDisplay(winnerPigeon.hoursFlown))}</p>
+                <p className="text-[#1a1a1a] font-bold truncate">{isUrdu && winnerPigeon.nameUrdu ? winnerPigeon.nameUrdu : winnerPigeon.name}</p>
+                <p className="text-[#777] text-xs truncate">{isUrdu && winnerPigeon.areaUrdu ? winnerPigeon.areaUrdu : winnerPigeon.area} · {fLandedAt(lang, winnerPigeon.landingTime, formatTimeDisplay(winnerPigeon.hoursFlown))}</p>
               </div>
             </div>
           </div>
@@ -401,8 +396,8 @@ export default function TournamentClient({
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[#1a1a1a] font-semibold text-sm truncate">{row.name}</p>
-                      <p className="text-[#777] text-xs">{row.area}</p>
+                      <p className="text-[#1a1a1a] font-semibold text-sm truncate">{isUrdu && row.nameUrdu ? row.nameUrdu : row.name}</p>
+                      <p className="text-[#777] text-xs">{isUrdu && row.areaUrdu ? row.areaUrdu : row.area}</p>
                     </div>
                     <div className="text-right shrink-0">
                       {row.grandTotal
@@ -461,8 +456,8 @@ export default function TournamentClient({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 mb-1.5">
                         <div className="min-w-0">
-                          <p className="font-semibold text-sm text-[#1a1a1a] truncate">{entry.name}</p>
-                          <p className="text-[#777] text-xs">{entry.area}{entry.hasData ? ` · ${entry.startTime}` : ''}</p>
+                          <p className="font-semibold text-sm text-[#1a1a1a] truncate">{isUrdu && entry.nameUrdu ? entry.nameUrdu : entry.name}</p>
+                          <p className="text-[#777] text-xs">{isUrdu && entry.areaUrdu ? entry.areaUrdu : entry.area}{entry.hasData ? ` · ${entry.startTime}` : ''}</p>
                         </div>
                         <div className="shrink-0 text-right">
                           {entry.totalHours

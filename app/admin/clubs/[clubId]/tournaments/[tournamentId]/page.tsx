@@ -11,11 +11,11 @@ import Link from 'next/link'
 
 interface RaceDay { dayNumber: number; date: string; isGap: boolean }
 interface Tournament {
-  id: string; name: string; status: string; totalDays: number
+  id: string; name: string; nameUrdu?: string; status: string; totalDays: number
   defaultStartTime: string; pigeonCount: number; raceDays: RaceDay[]
-  participantIds?: string[]
+  participantIds?: string[]; area?: string; areaUrdu?: string
 }
-interface Participant { id: string; name: string; area: string }
+interface Participant { id: string; name: string; nameUrdu?: string; area: string; areaUrdu?: string }
 interface PigeonEntry { landingTime: string; hoursFlown: string }
 interface Entry {
   participantId: string; name: string; area: string
@@ -35,6 +35,13 @@ export default function TournamentManagePage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [savingParticipants, setSavingParticipants] = useState(false)
   const [savedParticipants, setSavedParticipants] = useState(false)
+  const [editingTournament, setEditingTournament] = useState(false)
+  const [editTName, setEditTName] = useState('')
+  const [editTNameUrdu, setEditTNameUrdu] = useState('')
+  const [editTArea, setEditTArea] = useState('')
+  const [editTAreaUrdu, setEditTAreaUrdu] = useState('')
+  const [savingTournament, setSavingTournament] = useState(false)
+  const [savedTournament, setSavedTournament] = useState(false)
 
   const [tab, setTab] = useState<Tab>('entries')
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
@@ -135,6 +142,19 @@ export default function TournamentManagePage() {
     setSavedParticipants(false)
   }
 
+  const saveTournamentInfo = async () => {
+    if (!tournament || !editTName.trim()) return
+    setSavingTournament(true)
+    const updates: Record<string, string> = { name: editTName.trim() }
+    if (editTNameUrdu.trim()) updates.nameUrdu = editTNameUrdu.trim()
+    if (editTArea.trim()) updates.area = editTArea.trim()
+    if (editTAreaUrdu.trim()) updates.areaUrdu = editTAreaUrdu.trim()
+    await updateDoc(doc(db, 'clubs', clubId, 'tournaments', tournamentId), updates)
+    setTournament(prev => prev ? { ...prev, ...updates } : prev)
+    setSavingTournament(false); setSavedTournament(true); setEditingTournament(false)
+    setTimeout(() => setSavedTournament(false), 3000)
+  }
+
   const saveParticipants = async () => {
     if (!tournament) return
     setSavingParticipants(true)
@@ -162,14 +182,57 @@ export default function TournamentManagePage() {
 
   return (
     <main className="min-h-screen bg-dark">
-      <header className="bg-primary border-b border-secondary px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-secondary">🏆 {tournament?.name}</h1>
-          <p className="text-green-400 text-xs">Tournament Management</p>
+      <header className="bg-primary border-b border-secondary px-6 py-4">
+        <div className="flex items-center justify-between mb-1">
+          <div>
+            <h1 className="text-xl font-bold text-secondary">🏆 {tournament?.name}</h1>
+            {tournament?.nameUrdu && <p className="text-green-300 text-sm font-urdu" dir="rtl">{tournament.nameUrdu}</p>}
+            {tournament?.area && <p className="text-green-400 text-xs">{tournament.area}{tournament.areaUrdu ? ` · ${tournament.areaUrdu}` : ''}</p>}
+            {savedTournament && <p className="text-green-400 text-xs mt-0.5">✅ Saved!</p>}
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => { setEditTName(tournament?.name || ''); setEditTNameUrdu(tournament?.nameUrdu || ''); setEditTArea(tournament?.area || ''); setEditTAreaUrdu(tournament?.areaUrdu || ''); setEditingTournament(v => !v) }}
+              className="text-xs text-green-400 border border-green-700 px-3 py-1.5 rounded hover:bg-green-800 transition"
+            >
+              {editingTournament ? 'Cancel' : 'Edit'}
+            </button>
+            <Link href={`/admin/clubs/${clubId}`} className="text-xs text-green-400 hover:text-secondary transition">
+              ← Back to Club
+            </Link>
+          </div>
         </div>
-        <Link href={`/admin/clubs/${clubId}`} className="text-xs text-green-400 hover:text-secondary transition">
-          ← Back to Club
-        </Link>
+        {editingTournament && (
+          <div className="mt-3 pt-3 border-t border-green-800 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-green-400 text-xs mb-1 block">Tournament Name (English)</label>
+              <input value={editTName} onChange={e => setEditTName(e.target.value)} placeholder="Tournament name"
+                className="w-full bg-dark border border-green-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-secondary" />
+            </div>
+            <div>
+              <label className="text-green-400 text-xs mb-1 block">نام (اردو، اختیاری)</label>
+              <input value={editTNameUrdu} onChange={e => setEditTNameUrdu(e.target.value)} dir="rtl" placeholder="ٹورنامنٹ کا نام"
+                className="w-full bg-dark border border-green-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-secondary font-urdu" />
+            </div>
+            <div>
+              <label className="text-green-400 text-xs mb-1 block">Race Area / Location (English, optional)</label>
+              <input value={editTArea} onChange={e => setEditTArea(e.target.value)} placeholder="e.g. Lahore Race Track"
+                className="w-full bg-dark border border-green-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-secondary" />
+            </div>
+            <div>
+              <label className="text-green-400 text-xs mb-1 block">علاقہ (اردو، اختیاری)</label>
+              <input value={editTAreaUrdu} onChange={e => setEditTAreaUrdu(e.target.value)} dir="rtl" placeholder="مثلاً لاہور ریس ٹریک"
+                className="w-full bg-dark border border-green-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-secondary font-urdu" />
+            </div>
+            <div className="sm:col-span-2">
+              <button onClick={saveTournamentInfo} disabled={savingTournament || !editTName.trim()}
+                className="bg-secondary hover:bg-accent text-dark font-bold px-6 py-2 rounded-lg text-sm transition disabled:opacity-50 flex items-center gap-2">
+                {savingTournament && <span className="inline-block w-3 h-3 border-2 border-dark border-t-transparent rounded-full animate-spin" />}
+                {savingTournament ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
       <div className="px-6 py-8 max-w-6xl mx-auto">
@@ -257,7 +320,8 @@ export default function TournamentManagePage() {
                       />
                       <div>
                         <p className="text-white text-sm font-semibold">{p.name}</p>
-                        <p className="text-green-400 text-xs">{p.area}</p>
+                        {p.nameUrdu && <p className="text-green-300 text-xs font-urdu" dir="rtl">{p.nameUrdu}</p>}
+                        <p className="text-green-400 text-xs">{p.area}{p.areaUrdu ? ` · ${p.areaUrdu}` : ''}</p>
                       </div>
                     </label>
                   ))}
@@ -267,8 +331,9 @@ export default function TournamentManagePage() {
                   <button
                     onClick={saveParticipants}
                     disabled={savingParticipants}
-                    className="bg-secondary hover:bg-accent text-dark font-bold px-6 py-2 rounded-lg text-sm transition disabled:opacity-50"
+                    className="bg-secondary hover:bg-accent text-dark font-bold px-6 py-2 rounded-lg text-sm transition disabled:opacity-50 flex items-center gap-2"
                   >
+                    {savingParticipants && <span className="inline-block w-3 h-3 border-2 border-dark border-t-transparent rounded-full animate-spin" />}
                     {savingParticipants ? 'Saving...' : 'Save Participants'}
                   </button>
                   {savedParticipants && <p className="text-green-400 text-sm">✅ Saved!</p>}

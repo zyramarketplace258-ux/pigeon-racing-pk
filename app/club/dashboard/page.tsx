@@ -20,7 +20,7 @@ interface Tournament {
   defaultStartTime: string; defaultEndTime?: string; pigeonCount: number
   raceDays: RaceDay[]; participantIds?: string[]
 }
-interface Participant { id: string; name: string; area: string; photoUrl?: string; disabled?: boolean }
+interface Participant { id: string; name: string; nameUrdu?: string; area: string; areaUrdu?: string; photoUrl?: string; disabled?: boolean }
 interface PigeonEntry { landingTime: string; hoursFlown: string }
 interface EntryRow {
   participantId: string; name: string; area: string
@@ -75,9 +75,13 @@ export default function ClubDashboard() {
   const [saved, setSaved] = useState(false)
   const [timeError, setTimeError] = useState('')
   const [memberName, setMemberName] = useState('')
+  const [memberNameUrdu, setMemberNameUrdu] = useState('')
   const [memberArea, setMemberArea] = useState('')
+  const [memberAreaUrdu, setMemberAreaUrdu] = useState('')
   const [nameError, setNameError] = useState('')
+  const [nameUrduError, setNameUrduError] = useState('')
   const [areaError, setAreaError] = useState('')
+  const [areaUrduError, setAreaUrduError] = useState('')
   const [addingMember, setAddingMember] = useState(false)
   const [assignTournamentId, setAssignTournamentId] = useState('')
   const [assignedIds, setAssignedIds] = useState<Set<string>>(new Set())
@@ -278,27 +282,34 @@ export default function ClubDashboard() {
     e.preventDefault()
     if (!club) return
     const trimName = memberName.trim()
+    const trimNameUrdu = memberNameUrdu.trim()
     const trimArea = memberArea.trim()
+    const trimAreaUrdu = memberAreaUrdu.trim()
     let valid = true
     if (/[^a-zA-Z؀-ۿݐ-ݿ\s]/.test(trimName)) { setNameError('Only letters and spaces allowed'); valid = false }
     else if (trimName.length < 3) { setNameError('Minimum 3 letters required'); valid = false }
+    if (trimNameUrdu && /[^؀-ۿݐ-ݿ\s]/.test(trimNameUrdu)) { setNameUrduError('صرف اردو حروف اور خالی جگہ'); valid = false }
     if (/[^a-zA-Z0-9؀-ۿݐ-ݿ\s]/.test(trimArea)) { setAreaError('Only letters, numbers and spaces allowed'); valid = false }
     else if (trimArea.length < 2) { setAreaError('Minimum 2 characters required'); valid = false }
+    if (trimAreaUrdu && /[^؀-ۿݐ-ݿ0-9\s]/.test(trimAreaUrdu)) { setAreaUrduError('صرف اردو حروف اور نمبر'); valid = false }
     if (!valid) return
     const duplicate = participants.find(
       p => p.name.toLowerCase() === trimName.toLowerCase() && p.area.toLowerCase() === trimArea.toLowerCase()
     )
     if (duplicate && !window.confirm(`A member named "${trimName}" from "${trimArea}" already exists. Add again?`)) return
     setAddingMember(true)
-    const docRef = await addDoc(collection(db, 'clubs', club.id, 'participants'), {
-      name: trimName, area: trimArea, createdAt: serverTimestamp()
-    })
+    const data: Record<string, unknown> = { name: trimName, area: trimArea, createdAt: serverTimestamp() }
+    if (trimNameUrdu) data.nameUrdu = trimNameUrdu
+    if (trimAreaUrdu) data.areaUrdu = trimAreaUrdu
+    const docRef = await addDoc(collection(db, 'clubs', club.id, 'participants'), data)
     setParticipants(prev => {
-      const updated = [...prev, { id: docRef.id, name: trimName, area: trimArea }]
+      const updated = [...prev, { id: docRef.id, name: trimName, ...(trimNameUrdu ? { nameUrdu: trimNameUrdu } : {}), area: trimArea, ...(trimAreaUrdu ? { areaUrdu: trimAreaUrdu } : {}) }]
       participantsRef.current = updated
       return updated
     })
-    setMemberName(''); setMemberArea(''); setNameError(''); setAreaError(''); setAddingMember(false)
+    setMemberName(''); setMemberNameUrdu(''); setMemberArea(''); setMemberAreaUrdu('')
+    setNameError(''); setNameUrduError(''); setAreaError(''); setAreaUrduError('')
+    setAddingMember(false)
   }
 
   const removeMember = async (id: string) => {
@@ -485,7 +496,8 @@ export default function ClubDashboard() {
                     </div>
                     <div className="flex items-center gap-4">
                       <button onClick={saveAssignment} disabled={savingAssignment}
-                        className="bg-secondary hover:bg-accent text-dark font-bold px-6 py-2 rounded-lg text-sm transition disabled:opacity-50">
+                        className="bg-secondary hover:bg-accent text-dark font-bold px-6 py-2 rounded-lg text-sm transition disabled:opacity-50 flex items-center gap-2">
+                        {savingAssignment && <span className="inline-block w-3 h-3 border-2 border-dark border-t-transparent rounded-full animate-spin" />}
                         {savingAssignment ? 'Saving...' : 'Save'}
                       </button>
                       {savedAssignment && <p className="text-green-400 text-sm">✅ Saved!</p>}
@@ -504,8 +516,8 @@ export default function ClubDashboard() {
             <div className="bg-surface border border-green-800 rounded-xl p-6">
               <h2 className="text-secondary font-bold mb-4">+ Add Member</h2>
               <form onSubmit={addMember} className="space-y-2">
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <div className="flex-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
                     <input type="text" value={memberName}
                       onChange={e => {
                         const val = e.target.value
@@ -514,11 +526,23 @@ export default function ClubDashboard() {
                         else if (val.trim().length > 0 && val.trim().length < 3) setNameError('Minimum 3 letters required')
                         else setNameError('')
                       }}
-                      placeholder="Name (letters only)"
+                      placeholder="Name (English, required)"
                       className={`w-full bg-primary border text-white rounded-lg px-4 py-2 text-sm focus:outline-none placeholder-green-700 ${nameError ? 'border-red-500 focus:border-red-400' : 'border-green-700 focus:border-secondary'}`} />
                     {nameError && <p className="text-red-400 text-xs mt-0.5 px-1">{nameError}</p>}
                   </div>
-                  <div className="flex-1">
+                  <div>
+                    <input type="text" value={memberNameUrdu} dir="rtl"
+                      onChange={e => {
+                        const val = e.target.value
+                        setMemberNameUrdu(val)
+                        if (val.trim() && /[^؀-ۿݐ-ݿ\s]/.test(val.trim())) setNameUrduError('صرف اردو حروف اور خالی جگہ')
+                        else setNameUrduError('')
+                      }}
+                      placeholder="نام (اردو، اختیاری)"
+                      className={`w-full bg-primary border text-white rounded-lg px-4 py-2 text-sm focus:outline-none placeholder-green-700 font-urdu ${nameUrduError ? 'border-red-500 focus:border-red-400' : 'border-green-700 focus:border-secondary'}`} />
+                    {nameUrduError && <p className="text-red-400 text-xs mt-0.5 px-1 text-right">{nameUrduError}</p>}
+                  </div>
+                  <div>
                     <input type="text" value={memberArea}
                       onChange={e => {
                         const val = e.target.value
@@ -527,16 +551,29 @@ export default function ClubDashboard() {
                         else if (val.trim().length > 0 && val.trim().length < 2) setAreaError('Minimum 2 characters required')
                         else setAreaError('')
                       }}
-                      placeholder="Village/Area"
+                      placeholder="Village/Area (English, required)"
                       className={`w-full bg-primary border text-white rounded-lg px-4 py-2 text-sm focus:outline-none placeholder-green-700 ${areaError ? 'border-red-500 focus:border-red-400' : 'border-green-700 focus:border-secondary'}`} />
                     {areaError && <p className="text-red-400 text-xs mt-0.5 px-1">{areaError}</p>}
                   </div>
-                  <button type="submit" disabled={addingMember}
-                    className="bg-secondary hover:bg-accent text-dark font-bold px-5 py-2 rounded-lg text-sm transition disabled:opacity-50 sm:w-auto w-full self-start">
-                    Add
-                  </button>
+                  <div>
+                    <input type="text" value={memberAreaUrdu} dir="rtl"
+                      onChange={e => {
+                        const val = e.target.value
+                        setMemberAreaUrdu(val)
+                        if (val.trim() && /[^؀-ۿݐ-ݿ0-9\s]/.test(val.trim())) setAreaUrduError('صرف اردو حروف اور نمبر')
+                        else setAreaUrduError('')
+                      }}
+                      placeholder="گاؤں/علاقہ (اردو، اختیاری)"
+                      className={`w-full bg-primary border text-white rounded-lg px-4 py-2 text-sm focus:outline-none placeholder-green-700 font-urdu ${areaUrduError ? 'border-red-500 focus:border-red-400' : 'border-green-700 focus:border-secondary'}`} />
+                    {areaUrduError && <p className="text-red-400 text-xs mt-0.5 px-1 text-right">{areaUrduError}</p>}
+                  </div>
                 </div>
-                <p className="text-green-700 text-xs">Name: letters only, min 3 · Village: letters &amp; numbers, min 2</p>
+                <button type="submit" disabled={addingMember}
+                  className="bg-secondary hover:bg-accent text-dark font-bold px-5 py-2 rounded-lg text-sm transition disabled:opacity-50 flex items-center gap-2">
+                  {addingMember && <span className="inline-block w-3 h-3 border-2 border-dark border-t-transparent rounded-full animate-spin" />}
+                  Add Member
+                </button>
+                <p className="text-green-700 text-xs">English name &amp; area are required · Urdu fields are optional</p>
               </form>
             </div>
 
@@ -562,7 +599,7 @@ export default function ClubDashboard() {
                         <div className="w-10 h-10 rounded-full border overflow-hidden" style={{ borderColor: p.disabled ? '#1a3a1a' : '#4ade80' }}>
                           {p.photoUrl
                             ? <img src={p.photoUrl} alt={p.name} className="w-full h-full object-cover" />
-                            : <div className={`w-full h-full flex items-center justify-center font-bold text-sm ${p.disabled ? 'bg-primary text-green-700' : 'bg-primary text-secondary'}`}>{p.name.charAt(0)}</div>
+                            : <div className={`w-full h-full flex items-center justify-center font-bold text-sm ${p.disabled ? 'bg-primary text-green-700' : 'bg-primary text-secondary'}`}>{(p.name || '').charAt(0)}</div>
                           }
                         </div>
                         <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-green-700 rounded-full flex items-center justify-center border-2 border-surface shadow z-10">
@@ -574,7 +611,8 @@ export default function ClubDashboard() {
                         onChange={e => { const f = e.target.files?.[0]; if (f) setCropFile(f); e.target.value = '' }} />
                       <div className="flex-1 min-w-0">
                         <p className={`font-semibold text-sm truncate ${p.disabled ? 'text-green-700 line-through' : 'text-white'}`}>{p.name}</p>
-                        <p className="text-green-600 text-xs">{p.area}{p.disabled ? ' · Disabled' : ''}</p>
+                        {p.nameUrdu && <p className="text-green-400 text-xs font-urdu" dir="rtl">{p.nameUrdu}</p>}
+                        <p className="text-green-600 text-xs">{p.area}{p.areaUrdu ? ` · ${p.areaUrdu}` : ''}{p.disabled ? ' · Disabled' : ''}</p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <button onClick={() => toggleDisabled(p)}
@@ -793,7 +831,8 @@ export default function ClubDashboard() {
                     {saved && <p className="text-green-400 text-sm">✅ Entries saved!</p>}
                     <div className="ml-auto">
                       <button onClick={saveEntries} disabled={saving}
-                        className="bg-secondary hover:bg-accent text-dark font-bold px-8 py-3 rounded-lg transition disabled:opacity-50">
+                        className="bg-secondary hover:bg-accent text-dark font-bold px-8 py-3 rounded-lg transition disabled:opacity-50 flex items-center gap-2">
+                        {saving && <span className="inline-block w-3 h-3 border-2 border-dark border-t-transparent rounded-full animate-spin" />}
                         {saving ? 'Saving...' : 'Save Entries'}
                       </button>
                     </div>

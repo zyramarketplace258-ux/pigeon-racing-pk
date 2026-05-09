@@ -1,6 +1,7 @@
 import { getAdminDb } from '@/lib/firebase-admin'
 import TournamentClient from '@/components/TournamentClient'
 import type { TournamentInitialData } from '@/components/TournamentClient'
+import { getPKTDate } from '@/lib/pkt'
 
 export const dynamic = 'force-dynamic'
 
@@ -59,7 +60,9 @@ export default async function TournamentPage({ params }: { params: { clubSlug: s
       return {
         id: d.id,
         name: String(data.name || ''),
+        ...(data.nameUrdu ? { nameUrdu: String(data.nameUrdu) } : {}),
         area: String(data.area || ''),
+        ...(data.areaUrdu ? { areaUrdu: String(data.areaUrdu) } : {}),
         ...(data.photoUrl ? { photoUrl: String(data.photoUrl) } : {}),
       }
     })
@@ -87,7 +90,7 @@ export default async function TournamentPage({ params }: { params: { clubSlug: s
     /* eslint-enable @typescript-eslint/no-explicit-any */
 
     // 5. Default day — most recent past-or-today race day; first day if tournament hasn't started
-    const today = new Date().toISOString().split('T')[0]
+    const today = getPKTDate()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const nonGapDays = raceDays.filter((rd: any) => !rd.isGap)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -1,14 +1,15 @@
 import { getAdminDb } from '@/lib/firebase-admin'
 import HomeClient from '@/components/HomeClient'
 import { compareHours } from '@/lib/timeUtils'
+import { getPKTDate } from '@/lib/pkt'
 import type { TInfoClient, InitialHomeData, ActiveTournament, RaceDay } from '@/components/HomeClient'
 
 export const dynamic = 'force-dynamic'
 
-type PigeonRec = { participantKey: string; name: string; area: string; hoursFlown: string; landingTime: string }
-type ScoreRec = { participantKey: string; name: string; area: string; photoUrl: string; totalHours: string }
+type PigeonRec = { participantKey: string; name: string; nameUrdu: string; area: string; areaUrdu: string; hoursFlown: string; landingTime: string }
+type ScoreRec = { participantKey: string; name: string; nameUrdu: string; area: string; areaUrdu: string; photoUrl: string; totalHours: string }
 type PigeonChip = { landingTime: string; hoursFlown: string }
-type TopEntry = { name: string; area: string; photoUrl?: string; pigeons: PigeonChip[]; totalHours: string }
+type TopEntry = { name: string; nameUrdu: string; area: string; areaUrdu: string; photoUrl?: string; pigeons: PigeonChip[]; totalHours: string }
 
 export default async function HomePage() {
   const empty: InitialHomeData = {
@@ -20,7 +21,7 @@ export default async function HomePage() {
 
   try {
     const db = getAdminDb()
-    const today = new Date().toISOString().split('T')[0]
+    const today = getPKTDate()
 
     // 1. Fetch all clubs — extract only needed fields to avoid Firestore Timestamps in serialized props
     const clubsSnap = await db.collection('clubs').get()
@@ -56,8 +57,10 @@ export default async function HomePage() {
       const nm: Record<string, string> = {}
       const am: Record<string, string> = {}
       const pm: Record<string, string> = {}
+      const nurm: Record<string, string> = {}
+      const aurm: Record<string, string> = {}
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      participants.forEach((p: any) => { nm[p.id] = p.name || ''; am[p.id] = p.area || ''; pm[p.id] = p.photoUrl || '' })
+      participants.forEach((p: any) => { nm[p.id] = p.name || ''; am[p.id] = p.area || ''; pm[p.id] = p.photoUrl || ''; nurm[p.id] = p.nameUrdu || ''; aurm[p.id] = p.areaUrdu || '' })
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       for (const t of tournaments as any[]) {
@@ -71,7 +74,9 @@ export default async function HomePage() {
         const filteredNm: Record<string, string> = {}
         const filteredAm: Record<string, string> = {}
         const filteredPm: Record<string, string> = {}
-        enrolledIds.forEach(id => { filteredNm[id] = nm[id] || ''; filteredAm[id] = am[id] || ''; filteredPm[id] = pm[id] || '' })
+        const filteredNurm: Record<string, string> = {}
+        const filteredAurm: Record<string, string> = {}
+        enrolledIds.forEach(id => { filteredNm[id] = nm[id] || ''; filteredAm[id] = am[id] || ''; filteredPm[id] = pm[id] || ''; filteredNurm[id] = nurm[id] || ''; filteredAurm[id] = aurm[id] || '' })
         const pastDays = nonGap.filter(rd => rd.date <= today)
         const currentDayNum = pastDays.length > 0
           ? pastDays[pastDays.length - 1].dayNumber
@@ -89,6 +94,7 @@ export default async function HomePage() {
             totalRaceDays: nonGap.length,
           },
           nameMap: filteredNm, areaMap: filteredAm, photoMap: filteredPm,
+          nameUrduMap: filteredNurm, areaUrduMap: filteredAurm,
           enrolledCount: enrolledIds.length,
           suffix: currentDayNum ? `_day${currentDayNum}` : '',
         })
@@ -130,7 +136,7 @@ export default async function HomePage() {
             landingTime: pg.landingTime || '', hoursFlown: pg.hoursFlown || '',
           }))
           pigeons.forEach(pg => { if (pg.landingTime) totalLanded++ })
-          return [{ name: info.nameMap[pId], area: info.areaMap[pId] || '', photoUrl: info.photoMap[pId] || '', pigeons, totalHours: d.totalHours }]
+          return [{ name: info.nameMap[pId], nameUrdu: info.nameUrduMap[pId] || '', area: info.areaMap[pId] || '', areaUrdu: info.areaUrduMap[pId] || '', photoUrl: info.photoMap[pId] || '', pigeons, totalHours: d.totalHours }]
         })
         .sort((a: TopEntry, b: TopEntry) => compareHours(a.totalHours, b.totalHours))
 
@@ -142,11 +148,11 @@ export default async function HomePage() {
           const pId = d.id.slice(0, -info.suffix.length)
           if (!(pId in info.nameMap)) return
           if (d.totalHours) {
-            srecs.push({ participantKey: `${info.base.clubId}::${pId}`, name: info.nameMap[pId], area: info.areaMap[pId] || '', photoUrl: info.photoMap[pId] || '', totalHours: d.totalHours })
+            srecs.push({ participantKey: `${info.base.clubId}::${pId}`, name: info.nameMap[pId], nameUrdu: info.nameUrduMap[pId] || '', area: info.areaMap[pId] || '', areaUrdu: info.areaUrduMap[pId] || '', photoUrl: info.photoMap[pId] || '', totalHours: d.totalHours })
           }
           ;(d.pigeons || []).forEach((pg: any) => {
             if (pg.hoursFlown && pg.landingTime) {
-              precs.push({ participantKey: `${info.base.clubId}::${pId}`, name: info.nameMap[pId], area: info.areaMap[pId] || '', hoursFlown: pg.hoursFlown, landingTime: pg.landingTime })
+              precs.push({ participantKey: `${info.base.clubId}::${pId}`, name: info.nameMap[pId], nameUrdu: info.nameUrduMap[pId] || '', area: info.areaMap[pId] || '', areaUrdu: info.areaUrduMap[pId] || '', hoursFlown: pg.hoursFlown, landingTime: pg.landingTime })
             }
           })
         })
@@ -209,7 +215,7 @@ export default async function HomePage() {
     let prevHW = '', rankW = 0
     for (const p of sortedPR) {
       if (p.hoursFlown !== prevHW) { rankW++; if (rankW > 1) break; prevHW = p.hoursFlown }
-      winnerPigeons.push({ name: p.name, area: p.area, landingTime: p.landingTime, hoursFlown: p.hoursFlown, tournament: p.tournament, clubSlug: p.clubSlug, tournamentId: p.tournamentId, rank: rankW })
+      winnerPigeons.push({ name: p.name, nameUrdu: p.nameUrdu, area: p.area, areaUrdu: p.areaUrdu, landingTime: p.landingTime, hoursFlown: p.hoursFlown, tournament: p.tournament, clubSlug: p.clubSlug, tournamentId: p.tournamentId, rank: rankW })
     }
 
     initialData = {
