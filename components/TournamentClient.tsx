@@ -219,16 +219,13 @@ export default function TournamentClient({
     <main className={`min-h-screen bg-[#e8f5e9] ${isUrdu ? 'font-urdu' : ''}`} dir={isUrdu ? 'rtl' : 'ltr'}>
 
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#1b5e20] to-[#2e7d32] px-4 pt-4 pb-3">
-        <div className="flex items-start justify-between max-w-6xl mx-auto">
-          <div className="min-w-0 flex-1 mr-3">
-            <h1 className="text-white text-base sm:text-xl font-bold truncate leading-tight">{tournament.name}</h1>
-            <div className="flex items-center gap-2 mt-0.5">
-              <p className="text-green-300 text-xs truncate">{club.name} · {club.city}</p>
-              {viewerCount > 1 && <span className="text-green-400 text-xs shrink-0">· 👁 {viewerCount}</span>}
-            </div>
+      <div className="bg-gradient-to-r from-[#1b5e20] to-[#2e7d32] px-4 pt-3 pb-3">
+        <div className="flex items-center justify-between max-w-6xl mx-auto">
+          <div className="flex items-center gap-2">
+            <p className="text-green-300 text-xs truncate">{club.name} · {club.city}</p>
+            {viewerCount > 1 && <span className="text-green-400 text-xs shrink-0">· 👁 {viewerCount}</span>}
           </div>
-          <div className="flex items-center gap-3 shrink-0 mt-0.5">
+          <div className="flex items-center gap-3 shrink-0">
             <Link href={`/${clubSlug}`} className="text-green-300 hover:text-white text-xs font-medium transition">{t('clubBack')}</Link>
             <Link href="/" className="text-green-300 hover:text-white text-xs font-medium transition">{t('home')}</Link>
           </div>
@@ -291,6 +288,9 @@ export default function TournamentClient({
 
         {/* DETAIL RESULTS */}
         {(tournament.status !== 'completed' || showDetailResults) && (<>
+
+        {/* Tournament name */}
+        <h1 className="text-[#1b5e20] font-bold text-lg sm:text-xl leading-tight px-1">{tournament.name}</h1>
 
         {/* Stats bar */}
         <div className="bg-white rounded-lg border border-[#d4edda] shadow-sm px-4 py-2 flex items-center justify-center gap-3 text-sm">
