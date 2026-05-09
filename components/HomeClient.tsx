@@ -68,10 +68,17 @@ export default function HomeClient({ initialData, tInfos }: Props) {
   const [totalStillFlying, setTotalStillFlying] = useState(initialData.totalStillFlying)
   const [winnerPigeons, setWinnerPigeons] = useState<WinnerEntry[]>(initialData.winnerPigeons)
   const [totalLotsCompeting, setTotalLotsCompeting] = useState(initialData.totalLotsCompeting)
-  const [activeTab, setActiveTab] = useState<'home' | 'clubs' | 'gallery'>('home')
+  const [activeTab, setActiveTab] = useState<'home' | 'tournaments' | 'clubs' | 'gallery'>(() => {
+    if (typeof window !== 'undefined') {
+      const s = sessionStorage.getItem('home-tab') as string
+      if (s === 'home' || s === 'tournaments' || s === 'clubs' || s === 'gallery') return s
+    }
+    return 'home'
+  })
+  const setTab = (tab: typeof activeTab) => { setActiveTab(tab); sessionStorage.setItem('home-tab', tab) }
   const [navLoading, setNavLoading] = useState<string | null>(null)
   const [galleryPosts, setGalleryPosts] = useState<GalleryPost[]>([])
-  const [galleryLoading, setGalleryLoading] = useState(false)
+  const [galleryLoading, setGalleryLoading] = useState(true)
   const [loggedInClub, setLoggedInClub] = useState<Club | null>(null)
   // Set up real-time listeners — structural data already provided by SSR
   useEffect(() => {
@@ -215,15 +222,13 @@ export default function HomeClient({ initialData, tInfos }: Props) {
   }, [])
 
   useEffect(() => {
-    if (activeTab !== 'gallery') return
-    setGalleryLoading(true)
-    getDocs(query(collection(db, 'gallery'), orderBy('createdAt', 'desc')))
-      .then(snap => {
-        setGalleryPosts(snap.docs.map(d => ({ id: d.id, ...d.data() })) as GalleryPost[])
-        setGalleryLoading(false)
-      })
-      .catch(() => setGalleryLoading(false))
-  }, [activeTab])
+    const unsub = onSnapshot(
+      query(collection(db, 'gallery'), orderBy('createdAt', 'desc')),
+      snap => { setGalleryPosts(snap.docs.map(d => ({ id: d.id, ...d.data() })) as GalleryPost[]); setGalleryLoading(false) },
+      () => setGalleryLoading(false)
+    )
+    return () => unsub()
+  }, [])
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
@@ -302,9 +307,10 @@ export default function HomeClient({ initialData, tInfos }: Props) {
       </div>
       <nav className="bg-[#292929] px-4">
         <div className="max-w-5xl mx-auto flex items-center gap-4 h-9">
-          <button onClick={() => setActiveTab('home')} className={`text-sm font-semibold pb-0.5 transition ${activeTab === 'home' ? 'text-white border-b-2 border-[#66bb6a]' : 'text-gray-400 hover:text-white'}`}>{t('tabHome')}</button>
-          <button onClick={() => setActiveTab('clubs')} className={`text-sm font-semibold pb-0.5 transition ${activeTab === 'clubs' ? 'text-white border-b-2 border-[#66bb6a]' : 'text-gray-400 hover:text-white'}`}>{t('tabClubs')}</button>
-          <button onClick={() => setActiveTab('gallery')} className={`text-sm font-semibold pb-0.5 transition ${activeTab === 'gallery' ? 'text-white border-b-2 border-[#66bb6a]' : 'text-gray-400 hover:text-white'}`}>{t('tabGallery')}</button>
+          <button onClick={() => setTab('home')} className={`text-sm font-semibold pb-0.5 transition ${activeTab === 'home' ? 'text-white border-b-2 border-[#66bb6a]' : 'text-gray-400 hover:text-white'}`}>{t('tabHome')}</button>
+          <button onClick={() => setTab('tournaments')} className={`text-sm font-semibold pb-0.5 transition ${activeTab === 'tournaments' ? 'text-white border-b-2 border-[#66bb6a]' : 'text-gray-400 hover:text-white'}`}>{isUrdu ? 'ٹورنامنٹ' : 'Tournaments'}</button>
+          <button onClick={() => setTab('clubs')} className={`text-sm font-semibold pb-0.5 transition ${activeTab === 'clubs' ? 'text-white border-b-2 border-[#66bb6a]' : 'text-gray-400 hover:text-white'}`}>{t('tabClubs')}</button>
+          <button onClick={() => setTab('gallery')} className={`text-sm font-semibold pb-0.5 transition ${activeTab === 'gallery' ? 'text-white border-b-2 border-[#66bb6a]' : 'text-gray-400 hover:text-white'}`}>{t('tabGallery')}</button>
           <button onClick={toggle} className="ms-auto text-xs text-green-300 border border-green-700 px-2.5 py-1 rounded hover:bg-green-800 transition font-medium">
             {isUrdu ? 'EN' : 'اردو'}
           </button>
@@ -366,6 +372,127 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                       <p className="text-[#777] text-xs">{club.city}</p>
                     </div>
                   </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TOURNAMENTS TAB */}
+        {activeTab === 'tournaments' && (
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-[#1b5e20] font-bold text-lg leading-tight">{isUrdu ? 'فعال ٹورنامنٹ' : 'Active Tournaments'}</h2>
+              {activeTournaments.length > 0 && (
+                <span className="text-xs bg-[#e8f5e9] text-[#2e7d32] border border-[#c8e6c9] px-2.5 py-1 rounded-full font-semibold">
+                  {activeTournaments.length} {isUrdu ? 'ٹورنامنٹ' : activeTournaments.length === 1 ? 'tournament' : 'tournaments'}
+                </span>
+              )}
+            </div>
+
+            {activeTournaments.length === 0 ? (
+              <div className="bg-white rounded-xl border border-[#d4edda] p-10 text-center shadow-sm">
+                <p className="text-4xl mb-3">🏆</p>
+                <p className="text-gray-700 font-bold">{t('noLiveTournaments')}</p>
+                <p className="text-gray-400 text-sm mt-1">{t('checkBackSoon')}</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {activeTournaments.map(tr => (
+                  <div key={`t-${tr.clubId}-${tr.id}`} className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
+                    <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-3">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="bg-[#e65100] text-white text-xs px-1.5 py-0.5 rounded font-bold animate-pulse tracking-wider">LIVE</span>
+                          <span className="text-green-300 text-xs">
+                            {tr.defaultStartTime}{tr.defaultEndTime ? ` → ${tr.defaultEndTime}` : ''}
+                          </span>
+                        </div>
+                        {tr.totalRaceDays > 0 && (
+                          <span className="text-green-200 text-xs font-semibold bg-green-900 bg-opacity-40 px-2 py-0.5 rounded-full">
+                            {fDayOf(lang, tr.currentDay, tr.totalRaceDays)}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-green-300 text-xs mb-0.5">{tr.clubName} · {tr.clubCity}</p>
+                      <h3 className="text-white font-bold text-base leading-snug">{tr.name}</h3>
+                    </div>
+
+                    {tr.totalPigeons > 0 && (
+                      <div className="px-4 py-2.5 bg-green-50 border-b border-[#d4edda]">
+                        <div className="h-2 bg-[#e9ecef] rounded mb-1.5 overflow-hidden">
+                          <div
+                            className="h-full rounded"
+                            style={{
+                              width: `${Math.round((tr.totalLanded / tr.totalPigeons) * 100)}%`,
+                              background: 'linear-gradient(90deg,#388e3c,#66bb6a)',
+                              transition: 'width 0.4s ease',
+                            }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-xs text-gray-500">
+                          <span>{fLanded(lang, tr.totalLanded)}</span>
+                          <span>{fStillFlying(lang, Math.max(0, tr.totalPigeons - tr.totalLanded))}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {tr.topEntries.length > 0 ? (
+                      <div>
+                        {tr.topEntries.map((entry, i) => {
+                          const rank = getRank(entry, tr.topEntries)
+                          return (
+                            <div
+                              key={i}
+                              className="flex items-center gap-3 px-3 py-2.5 border-b border-[#e9ecef] last:border-b-0"
+                              style={{ background: rank === 0 ? '#dff0d8' : i % 2 === 1 ? '#f6faf6' : '#fff' }}
+                            >
+                              <div className="relative w-9 h-9 shrink-0">
+                                {entry.photoUrl ? (
+                                  <>
+                                    <img src={entry.photoUrl} alt={entry.name} className="w-9 h-9 rounded-full object-cover" style={{ border: `2px solid ${rank === 0 ? '#c8900a' : rank === 1 ? '#9e9e9e' : '#bbb'}` }} />
+                                    <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold ${rankRingClass(rank)}`} style={rankRingStyle(rank)}>
+                                      {rank + 1}
+                                    </div>
+                                  </>
+                                ) : (
+                                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold ${rankRingClass(rank)}`} style={rankRingStyle(rank)}>
+                                    {rank + 1}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-sm text-[#1a1a1a] truncate">{isUrdu && entry.nameUrdu ? entry.nameUrdu : entry.name}</p>
+                                <p className="text-[#777] text-xs">{isUrdu && entry.areaUrdu ? entry.areaUrdu : entry.area}</p>
+                                {entry.pigeons.some(pg => pg.landingTime) && (
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {entry.pigeons.filter(pg => pg.landingTime).map((pg, pi) => (
+                                      <span key={pi} className="text-[10px] bg-[#e8f5e9] text-[#2e7d32] px-1.5 py-0.5 rounded font-medium leading-tight">
+                                        {pg.landingTime}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                              <p className="font-bold text-xl text-[#1a1a1a] shrink-0">{formatTimeDisplay(entry.totalHours)}</p>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <div className="px-4 py-6 text-center text-gray-400 text-sm bg-[#f9fdf9]">
+                        {t('noResultsYet')}
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => { setNavLoading(`t-${tr.clubId}-${tr.id}`); router.push(`/${tr.clubSlug}/${tr.id}`) }}
+                      className="flex items-center justify-center gap-2 py-3 text-sm font-semibold text-[#23592b] bg-[#f1faf2] border-t border-[#d4edda] hover:bg-[#e8f5e9] transition w-full"
+                    >
+                      {navLoading === `t-${tr.clubId}-${tr.id}` ? <span className="inline-block w-3 h-3 border-2 border-[#23592b] border-t-transparent rounded-full animate-spin" /> : null}
+                      {t('fullResults')} <span>→</span>
+                    </button>
+                  </div>
                 ))}
               </div>
             )}

@@ -49,7 +49,14 @@ export default function ClubPageClient({
   const [club] = useState<Club | null>(initialData.club)
   const [tournaments, setTournaments] = useState<Tournament[]>(initialData.tournaments)
   const [weather, setWeather] = useState<Weather | null>(null)
-  const [activeView, setActiveView] = useState<'tournaments' | 'history'>('tournaments')
+  const [activeView, setActiveView] = useState<'tournaments' | 'history'>(() => {
+    if (typeof window !== 'undefined') {
+      const s = sessionStorage.getItem('club-view') as string
+      if (s === 'tournaments' || s === 'history') return s
+    }
+    return 'tournaments'
+  })
+  const setView = (v: 'tournaments' | 'history') => { setActiveView(v); sessionStorage.setItem('club-view', v) }
   const isUrdu = lang === 'ur'
 
   useEffect(() => {
@@ -116,7 +123,7 @@ export default function ClubPageClient({
       <nav className="bg-[#292929] px-4">
         <div className="max-w-4xl mx-auto flex items-center h-9 gap-1">
           {(['tournaments', 'history'] as const).map(v => (
-            <button key={v} onClick={() => setActiveView(v)}
+            <button key={v} onClick={() => setView(v)}
               className={`px-4 h-full text-sm font-semibold transition border-b-2 ${
                 activeView === v ? 'text-white border-[#66bb6a]' : 'text-gray-400 border-transparent hover:text-white'
               }`}>
