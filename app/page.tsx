@@ -8,7 +8,7 @@ type RecentTournament = InitialHomeData['recentTournaments'][number]
 
 export const dynamic = 'force-dynamic'
 
-type PigeonRec = { participantKey: string; name: string; nameUrdu: string; area: string; areaUrdu: string; hoursFlown: string; landingTime: string }
+type PigeonRec = { participantKey: string; name: string; nameUrdu: string; area: string; areaUrdu: string; photoUrl: string; hoursFlown: string; landingTime: string }
 type ScoreRec = { participantKey: string; name: string; nameUrdu: string; area: string; areaUrdu: string; photoUrl: string; totalHours: string }
 type PigeonChip = { landingTime: string; hoursFlown: string }
 type TopEntry = { name: string; nameUrdu: string; area: string; areaUrdu: string; photoUrl?: string; pigeons: PigeonChip[]; totalHours: string }
@@ -158,7 +158,7 @@ export default async function HomePage() {
           }
           ;(d.pigeons || []).forEach((pg: any) => {
             if (pg.hoursFlown && pg.landingTime) {
-              precs.push({ participantKey: `${info.base.clubId}::${pId}`, name: info.nameMap[pId], nameUrdu: info.nameUrduMap[pId] || '', area: info.areaMap[pId] || '', areaUrdu: info.areaUrduMap[pId] || '', hoursFlown: pg.hoursFlown, landingTime: pg.landingTime })
+              precs.push({ participantKey: `${info.base.clubId}::${pId}`, name: info.nameMap[pId], nameUrdu: info.nameUrduMap[pId] || '', area: info.areaMap[pId] || '', areaUrdu: info.areaUrduMap[pId] || '', photoUrl: info.photoMap[pId] || '', hoursFlown: pg.hoursFlown, landingTime: pg.landingTime })
             }
           })
         })
@@ -221,7 +221,7 @@ export default async function HomePage() {
     let prevHW = '', rankW = 0
     for (const p of sortedPR) {
       if (p.hoursFlown !== prevHW) { rankW++; if (rankW > 1) break; prevHW = p.hoursFlown }
-      winnerPigeons.push({ name: p.name, nameUrdu: p.nameUrdu, area: p.area, areaUrdu: p.areaUrdu, landingTime: p.landingTime, hoursFlown: p.hoursFlown, tournament: p.tournament, clubSlug: p.clubSlug, tournamentId: p.tournamentId, rank: rankW })
+      winnerPigeons.push({ name: p.name, nameUrdu: p.nameUrdu, area: p.area, areaUrdu: p.areaUrdu, photoUrl: p.photoUrl, landingTime: p.landingTime, hoursFlown: p.hoursFlown, tournament: p.tournament, clubSlug: p.clubSlug, tournamentId: p.tournamentId, rank: rankW })
     }
 
     // 10. Recent completed tournaments

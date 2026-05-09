@@ -21,7 +21,7 @@ export interface RaceDay { dayNumber: number; date: string; isGap?: boolean }
 interface PigeonChip { landingTime: string; hoursFlown: string }
 interface TopEntry { name: string; nameUrdu: string; area: string; areaUrdu: string; photoUrl?: string; pigeons: PigeonChip[]; totalHours: string }
 interface TopScorer { rank: number; name: string; nameUrdu?: string; area: string; areaUrdu?: string; photoUrl?: string; totalHours: string; tournament: string; clubSlug: string; tournamentId: string }
-interface WinnerEntry { rank: number; name: string; nameUrdu?: string; area: string; areaUrdu?: string; landingTime: string; hoursFlown: string; tournament: string; clubSlug: string; tournamentId: string }
+interface WinnerEntry { rank: number; name: string; nameUrdu?: string; area: string; areaUrdu?: string; photoUrl?: string; landingTime: string; hoursFlown: string; tournament: string; clubSlug: string; tournamentId: string }
 export interface ActiveTournament {
   id: string; name: string; pigeonCount: number
   defaultStartTime: string; defaultEndTime: string
@@ -101,7 +101,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
       }
     })
 
-    type PigeonRec = { participantKey: string; name: string; nameUrdu: string; area: string; areaUrdu: string; hoursFlown: string; landingTime: string }
+    type PigeonRec = { participantKey: string; name: string; nameUrdu: string; area: string; areaUrdu: string; photoUrl: string; hoursFlown: string; landingTime: string }
     type ScoreRec = { participantKey: string; name: string; nameUrdu: string; area: string; areaUrdu: string; photoUrl: string; totalHours: string }
     const pigeonStore = new Map<string, PigeonRec[]>()
     const scoreStore = new Map<string, ScoreRec[]>()
@@ -160,7 +160,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
       let prevHW = '', rankW = 0
       for (const p of sorted) {
         if (p.hoursFlown !== prevHW) { rankW++; if (rankW > 1) break; prevHW = p.hoursFlown }
-        wp.push({ name: p.name, nameUrdu: p.nameUrdu, area: p.area, areaUrdu: p.areaUrdu, landingTime: p.landingTime, hoursFlown: p.hoursFlown, tournament: p.tournament, clubSlug: p.clubSlug, tournamentId: p.tournamentId, rank: rankW })
+        wp.push({ name: p.name, nameUrdu: p.nameUrdu, area: p.area, areaUrdu: p.areaUrdu, photoUrl: p.photoUrl, landingTime: p.landingTime, hoursFlown: p.hoursFlown, tournament: p.tournament, clubSlug: p.clubSlug, tournamentId: p.tournamentId, rank: rankW })
       }
       setWinnerPigeons(wp)
     }
@@ -207,7 +207,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
               }
               ;(ddata.pigeons || []).forEach((pg: Record<string, string>) => {
                 if (pg.hoursFlown && pg.landingTime) {
-                  precs.push({ participantKey: `${info.base.clubId}::${pId}`, name: info.nameMap[pId], nameUrdu: info.nameUrduMap[pId] || '', area: info.areaMap[pId] || '', areaUrdu: info.areaUrduMap[pId] || '', hoursFlown: pg.hoursFlown, landingTime: pg.landingTime })
+                  precs.push({ participantKey: `${info.base.clubId}::${pId}`, name: info.nameMap[pId], nameUrdu: info.nameUrduMap[pId] || '', area: info.areaMap[pId] || '', areaUrdu: info.areaUrduMap[pId] || '', photoUrl: info.photoMap[pId] || '', hoursFlown: pg.hoursFlown, landingTime: pg.landingTime })
                 }
               })
             })
@@ -523,6 +523,13 @@ export default function HomeClient({ initialData, tInfos }: Props) {
             <div className="divide-y divide-[#f0f0f0]">
               {winnerPigeons.map((w, i) => (
                 <Link key={i} href={`/${w.clubSlug}/${w.tournamentId}`} className="flex items-center gap-3 px-4 py-3 hover:bg-[#f9fdf9] transition">
+                  {w.photoUrl ? (
+                    <img src={w.photoUrl} alt={w.name} className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-[#c8900a]" />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#ffe066] to-[#c8900a] flex items-center justify-center shrink-0">
+                      <span className="text-white text-xs font-bold">{w.name.charAt(0)}</span>
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm text-[#1a1a1a] truncate">{isUrdu && w.nameUrdu ? w.nameUrdu : w.name}</p>
                     <p className="text-[#999] text-xs truncate">{(isUrdu && w.areaUrdu ? w.areaUrdu : w.area) || '—'}</p>
