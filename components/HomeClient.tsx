@@ -524,7 +524,9 @@ export default function HomeClient({ initialData, tInfos }: Props) {
               {winnerPigeons.map((w, i) => (
                 <Link key={i} href={`/${w.clubSlug}/${w.tournamentId}`} className="flex items-center gap-3 px-4 py-3 hover:bg-[#f9fdf9] transition">
                   {w.photoUrl ? (
-                    <img src={w.photoUrl} alt={w.name} className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-[#c8900a]" />
+                    <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 border-2 border-[#c8900a]">
+                      <img src={w.photoUrl} alt={w.name} className="w-full h-full object-cover" />
+                    </div>
                   ) : (
                     <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#ffe066] to-[#c8900a] flex items-center justify-center shrink-0">
                       <span className="text-white text-xs font-bold">{w.name.charAt(0)}</span>
