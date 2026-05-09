@@ -290,7 +290,7 @@ export default function TournamentClient({
         {(tournament.status !== 'completed' || showDetailResults) && (<>
 
         {/* Tournament name */}
-        <h1 className="text-[#1b5e20] font-bold text-lg sm:text-xl leading-tight px-1">{tournament.name}</h1>
+        <h1 className="text-[#1b5e20] font-bold text-xl sm:text-2xl leading-tight text-center">{tournament.name}</h1>
 
         {/* Stats bar */}
         <div className="bg-white rounded-lg border border-[#d4edda] shadow-sm px-4 py-2 flex items-center justify-center gap-3 text-sm">
