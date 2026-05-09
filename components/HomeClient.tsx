@@ -247,6 +247,15 @@ export default function HomeClient({ initialData, tInfos }: Props) {
 
   const isUrdu = lang === 'ur'
 
+  const raceDateLabel = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0]
+    const allDays = activeTournaments.flatMap(tr => (tr.raceDays || []).filter(rd => !rd.isGap))
+    const past = allDays.filter(rd => rd.date <= todayStr).sort((a, b) => b.date.localeCompare(a.date))
+    const ref = past[0] ?? allDays.filter(rd => rd.date > todayStr).sort((a, b) => a.date.localeCompare(b.date))[0]
+    if (!ref) return new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    return new Date(ref.date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  }, [activeTournaments])
+
   return (
     <main className={`min-h-screen bg-[#e8f5e9] ${isUrdu ? 'font-urdu' : ''}`} dir={isUrdu ? 'rtl' : 'ltr'}>
 
@@ -292,7 +301,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
 
       {/* Stats Bar */}
       <div className="bg-[#2e7d32] px-4 py-3">
-        <p className="text-green-200 text-xs font-bold uppercase tracking-widest text-center mb-2">{t('todaysStats')}</p>
+        <p className="text-green-200 text-xs font-bold uppercase tracking-widest text-center mb-2">{raceDateLabel}</p>
         <div className="grid grid-cols-2 gap-2 max-w-sm mx-auto">
           <div className="bg-[#1b5e20] bg-opacity-60 rounded-lg py-2 px-3 text-center">
             <p className="text-white font-bold text-xl leading-none">{activeTournaments.length}</p>
