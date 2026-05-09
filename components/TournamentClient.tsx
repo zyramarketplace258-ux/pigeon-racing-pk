@@ -292,27 +292,17 @@ export default function TournamentClient({
         {/* DETAIL RESULTS */}
         {(tournament.status !== 'completed' || showDetailResults) && (<>
 
-        {/* Stats card */}
-        <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
-          <div className="grid grid-cols-2 divide-x divide-[#e9ecef] text-center">
-            {showTotal ? (
-              <div className="col-span-2 py-2 px-2">
-                <p className="text-[#999] text-xs uppercase tracking-wide">{t('participantsStat')}</p>
-                <p className="text-[#1b5e20] font-bold text-xl">{participants.length}</p>
-              </div>
-            ) : (
-              <>
-                <div className="py-2 px-2">
-                  <p className="text-[#999] text-xs uppercase tracking-wide">{t('landedStat')}</p>
-                  <p className="text-[#1b5e20] font-bold text-xl">{totalLanded}</p>
-                </div>
-                <div className="py-2 px-2">
-                  <p className="text-[#999] text-xs uppercase tracking-wide">{t('flyingStat')}</p>
-                  <p className="text-[#388e3c] font-bold text-xl">{stillFlying}</p>
-                </div>
-              </>
-            )}
-          </div>
+        {/* Stats bar */}
+        <div className="bg-white rounded-lg border border-[#d4edda] shadow-sm px-4 py-2 flex items-center justify-center gap-3 text-sm">
+          {showTotal ? (
+            <span className="text-[#555]">{t('participantsStat')}: <strong className="text-[#1b5e20]">{participants.length}</strong></span>
+          ) : (
+            <>
+              <span className="text-[#555]">{t('landedStat')}: <strong className="text-[#1b5e20]">{totalLanded}</strong></span>
+              <span className="text-[#ccc]">|</span>
+              <span className="text-[#555]">{t('flyingStat')}: <strong className="text-[#388e3c]">{stillFlying}</strong></span>
+            </>
+          )}
         </div>
 
         {/* Winner Pigeon */}
