@@ -37,6 +37,9 @@ const strings = {
     fullResults: 'Full results',
     landed: 'landed',
     stillFlying: 'Still Flying',
+    eventGallery: '📸 Event Gallery',
+    searchClubs: 'Search clubs...',
+    recentResults: '🏁 Recent Results',
 
     // Club public page
     clubNotFound: 'Club Not Found',
@@ -111,6 +114,9 @@ const strings = {
     fullResults: 'مکمل نتائج',
     landed: 'اترے',
     stillFlying: 'ابھی اڑ رہے ہیں',
+    eventGallery: '📸 ایونٹ گیلری',
+    searchClubs: 'کلبز تلاش کریں...',
+    recentResults: '🏁 حالیہ نتائج',
 
     // Club public page
     clubNotFound: 'کلب نہیں ملا',

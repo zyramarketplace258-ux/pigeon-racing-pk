@@ -14,7 +14,8 @@ import { useT, fDayOf, fLanded, fStillFlying } from '@/lib/translations'
 
 const playfair = Playfair_Display({ subsets: ['latin'], weight: ['700'], style: ['italic'] })
 
-export interface Club { id: string; name: string; slug: string; city: string; logoUrl?: string }
+export interface Club { id: string; name: string; slug: string; city: string; cityUrdu?: string; logoUrl?: string }
+interface RecentTournament { id: string; name: string; nameUrdu?: string; clubName: string; clubSlug: string; clubCity: string; endDate: string }
 interface GalleryPost { id: string; imageUrl: string; title: string; description: string; postedBy: string; createdAt?: { seconds: number } }
 export interface RaceDay { dayNumber: number; date: string; isGap?: boolean }
 interface PigeonChip { landingTime: string; hoursFlown: string }
@@ -46,6 +47,7 @@ export interface InitialHomeData {
   activeTournaments: ActiveTournament[]
   topScorers: TopScorer[]
   winnerPigeons: WinnerEntry[]
+  recentTournaments: RecentTournament[]
   totalLandedToday: number
   totalStillFlying: number
   totalLotsCompeting: number
@@ -77,6 +79,8 @@ export default function HomeClient({ initialData, tInfos }: Props) {
   })
   const setTab = (tab: typeof activeTab) => { setActiveTab(tab); sessionStorage.setItem('home-tab', tab) }
   const [navLoading, setNavLoading] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
   const [galleryPosts, setGalleryPosts] = useState<GalleryPost[]>([])
   const [galleryLoading, setGalleryLoading] = useState(true)
   const [loggedInClub, setLoggedInClub] = useState<Club | null>(null)
@@ -155,8 +159,8 @@ export default function HomeClient({ initialData, tInfos }: Props) {
       const wp: WinnerEntry[] = []
       let prevHW = '', rankW = 0
       for (const p of sorted) {
-        if (p.hoursFlown !== prevHW) { rankW++; if (rankW > 1) break; prevHW = p.hoursFlown }
-        wp.push({ name: p.name, area: p.area, landingTime: p.landingTime, hoursFlown: p.hoursFlown, tournament: p.tournament, clubSlug: p.clubSlug, tournamentId: p.tournamentId, rank: rankW })
+        if (p.hoursFlown !== prevHW) { rankW++; if (rankW > 3) break; prevHW = p.hoursFlown }
+        wp.push({ name: p.name, nameUrdu: p.nameUrdu, area: p.area, areaUrdu: p.areaUrdu, landingTime: p.landingTime, hoursFlown: p.hoursFlown, tournament: p.tournament, clubSlug: p.clubSlug, tournamentId: p.tournamentId, rank: rankW })
       }
       setWinnerPigeons(wp)
     }
@@ -264,6 +268,12 @@ export default function HomeClient({ initialData, tInfos }: Props) {
     return () => clearInterval(iv)
   }, [])
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setLightboxSrc(null) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   const raceDateLabel = useMemo(() => {
     const todayStr = getPKTDate()
     const allDays = activeTournaments.flatMap(tr => (tr.raceDays || []).filter(rd => !rd.isGap))
@@ -301,7 +311,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                 {t('clubLogin')}
               </Link>
             )}
-            <span className="text-[10px] text-white/50 leading-none" dir="ltr">{clockLabel}</span>
+            <span className="text-[10px] text-white/50 leading-none" dir="ltr">{clockLabel} PKT</span>
           </div>
         </div>
       </div>
@@ -336,6 +346,10 @@ export default function HomeClient({ initialData, tInfos }: Props) {
             <p className="text-white font-bold text-xl leading-none">{totalStillFlying}</p>
             <p className="text-green-300 text-xs mt-0.5">{t('stillFlying')}</p>
           </div>
+          <div className="col-span-2 bg-[#1b5e20] bg-opacity-60 rounded-lg py-2 px-3 text-center">
+            <p className="text-white font-bold text-xl leading-none">{clubs.length}</p>
+            <p className="text-green-300 text-xs mt-0.5">{t('tabClubs')}</p>
+          </div>
         </div>
       </div>
 
@@ -345,7 +359,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
         {activeTab === 'clubs' && (
           <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden mb-4">
             <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-2">
-              <p className="text-green-200 text-xs font-bold uppercase tracking-widest">{t('registeredClubs')}</p>
+              <p className="text-green-200 text-xs font-bold uppercase tracking-widest">{t('registeredClubs')} ({clubs.length})</p>
             </div>
             {clubs.length === 0 ? (
               <div className="p-10 text-center text-gray-400">
@@ -353,26 +367,42 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                 <p className="font-bold">{t('noClubsYet')}</p>
               </div>
             ) : (
-              <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {clubs.map(club => (
-                  <button
-                    key={club.id}
-                    onClick={() => { setNavLoading(`club-${club.id}`); router.push(`/${club.slug}`) }}
-                    className="flex items-center gap-3 p-3 border border-[#d4edda] rounded-lg hover:border-[#388e3c] hover:bg-[#f1faf2] transition group text-left w-full"
-                  >
-                    <div className="w-10 h-10 shrink-0 rounded-full bg-white border border-[#d4edda] overflow-hidden">
-                      {navLoading === `club-${club.id}`
-                        ? <div className="w-full h-full flex items-center justify-center"><span className="inline-block w-4 h-4 border-2 border-[#388e3c] border-t-transparent rounded-full animate-spin" /></div>
-                        : <img src={club.logoUrl || '/pigeon.png'} alt={club.name} className="w-full h-full object-cover" />
-                      }
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[#1a1a1a] font-semibold text-sm truncate group-hover:text-[#1b5e20] transition">{club.name}</p>
-                      <p className="text-[#777] text-xs">{club.city}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
+              <>
+                <div className="px-4 pt-3 pb-1">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder={t('searchClubs')}
+                    className="w-full text-sm border border-[#d4edda] rounded-lg px-3 py-2 focus:outline-none focus:border-[#388e3c] bg-[#f9fdf9]"
+                  />
+                </div>
+                <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {clubs
+                    .filter(club => {
+                      const q = searchQuery.toLowerCase()
+                      return !q || club.name.toLowerCase().includes(q) || club.city.toLowerCase().includes(q) || (club.cityUrdu || '').includes(searchQuery)
+                    })
+                    .map(club => (
+                      <button
+                        key={club.id}
+                        onClick={() => { setNavLoading(`club-${club.id}`); router.push(`/${club.slug}`) }}
+                        className="flex items-center gap-3 p-3 border border-[#d4edda] rounded-lg hover:border-[#388e3c] hover:bg-[#f1faf2] transition group text-left w-full"
+                      >
+                        <div className="w-10 h-10 shrink-0 rounded-full bg-white border border-[#d4edda] overflow-hidden">
+                          {navLoading === `club-${club.id}`
+                            ? <div className="w-full h-full flex items-center justify-center"><span className="inline-block w-4 h-4 border-2 border-[#388e3c] border-t-transparent rounded-full animate-spin" /></div>
+                            : <img src={club.logoUrl || '/pigeon.png'} alt={club.name} className="w-full h-full object-cover" />
+                          }
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[#1a1a1a] font-semibold text-sm truncate group-hover:text-[#1b5e20] transition">{club.name}</p>
+                          <p className="text-[#777] text-xs">{isUrdu && club.cityUrdu ? club.cityUrdu : club.city}</p>
+                        </div>
+                      </button>
+                    ))}
+                </div>
+              </>
             )}
           </div>
         )}
@@ -382,7 +412,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
           <>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-[#1b5e20] font-bold text-lg leading-tight">📸 Event Gallery</h2>
+                <h2 className="text-[#1b5e20] font-bold text-lg leading-tight">{t('eventGallery')}</h2>
                 {!galleryLoading && galleryPosts.length > 0 && (
                   <p className="text-[#888] text-xs mt-0.5">{galleryPosts.length} post{galleryPosts.length !== 1 ? 's' : ''}</p>
                 )}
@@ -414,7 +444,11 @@ export default function HomeClient({ initialData, tInfos }: Props) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 {galleryPosts.map(post => (
                   <div key={post.id} className="bg-white rounded-2xl shadow-md overflow-hidden border border-[#e8f5e9] flex flex-col">
-                    <div className="relative w-full bg-[#111] overflow-hidden" style={{ paddingBottom: '75%' }}>
+                    <div
+                      className="relative w-full bg-[#111] overflow-hidden cursor-pointer"
+                      style={{ paddingBottom: '75%' }}
+                      onClick={() => setLightboxSrc(post.imageUrl)}
+                    >
                       <img
                         src={post.imageUrl}
                         alt={post.title}
@@ -484,7 +518,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
         {winnerPigeons.length > 0 && (
           <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden mb-4">
             <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-2">
-              <p className="text-green-200 text-xs font-bold uppercase tracking-widest">🏆 Winner Pigeon Today</p>
+              <p className="text-green-200 text-xs font-bold uppercase tracking-widest">{t('winnerPigeonToday')}</p>
             </div>
             <div className="divide-y divide-[#f0f0f0]">
               {winnerPigeons.map((w, i) => {
@@ -502,7 +536,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                     </div>
                     <div className="shrink-0 text-right">
                       <p className="font-bold text-base text-[#1b5e20]">{formatTimeDisplay(w.hoursFlown)}</p>
-                      <p className="text-[#888] text-xs">landed {w.landingTime}</p>
+                      <p className="text-[#888] text-xs">{t('landedAt')} {w.landingTime}</p>
                     </div>
                   </Link>
                 )
@@ -619,6 +653,31 @@ export default function HomeClient({ initialData, tInfos }: Props) {
           </div>
         )}
 
+        {initialData.recentTournaments.length > 0 && (
+          <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden mb-4">
+            <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-2">
+              <p className="text-green-200 text-xs font-bold uppercase tracking-widest">{t('recentResults')}</p>
+            </div>
+            <div className="divide-y divide-[#f0f0f0]">
+              {initialData.recentTournaments.map((rt, i) => (
+                <Link key={i} href={`/${rt.clubSlug}/${rt.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-[#f9fdf9] transition">
+                  <span className="text-lg shrink-0">🏁</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm text-[#1a1a1a] truncate">{isUrdu && rt.nameUrdu ? rt.nameUrdu : rt.name}</p>
+                    <p className="text-[#888] text-xs truncate">{rt.clubName} · {rt.clubCity}</p>
+                  </div>
+                  {rt.endDate && (
+                    <p className="text-[#bbb] text-xs shrink-0" dir="ltr">
+                      {new Date(rt.endDate + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                    </p>
+                  )}
+                  <span className="text-[#ccc] text-sm">→</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         </>}
 
       </div>
@@ -627,6 +686,25 @@ export default function HomeClient({ initialData, tInfos }: Props) {
         {t('footerFull')}
       </footer>
 
+      {lightboxSrc && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setLightboxSrc(null)}
+        >
+          <img
+            src={lightboxSrc}
+            alt=""
+            className="max-w-full max-h-full object-contain rounded"
+            onClick={e => e.stopPropagation()}
+          />
+          <button
+            className="absolute top-4 right-4 text-white text-3xl font-bold leading-none"
+            onClick={() => setLightboxSrc(null)}
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </main>
   )
 }
