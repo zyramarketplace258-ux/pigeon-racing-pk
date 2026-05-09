@@ -24,12 +24,14 @@ export default function NewTournamentPage() {
 
   const [form, setForm] = useState({
     name: '',
+    nameUrdu: '',
     totalDays: 0,
     defaultStartTime: '06:00',
     defaultEndTime: '20:00',
     pigeonCount: 0,
     startDate: '',
   })
+  const [nameError, setNameError] = useState('')
 
   // Regenerate race days whenever startDate or totalDays changes
   useEffect(() => {
@@ -59,10 +61,18 @@ export default function NewTournamentPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setNameError('')
+
+    if (!form.name.trim() && !form.nameUrdu.trim()) {
+      setNameError('Enter tournament name in English or Urdu (at least one)')
+      setLoading(false)
+      return
+    }
 
     try {
       await addDoc(collection(db, 'clubs', clubId, 'tournaments'), {
         name: form.name,
+        ...(form.nameUrdu.trim() ? { nameUrdu: form.nameUrdu.trim() } : {}),
         status: 'inactive',
         totalDays: form.totalDays,
         defaultStartTime: form.defaultStartTime,
@@ -110,15 +120,26 @@ export default function NewTournamentPage() {
           <form onSubmit={handleSubmit} className="space-y-5">
 
             <div>
-              <label className="block text-green-300 text-sm mb-2">Tournament Name</label>
-              <input
-                type="text"
-                value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                required
-                placeholder="e.g. Spring Race 2026"
-                className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-secondary placeholder-green-700"
-              />
+              <label className="block text-green-300 text-sm mb-1">Tournament Name</label>
+              <p className="text-green-600 text-xs mb-2">At least one of English or Urdu is required</p>
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={form.name}
+                  onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setNameError('') }}
+                  placeholder="English name (e.g. Spring Race 2026)"
+                  className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-secondary placeholder-green-700"
+                />
+                <input
+                  type="text"
+                  value={form.nameUrdu}
+                  onChange={e => { setForm(f => ({ ...f, nameUrdu: e.target.value })); setNameError('') }}
+                  dir="rtl"
+                  placeholder="اردو نام (مثلاً بہار ریس ۲۰۲۶)"
+                  className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-secondary placeholder-green-700 font-urdu"
+                />
+              </div>
+              {nameError && <p className="text-red-400 text-xs mt-1">{nameError}</p>}
             </div>
 
             <div>

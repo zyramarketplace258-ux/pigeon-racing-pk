@@ -146,7 +146,7 @@ export default function TournamentManagePage() {
   }
 
   const saveTournamentInfo = async () => {
-    if (!tournament || !editTName.trim()) return
+    if (!tournament || (!editTName.trim() && !editTNameUrdu.trim())) return
     setSavingTournament(true)
     const updates: Record<string, string> = { name: editTName.trim() }
     if (editTNameUrdu.trim()) updates.nameUrdu = editTNameUrdu.trim()
@@ -213,7 +213,7 @@ export default function TournamentManagePage() {
                 className="w-full bg-dark border border-green-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-secondary" />
             </div>
             <div>
-              <label className="text-green-400 text-xs mb-1 block">نام (اردو، اختیاری)</label>
+              <label className="text-green-400 text-xs mb-1 block">نام (اردو)</label>
               <input value={editTNameUrdu} onChange={e => setEditTNameUrdu(e.target.value)} dir="rtl" placeholder="ٹورنامنٹ کا نام"
                 className="w-full bg-dark border border-green-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-secondary font-urdu" />
             </div>
@@ -228,7 +228,7 @@ export default function TournamentManagePage() {
                 className="w-full bg-dark border border-green-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-secondary font-urdu" />
             </div>
             <div className="sm:col-span-2">
-              <button onClick={saveTournamentInfo} disabled={savingTournament || !editTName.trim()}
+              <button onClick={saveTournamentInfo} disabled={savingTournament || (!editTName.trim() && !editTNameUrdu.trim())}
                 className="bg-secondary hover:bg-accent text-dark font-bold px-6 py-2 rounded-lg text-sm transition disabled:opacity-50 flex items-center gap-2">
                 {savingTournament && <span className="inline-block w-3 h-3 border-2 border-dark border-t-transparent rounded-full animate-spin" />}
                 {savingTournament ? 'Saving...' : 'Save Changes'}
