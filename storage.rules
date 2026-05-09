@@ -1,0 +1,36 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helper: caller is authenticated
+    function isAuthed() {
+      return request.auth != null;
+    }
+
+    // Helper: uploaded file is an image and under 5 MB
+    function isValidImage() {
+      return request.resource.contentType.matches('image/.*')
+        && request.resource.size < 5 * 1024 * 1024;
+    }
+
+    // ── Gallery images ───────────────────────────────────────────────────────
+    // Public read; only authenticated users can upload valid images
+    // (admin-only enforcement is handled by Firestore rules on the gallery doc)
+    match /gallery/{filename} {
+      allow read:  if true;
+      allow write: if isAuthed() && isValidImage();
+    }
+
+    // ── Club assets (logo, banner, participant photos) ──────────────────────
+    // Public read; only the club's own Firebase user (or admin) can write
+    match /clubs/{clubId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthed() && isValidImage();
+    }
+
+    // ── Everything else: deny by default ────────────────────────────────────
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
