@@ -188,8 +188,14 @@ export default function TournamentClient({
   }, [club?.id, tournament?.id])
 
   const [, setTick] = useState(0)
+  const formatClock = () => {
+    const now = new Date()
+    return now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) +
+      ' · ' + now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  }
+  const [clockLabel, setClockLabel] = useState(formatClock)
   useEffect(() => {
-    const interval = setInterval(() => setTick(tk => tk + 1), 15000)
+    const interval = setInterval(() => { setTick(tk => tk + 1); setClockLabel(formatClock()) }, 15000)
     return () => clearInterval(interval)
   }, [])
 
@@ -229,16 +235,19 @@ export default function TournamentClient({
     <main className={`min-h-screen bg-[#e8f5e9] ${isUrdu ? 'font-urdu' : ''}`} dir={isUrdu ? 'rtl' : 'ltr'}>
 
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#1b5e20] to-[#2e7d32] px-4 pt-3 pb-3">
-        <div className="flex items-center justify-between max-w-6xl mx-auto">
-          <div className="flex items-center gap-2">
-            <p className="text-green-300 text-xs truncate">{club.name} · {club.city}</p>
-            {viewerCount > 1 && <span className="text-green-400 text-xs shrink-0">· 👁 {viewerCount}</span>}
+      <div className="bg-gradient-to-r from-[#1b5e20] to-[#2e7d32] px-4 pt-4 pb-3">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2 min-w-0">
+              <p className="text-green-200 text-sm font-semibold truncate">{club.name} · {club.city}</p>
+              {viewerCount > 1 && <span className="text-green-400 text-xs shrink-0">· 👁 {viewerCount}</span>}
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              <Link href={`/${clubSlug}`} className="text-green-300 hover:text-white text-xs font-medium transition">{t('clubBack')}</Link>
+              <Link href="/" className="text-green-300 hover:text-white text-xs font-medium transition">{t('home')}</Link>
+            </div>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <Link href={`/${clubSlug}`} className="text-green-300 hover:text-white text-xs font-medium transition">{t('clubBack')}</Link>
-            <Link href="/" className="text-green-300 hover:text-white text-xs font-medium transition">{t('home')}</Link>
-          </div>
+          <p className="text-white/50 text-[10px] leading-none" dir="ltr">{clockLabel}</p>
         </div>
       </div>
       <nav className="bg-[#292929] px-4">

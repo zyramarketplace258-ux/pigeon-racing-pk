@@ -247,6 +247,18 @@ export default function HomeClient({ initialData, tInfos }: Props) {
 
   const isUrdu = lang === 'ur'
 
+  const formatClock = () => {
+    const now = new Date()
+    return now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) +
+      ' · ' + now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  }
+  const [clockLabel, setClockLabel] = useState(formatClock)
+  useEffect(() => {
+    const iv = setInterval(() => setClockLabel(formatClock()), 60000)
+    return () => clearInterval(iv)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const raceDateLabel = useMemo(() => {
     const todayStr = new Date().toISOString().split('T')[0]
     const allDays = activeTournaments.flatMap(tr => (tr.raceDays || []).filter(rd => !rd.isGap))
@@ -267,25 +279,25 @@ export default function HomeClient({ initialData, tInfos }: Props) {
             <p className="text-green-300 text-xs tracking-widest uppercase">{t('loveForTheLoft')}</p>
           </div>
           <img src="/pigeon.png" alt="Pigeon" className="absolute left-1/2 -translate-x-1/2 w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-lg" />
-          {loggedInClub ? (
-            <div className="flex items-center gap-2">
-              <Link href="/club/dashboard" className="flex items-center gap-1.5 text-xs text-green-200 border border-green-600 px-2.5 py-1.5 rounded hover:bg-green-800 transition font-medium">
-                <img src={loggedInClub.logoUrl || '/pigeon.png'} alt="" className="w-5 h-5 rounded-full object-cover border border-green-500" />
-                <span className="hidden sm:inline max-w-[80px] truncate">{loggedInClub.name}</span>
-                <span className="sm:hidden">Dashboard</span>
+          <div className="flex flex-col items-end gap-1">
+            {loggedInClub ? (
+              <div className="flex items-center gap-2">
+                <Link href="/club/dashboard" className="flex items-center gap-1.5 text-xs text-green-200 border border-green-600 px-2.5 py-1.5 rounded hover:bg-green-800 transition font-medium">
+                  <img src={loggedInClub.logoUrl || '/pigeon.png'} alt="" className="w-5 h-5 rounded-full object-cover border border-green-500" />
+                  <span className="hidden sm:inline max-w-[80px] truncate">{loggedInClub.name}</span>
+                  <span className="sm:hidden">Dashboard</span>
+                </Link>
+                <button onClick={() => signOut(auth)} className="text-xs text-red-300 border border-red-700 px-2 py-1.5 rounded hover:bg-red-900 transition font-medium">
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <Link href="/club/login" className="text-xs text-green-200 border border-green-600 px-2.5 py-1.5 rounded hover:bg-green-800 transition font-medium">
+                {t('clubLogin')}
               </Link>
-              <button
-                onClick={() => signOut(auth)}
-                className="text-xs text-red-300 border border-red-700 px-2 py-1.5 rounded hover:bg-red-900 transition font-medium"
-              >
-                Logout
-              </button>
-            </div>
-          ) : (
-            <Link href="/club/login" className="text-xs text-green-200 border border-green-600 px-2.5 py-1.5 rounded hover:bg-green-800 transition font-medium">
-              {t('clubLogin')}
-            </Link>
-          )}
+            )}
+            <span className="text-[10px] text-white/50 leading-none" dir="ltr">{clockLabel}</span>
+          </div>
         </div>
       </div>
       <nav className="bg-[#292929] px-4">
