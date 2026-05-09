@@ -86,13 +86,15 @@ export default async function TournamentPage({ params }: { params: { clubSlug: s
     })
     /* eslint-enable @typescript-eslint/no-explicit-any */
 
-    // 5. Default day
+    // 5. Default day — most recent past-or-today race day; first day if tournament hasn't started
     const today = new Date().toISOString().split('T')[0]
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const nonGapDays = raceDays.filter((rd: any) => !rd.isGap)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const todayDay = nonGapDays.find((rd: any) => rd.date === today)
-    const defaultDay: number = todayDay?.dayNumber ?? nonGapDays[nonGapDays.length - 1]?.dayNumber ?? 1
+    const pastDays = nonGapDays.filter((rd: any) => rd.date <= today)
+    const defaultDay: number = pastDays.length > 0
+      ? pastDays[pastDays.length - 1].dayNumber
+      : nonGapDays[0]?.dayNumber ?? 1
 
     return (
       <TournamentClient

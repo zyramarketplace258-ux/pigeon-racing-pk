@@ -117,9 +117,13 @@ export default function TournamentClient({
   const tournament = initialData.tournament
   const participants = initialData.participants
 
+  const todayDate = new Date().toISOString().split('T')[0]
+  const nonGapRaceDays = tournament?.raceDays?.filter(rd => !rd.isGap) ?? []
+  const allDaysPast = nonGapRaceDays.length > 0 && nonGapRaceDays.every(rd => rd.date < todayDate)
+
   const [allEntryDocs, setAllEntryDocs] = useState<EntryDoc[]>(initialData.allEntryDocs)
   const [selectedDay, setSelectedDay] = useState<number>(initialData.defaultDay)
-  const [showTotal, setShowTotal] = useState(tournament?.status === 'completed')
+  const [showTotal, setShowTotal] = useState(tournament?.status === 'completed' || allDaysPast)
   const [showDetailResults, setShowDetailResults] = useState(false)
   const [viewerCount, setViewerCount] = useState(0)
   const sessionId = useRef(Math.random().toString(36).slice(2, 10))
@@ -198,7 +202,7 @@ export default function TournamentClient({
     return diff >= 0 && diff < 5 * 60 * 1000
   }
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = todayDate
   const selectedRaceDay = tournament?.raceDays?.find(rd => rd.dayNumber === selectedDay)
   const selectedDisplayDay = tournament?.raceDays
     ? tournament.raceDays.filter(r => !r.isGap && r.dayNumber <= selectedDay).length
