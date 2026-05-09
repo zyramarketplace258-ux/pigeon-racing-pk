@@ -15,20 +15,51 @@ export default function NewClubPage() {
 
   const [form, setForm] = useState({
     name: '',
+    nameUrdu: '',
     city: '',
+    cityUrdu: '',
     slug: '',
     password: '',
   })
+  const [nameError, setNameError] = useState('')
+  const [cityError, setCityError] = useState('')
 
   const handleNameChange = (value: string) => {
     const slug = value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
     setForm(f => ({ ...f, name: value, slug }))
+    if (/[؀-ۿ]/.test(value)) setNameError('Urdu text detected — use the Urdu field below')
+    else setNameError('')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
+
+    if (!form.name.trim() && !form.nameUrdu.trim()) {
+      setError('Enter club name in English or Urdu (at least one)')
+      setLoading(false); return
+    }
+    if (/[؀-ۿ]/.test(form.name)) {
+      setError('Urdu text in English name field — use the Urdu field')
+      setLoading(false); return
+    }
+    if (form.nameUrdu.trim() && /[a-zA-Z]/.test(form.nameUrdu) && !/[؀-ۿ]/.test(form.nameUrdu)) {
+      setError('English text in Urdu name field — use the English field')
+      setLoading(false); return
+    }
+    if (!form.city.trim() && !form.cityUrdu.trim()) {
+      setError('Enter city in English or Urdu (at least one)')
+      setLoading(false); return
+    }
+    if (/[؀-ۿ]/.test(form.city)) {
+      setError('Urdu text in English city field — use the Urdu field')
+      setLoading(false); return
+    }
+    if (form.cityUrdu.trim() && /[a-zA-Z]/.test(form.cityUrdu) && !/[؀-ۿ]/.test(form.cityUrdu)) {
+      setError('English text in Urdu city field — use the English field')
+      setLoading(false); return
+    }
 
     const email = `${form.slug}@pigeonracing.pk`
 
@@ -44,7 +75,9 @@ export default function NewClubPage() {
       await addDoc(collection(db, 'clubs'), {
         uid,
         name: form.name,
+        ...(form.nameUrdu.trim() ? { nameUrdu: form.nameUrdu.trim() } : {}),
         city: form.city,
+        ...(form.cityUrdu.trim() ? { cityUrdu: form.cityUrdu.trim() } : {}),
         slug: form.slug,
         loginEmail: email,
         logoUrl: '',
@@ -92,7 +125,7 @@ export default function NewClubPage() {
 
             <div className="flex gap-3">
               <button
-                onClick={() => { setSuccess(null); setForm({ name: '', city: '', slug: '', password: '' }) }}
+                onClick={() => { setSuccess(null); setForm({ name: '', nameUrdu: '', city: '', cityUrdu: '', slug: '', password: '' }) }}
                 className="flex-1 bg-primary hover:bg-green-800 text-white py-2 rounded-lg text-sm transition"
               >
                 + Add Another
@@ -140,28 +173,67 @@ export default function NewClubPage() {
 
             {/* Club Name */}
             <div>
-              <label className="block text-green-300 text-sm mb-2">Club Name</label>
-              <input
-                type="text"
-                value={form.name}
-                onChange={(e) => handleNameChange(e.target.value)}
-                required
-                placeholder="e.g. Lahore Pigeon Club"
-                className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-secondary placeholder-green-700"
-              />
+              <label className="block text-green-300 text-sm mb-1">Club Name</label>
+              <p className="text-green-600 text-xs mb-2">At least one of English or Urdu is required</p>
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={form.name}
+                  onChange={(e) => handleNameChange(e.target.value)}
+                  placeholder="English name (e.g. Lahore Pigeon Club)"
+                  className={`w-full bg-primary border text-white rounded-lg px-4 py-3 text-sm focus:outline-none placeholder-green-700 ${nameError ? 'border-red-500 focus:border-red-400' : 'border-green-700 focus:border-secondary'}`}
+                />
+                {nameError && <p className="text-red-400 text-xs">{nameError}</p>}
+                <input
+                  type="text"
+                  value={form.nameUrdu}
+                  dir="rtl"
+                  onChange={(e) => {
+                    const val = e.target.value
+                    setForm(f => ({ ...f, nameUrdu: val }))
+                    if (val.trim() && /[a-zA-Z]/.test(val) && !/[؀-ۿ]/.test(val))
+                      setNameError('English text detected — use the English field above')
+                    else setNameError('')
+                  }}
+                  placeholder="اردو نام (مثلاً لاہور پیجن کلب)"
+                  className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-secondary placeholder-green-700 font-urdu"
+                />
+              </div>
             </div>
 
             {/* City */}
             <div>
-              <label className="block text-green-300 text-sm mb-2">City</label>
-              <input
-                type="text"
-                value={form.city}
-                onChange={(e) => setForm(f => ({ ...f, city: e.target.value }))}
-                required
-                placeholder="e.g. Lahore"
-                className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-secondary placeholder-green-700"
-              />
+              <label className="block text-green-300 text-sm mb-1">City</label>
+              <p className="text-green-600 text-xs mb-2">At least one of English or Urdu is required</p>
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={form.city}
+                  onChange={(e) => {
+                    const val = e.target.value
+                    setForm(f => ({ ...f, city: val }))
+                    if (/[؀-ۿ]/.test(val)) setCityError('Urdu text detected — use the Urdu field below')
+                    else setCityError('')
+                  }}
+                  placeholder="English city (e.g. Lahore)"
+                  className={`w-full bg-primary border text-white rounded-lg px-4 py-3 text-sm focus:outline-none placeholder-green-700 ${cityError ? 'border-red-500 focus:border-red-400' : 'border-green-700 focus:border-secondary'}`}
+                />
+                {cityError && <p className="text-red-400 text-xs">{cityError}</p>}
+                <input
+                  type="text"
+                  value={form.cityUrdu}
+                  dir="rtl"
+                  onChange={(e) => {
+                    const val = e.target.value
+                    setForm(f => ({ ...f, cityUrdu: val }))
+                    if (val.trim() && /[a-zA-Z]/.test(val) && !/[؀-ۿ]/.test(val))
+                      setCityError('English text detected — use the English field above')
+                    else setCityError('')
+                  }}
+                  placeholder="اردو شہر (مثلاً لاہور)"
+                  className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-secondary placeholder-green-700 font-urdu"
+                />
+              </div>
             </div>
 
             {/* Slug (auto generated) */}
