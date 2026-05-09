@@ -8,27 +8,24 @@ import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'
 import { db, firebaseConfig } from '@/lib/firebase'
 import Link from 'next/link'
 
+const isUrduScript = (text: string) => /[؀-ۿ]/.test(text)
+
 export default function NewClubPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState<{email: string, password: string, name: string} | null>(null)
+  const [success, setSuccess] = useState<{email: string, password: string, displayName: string} | null>(null)
 
-  const [form, setForm] = useState({
-    name: '',
-    nameUrdu: '',
-    city: '',
-    cityUrdu: '',
-    slug: '',
-    password: '',
-  })
-  const [nameError, setNameError] = useState('')
-  const [cityError, setCityError] = useState('')
+  const [nameInput, setNameInput] = useState('')
+  const [cityInput, setCityInput] = useState('')
+  const [slug, setSlug] = useState('')
+  const [password, setPassword] = useState('')
 
-  const handleNameChange = (value: string) => {
-    const slug = value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
-    setForm(f => ({ ...f, name: value, slug }))
-    if (/[؀-ۿ]/.test(value)) setNameError('Urdu text detected — use the Urdu field below')
-    else setNameError('')
+  const handleNameInput = (value: string) => {
+    setNameInput(value)
+    // Auto-generate slug only from English text
+    if (!isUrduScript(value)) {
+      setSlug(value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''))
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -36,49 +33,32 @@ export default function NewClubPage() {
     setLoading(true)
     setError('')
 
-    if (!form.name.trim() && !form.nameUrdu.trim()) {
-      setError('Enter club name in English or Urdu (at least one)')
-      setLoading(false); return
-    }
-    if (/[؀-ۿ]/.test(form.name)) {
-      setError('Urdu text in English name field — use the Urdu field')
-      setLoading(false); return
-    }
-    if (form.nameUrdu.trim() && /[a-zA-Z]/.test(form.nameUrdu) && !/[؀-ۿ]/.test(form.nameUrdu)) {
-      setError('English text in Urdu name field — use the English field')
-      setLoading(false); return
-    }
-    if (!form.city.trim() && !form.cityUrdu.trim()) {
-      setError('Enter city in English or Urdu (at least one)')
-      setLoading(false); return
-    }
-    if (/[؀-ۿ]/.test(form.city)) {
-      setError('Urdu text in English city field — use the Urdu field')
-      setLoading(false); return
-    }
-    if (form.cityUrdu.trim() && /[a-zA-Z]/.test(form.cityUrdu) && !/[؀-ۿ]/.test(form.cityUrdu)) {
-      setError('English text in Urdu city field — use the English field')
-      setLoading(false); return
-    }
+    const trimName = nameInput.trim()
+    const trimCity = cityInput.trim()
 
-    const email = `${form.slug}@pigeonracing.pk`
+    if (!trimName) { setError('Club name is required'); setLoading(false); return }
+    if (!trimCity) { setError('City is required'); setLoading(false); return }
+    if (!slug) { setError('URL slug is required — type an English name or enter slug manually'); setLoading(false); return }
+
+    const nameIsUrdu = isUrduScript(trimName)
+    const cityIsUrdu = isUrduScript(trimCity)
+
+    const email = `${slug}@pigeonracing.pk`
 
     try {
-      // Use a secondary app so the admin's auth session is not replaced
       const secondaryApp = initializeApp(firebaseConfig, `club-create-${Date.now()}`)
       const secondaryAuth = getAuth(secondaryApp)
-      const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, form.password)
+      const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password)
       const uid = userCredential.user.uid
       await deleteApp(secondaryApp)
 
-      // Save club to Firestore
       await addDoc(collection(db, 'clubs'), {
         uid,
-        name: form.name,
-        ...(form.nameUrdu.trim() ? { nameUrdu: form.nameUrdu.trim() } : {}),
-        city: form.city,
-        ...(form.cityUrdu.trim() ? { cityUrdu: form.cityUrdu.trim() } : {}),
-        slug: form.slug,
+        name: nameIsUrdu ? '' : trimName,
+        ...(nameIsUrdu ? { nameUrdu: trimName } : {}),
+        city: cityIsUrdu ? '' : trimCity,
+        ...(cityIsUrdu ? { cityUrdu: trimCity } : {}),
+        slug,
         loginEmail: email,
         logoUrl: '',
         bannerImageUrl: '',
@@ -86,14 +66,11 @@ export default function NewClubPage() {
         createdBy: 'admin',
       })
 
-      setSuccess({ email, password: form.password, name: form.name })
+      setSuccess({ email, password, displayName: trimName })
 
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message)
-      } else {
-        setError('Something went wrong.')
-      }
+      if (err instanceof Error) setError(err.message)
+      else setError('Something went wrong.')
     } finally {
       setLoading(false)
     }
@@ -106,7 +83,7 @@ export default function NewClubPage() {
           <div className="bg-surface border border-secondary rounded-2xl p-8 text-center">
             <p className="text-5xl mb-4">🎉</p>
             <h2 className="text-secondary text-2xl font-bold mb-2">Club Created!</h2>
-            <p className="text-green-300 mb-6">{success.name} has been added successfully.</p>
+            <p className="text-green-300 mb-6">{success.displayName} has been added successfully.</p>
 
             <div className="bg-primary rounded-xl p-4 text-left mb-6">
               <p className="text-green-400 text-xs mb-3 uppercase tracking-widest">Club Login Credentials</p>
@@ -125,7 +102,7 @@ export default function NewClubPage() {
 
             <div className="flex gap-3">
               <button
-                onClick={() => { setSuccess(null); setForm({ name: '', nameUrdu: '', city: '', cityUrdu: '', slug: '', password: '' }) }}
+                onClick={() => { setSuccess(null); setNameInput(''); setCityInput(''); setSlug(''); setPassword('') }}
                 className="flex-1 bg-primary hover:bg-green-800 text-white py-2 rounded-lg text-sm transition"
               >
                 + Add Another
@@ -146,16 +123,12 @@ export default function NewClubPage() {
   return (
     <main className="min-h-screen bg-dark">
 
-      {/* Header */}
       <header className="bg-primary border-b border-secondary px-6 py-4 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-secondary">🏟️ Create New Club</h1>
           <p className="text-green-400 text-xs">Admin Panel</p>
         </div>
-        <Link
-          href="/admin/dashboard"
-          className="text-xs text-green-400 hover:text-secondary transition"
-        >
+        <Link href="/admin/dashboard" className="text-xs text-green-400 hover:text-secondary transition">
           ← Back to Dashboard
         </Link>
       </header>
@@ -171,87 +144,55 @@ export default function NewClubPage() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
 
-            {/* Club Name */}
+            {/* Club Name — single smart field */}
             <div>
               <label className="block text-green-300 text-sm mb-1">Club Name</label>
-              <p className="text-green-600 text-xs mb-2">At least one of English or Urdu is required</p>
-              <div className="space-y-2">
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) => handleNameChange(e.target.value)}
-                  placeholder="English name (e.g. Lahore Pigeon Club)"
-                  className={`w-full bg-primary border text-white rounded-lg px-4 py-3 text-sm focus:outline-none placeholder-green-700 ${nameError ? 'border-red-500 focus:border-red-400' : 'border-green-700 focus:border-secondary'}`}
-                />
-                {nameError && <p className="text-red-400 text-xs">{nameError}</p>}
-                <input
-                  type="text"
-                  value={form.nameUrdu}
-                  dir="rtl"
-                  onChange={(e) => {
-                    const val = e.target.value
-                    setForm(f => ({ ...f, nameUrdu: val }))
-                    if (val.trim() && /[a-zA-Z]/.test(val) && !/[؀-ۿ]/.test(val))
-                      setNameError('English text detected — use the English field above')
-                    else setNameError('')
-                  }}
-                  placeholder="اردو نام (مثلاً لاہور پیجن کلب)"
-                  className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-secondary placeholder-green-700 font-urdu"
-                />
-              </div>
+              <p className="text-green-600 text-xs mb-2">Type in English or Urdu — detected automatically</p>
+              <input
+                type="text"
+                value={nameInput}
+                onChange={e => handleNameInput(e.target.value)}
+                required
+                dir={isUrduScript(nameInput) ? 'rtl' : 'ltr'}
+                placeholder="e.g. Lahore Pigeon Club / لاہور پیجن کلب"
+                className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-secondary placeholder-green-700"
+              />
+              {isUrduScript(nameInput) && (
+                <p className="text-green-500 text-xs mt-1">Urdu detected ✓ — enter URL slug manually below</p>
+              )}
             </div>
 
-            {/* City */}
+            {/* City — single smart field */}
             <div>
               <label className="block text-green-300 text-sm mb-1">City</label>
-              <p className="text-green-600 text-xs mb-2">At least one of English or Urdu is required</p>
-              <div className="space-y-2">
-                <input
-                  type="text"
-                  value={form.city}
-                  onChange={(e) => {
-                    const val = e.target.value
-                    setForm(f => ({ ...f, city: val }))
-                    if (/[؀-ۿ]/.test(val)) setCityError('Urdu text detected — use the Urdu field below')
-                    else setCityError('')
-                  }}
-                  placeholder="English city (e.g. Lahore)"
-                  className={`w-full bg-primary border text-white rounded-lg px-4 py-3 text-sm focus:outline-none placeholder-green-700 ${cityError ? 'border-red-500 focus:border-red-400' : 'border-green-700 focus:border-secondary'}`}
-                />
-                {cityError && <p className="text-red-400 text-xs">{cityError}</p>}
-                <input
-                  type="text"
-                  value={form.cityUrdu}
-                  dir="rtl"
-                  onChange={(e) => {
-                    const val = e.target.value
-                    setForm(f => ({ ...f, cityUrdu: val }))
-                    if (val.trim() && /[a-zA-Z]/.test(val) && !/[؀-ۿ]/.test(val))
-                      setCityError('English text detected — use the English field above')
-                    else setCityError('')
-                  }}
-                  placeholder="اردو شہر (مثلاً لاہور)"
-                  className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-secondary placeholder-green-700 font-urdu"
-                />
-              </div>
+              <p className="text-green-600 text-xs mb-2">Type in English or Urdu — detected automatically</p>
+              <input
+                type="text"
+                value={cityInput}
+                onChange={e => setCityInput(e.target.value)}
+                required
+                dir={isUrduScript(cityInput) ? 'rtl' : 'ltr'}
+                placeholder="e.g. Lahore / لاہور"
+                className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-secondary placeholder-green-700"
+              />
             </div>
 
-            {/* Slug (auto generated) */}
+            {/* Slug */}
             <div>
               <label className="block text-green-300 text-sm mb-2">
                 Club URL Slug
-                <span className="text-green-600 ml-2 text-xs">(auto-generated)</span>
+                <span className="text-green-600 ml-2 text-xs">{isUrduScript(nameInput) ? '(enter manually)' : '(auto-generated)'}</span>
               </label>
               <input
                 type="text"
-                value={form.slug}
-                onChange={(e) => setForm(f => ({ ...f, slug: e.target.value }))}
+                value={slug}
+                onChange={e => setSlug(e.target.value)}
                 required
                 placeholder="lahore-pigeon-club"
                 className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-secondary placeholder-green-700 font-mono"
               />
               <p className="text-green-600 text-xs mt-1">
-                Public URL: yoursite.com/{form.slug || 'club-slug'}
+                Public URL: yoursite.com/{slug || 'club-slug'}
               </p>
             </div>
 
@@ -259,7 +200,7 @@ export default function NewClubPage() {
             <div>
               <label className="block text-green-300 text-sm mb-2">Login Email (auto-generated)</label>
               <div className="w-full bg-dark border border-green-900 text-green-500 rounded-lg px-4 py-3 text-sm font-mono">
-                {form.slug ? `${form.slug}@pigeonracing.pk` : 'slug@pigeonracing.pk'}
+                {slug ? `${slug}@pigeonracing.pk` : 'slug@pigeonracing.pk'}
               </div>
             </div>
 
@@ -268,8 +209,8 @@ export default function NewClubPage() {
               <label className="block text-green-300 text-sm mb-2">Login Password</label>
               <input
                 type="text"
-                value={form.password}
-                onChange={(e) => setForm(f => ({ ...f, password: e.target.value }))}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
                 required
                 minLength={6}
                 placeholder="Set a password for this club"

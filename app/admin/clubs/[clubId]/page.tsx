@@ -40,10 +40,8 @@ export default function ClubDetailPage() {
   const [tTab, setTTab] = useState<'active' | 'inactive' | 'completed'>('active')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [editingClub, setEditingClub] = useState(false)
-  const [editName, setEditName] = useState('')
-  const [editNameUrdu, setEditNameUrdu] = useState('')
-  const [editCity, setEditCity] = useState('')
-  const [editCityUrdu, setEditCityUrdu] = useState('')
+  const [editNameInput, setEditNameInput] = useState('')
+  const [editCityInput, setEditCityInput] = useState('')
   const [savingClub, setSavingClub] = useState(false)
   const [savedClub, setSavedClub] = useState(false)
   const [editClubError, setEditClubError] = useState('')
@@ -105,19 +103,24 @@ export default function ClubDetailPage() {
     setActionLoading(null)
   }
 
+  const isUrduScript = (text: string) => /[؀-ۿ]/.test(text)
+
   const saveClubInfo = async () => {
     if (!club) return
-    if (!editName.trim() && !editNameUrdu.trim()) { setEditClubError('Enter club name in English or Urdu (at least one)'); return }
-    if (/[؀-ۿ]/.test(editName)) { setEditClubError('Urdu text in English name field — use the Urdu field'); return }
-    if (editNameUrdu.trim() && /[a-zA-Z]/.test(editNameUrdu) && !/[؀-ۿ]/.test(editNameUrdu)) { setEditClubError('English text in Urdu name field — use the English field'); return }
-    if (!editCity.trim() && !editCityUrdu.trim()) { setEditClubError('Enter city in English or Urdu (at least one)'); return }
-    if (/[؀-ۿ]/.test(editCity)) { setEditClubError('Urdu text in English city field — use the Urdu field'); return }
-    if (editCityUrdu.trim() && /[a-zA-Z]/.test(editCityUrdu) && !/[؀-ۿ]/.test(editCityUrdu)) { setEditClubError('English text in Urdu city field — use the English field'); return }
+    const trimName = editNameInput.trim()
+    const trimCity = editCityInput.trim()
+    if (!trimName) { setEditClubError('Club name is required'); return }
+    if (!trimCity) { setEditClubError('City is required'); return }
     setEditClubError('')
     setSavingClub(true)
-    const updates: Record<string, string> = { name: editName.trim(), city: editCity.trim() }
-    if (editNameUrdu.trim()) updates.nameUrdu = editNameUrdu.trim()
-    if (editCityUrdu.trim()) updates.cityUrdu = editCityUrdu.trim()
+    const nameIsUrdu = isUrduScript(trimName)
+    const cityIsUrdu = isUrduScript(trimCity)
+    const updates: Record<string, string> = {
+      name: nameIsUrdu ? '' : trimName,
+      nameUrdu: nameIsUrdu ? trimName : '',
+      city: cityIsUrdu ? '' : trimCity,
+      cityUrdu: cityIsUrdu ? trimCity : '',
+    }
     await updateDoc(doc(db, 'clubs', clubId), updates)
     setClub(prev => prev ? { ...prev, ...updates } : prev)
     setSavingClub(false); setSavedClub(true); setEditingClub(false)
@@ -190,7 +193,7 @@ export default function ClubDetailPage() {
             </div>
             <div className="flex gap-2 flex-wrap">
               <button
-                onClick={() => { setEditName(club?.name || ''); setEditNameUrdu(club?.nameUrdu || ''); setEditCity(club?.city || ''); setEditCityUrdu(club?.cityUrdu || ''); setEditingClub(v => !v) }}
+                onClick={() => { setEditNameInput(club?.name || club?.nameUrdu || ''); setEditCityInput(club?.city || club?.cityUrdu || ''); setEditClubError(''); setEditingClub(v => !v) }}
                 className="bg-green-800 hover:bg-green-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition"
               >
                 {editingClub ? 'Cancel' : 'Edit Info'}
@@ -214,36 +217,35 @@ export default function ClubDetailPage() {
           {editingClub && (
             <div className="mt-4 pt-4 border-t border-green-800 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-green-400 text-xs mb-1 block">Club Name (English)</label>
-                <input value={editName}
-                  onChange={e => { setEditName(e.target.value); setEditClubError(/[؀-ۿ]/.test(e.target.value) ? 'Urdu text in English name field — use the Urdu field' : '') }}
-                  placeholder="Club name"
-                  className={`w-full bg-primary border text-white rounded-lg px-3 py-2 text-sm focus:outline-none ${editClubError && /[؀-ۿ]/.test(editName) ? 'border-red-500' : 'border-green-700 focus:border-secondary'}`} />
+                <label className="text-green-400 text-xs mb-1 block">Club Name</label>
+                <p className="text-green-600 text-xs mb-2">Type in English or Urdu — detected automatically</p>
+                <input
+                  value={editNameInput}
+                  onChange={e => { setEditNameInput(e.target.value); setEditClubError('') }}
+                  dir={isUrduScript(editNameInput) ? 'rtl' : 'ltr'}
+                  placeholder="e.g. Lahore Pigeon Club / لاہور پیجن کلب"
+                  className="w-full bg-primary border border-green-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-secondary"
+                />
+                {isUrduScript(editNameInput) && (
+                  <p className="text-green-500 text-xs mt-1">Urdu detected ✓</p>
+                )}
               </div>
               <div>
-                <label className="text-green-400 text-xs mb-1 block">نام (اردو)</label>
-                <input value={editNameUrdu}
-                  onChange={e => { setEditNameUrdu(e.target.value); setEditClubError(e.target.value.trim() && /[a-zA-Z]/.test(e.target.value) && !/[؀-ۿ]/.test(e.target.value) ? 'English text in Urdu name field — use the English field' : '') }}
-                  dir="rtl" placeholder="کلب کا نام"
-                  className={`w-full bg-primary border text-white rounded-lg px-3 py-2 text-sm focus:outline-none font-urdu ${editClubError && /[a-zA-Z]/.test(editNameUrdu) && !/[؀-ۿ]/.test(editNameUrdu) ? 'border-red-500' : 'border-green-700 focus:border-secondary'}`} />
-              </div>
-              <div>
-                <label className="text-green-400 text-xs mb-1 block">City / Area (English)</label>
-                <input value={editCity}
-                  onChange={e => { setEditCity(e.target.value); setEditClubError(/[؀-ۿ]/.test(e.target.value) ? 'Urdu text in English city field — use the Urdu field' : '') }}
-                  placeholder="City"
-                  className={`w-full bg-primary border text-white rounded-lg px-3 py-2 text-sm focus:outline-none ${editClubError && /[؀-ۿ]/.test(editCity) ? 'border-red-500' : 'border-green-700 focus:border-secondary'}`} />
-              </div>
-              <div>
-                <label className="text-green-400 text-xs mb-1 block">شہر (اردو)</label>
-                <input value={editCityUrdu}
-                  onChange={e => { setEditCityUrdu(e.target.value); setEditClubError(e.target.value.trim() && /[a-zA-Z]/.test(e.target.value) && !/[؀-ۿ]/.test(e.target.value) ? 'English text in Urdu city field — use the English field' : '') }}
-                  dir="rtl" placeholder="شہر"
-                  className={`w-full bg-primary border text-white rounded-lg px-3 py-2 text-sm focus:outline-none font-urdu ${editClubError && /[a-zA-Z]/.test(editCityUrdu) && !/[؀-ۿ]/.test(editCityUrdu) ? 'border-red-500' : 'border-green-700 focus:border-secondary'}`} />
+                <label className="text-green-400 text-xs mb-1 block">City</label>
+                <p className="text-green-600 text-xs mb-2">Type in English or Urdu — detected automatically</p>
+                <input
+                  value={editCityInput}
+                  onChange={e => { setEditCityInput(e.target.value); setEditClubError('') }}
+                  dir={isUrduScript(editCityInput) ? 'rtl' : 'ltr'}
+                  placeholder="e.g. Lahore / لاہور"
+                  className="w-full bg-primary border border-green-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-secondary"
+                />
+                {isUrduScript(editCityInput) && (
+                  <p className="text-green-500 text-xs mt-1">Urdu detected ✓</p>
+                )}
               </div>
               <div className="sm:col-span-2 space-y-2">
                 {editClubError && <p className="text-red-400 text-xs">{editClubError}</p>}
-                <p className="text-green-700 text-xs">At least one of English or Urdu required for name and city</p>
                 <button onClick={saveClubInfo} disabled={savingClub}
                   className="bg-secondary hover:bg-accent text-dark font-bold px-6 py-2 rounded-lg text-sm transition disabled:opacity-50 flex items-center gap-2">
                   {savingClub && <span className="inline-block w-3 h-3 border-2 border-dark border-t-transparent rounded-full animate-spin" />}
