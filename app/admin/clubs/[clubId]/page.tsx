@@ -166,8 +166,8 @@ export default function ClubDetailPage() {
         </Link>
         <div className="text-center">
           <img src={club?.logoUrl || '/pigeon.png'} alt="Logo" className="w-10 h-10 object-cover rounded-full drop-shadow mx-auto border border-green-700" />
-          <h1 className="text-sm font-bold text-secondary leading-tight mt-0.5">{club?.name}</h1>
-          <p className="text-green-400 text-xs">{club?.city}</p>
+          <h1 className="text-sm font-bold text-secondary leading-tight mt-0.5">{club?.name || club?.nameUrdu}</h1>
+          <p className="text-green-400 text-xs">{club?.city || club?.cityUrdu}</p>
         </div>
       </header>
 
@@ -181,7 +181,7 @@ export default function ClubDetailPage() {
                 <img src={club?.logoUrl || '/pigeon.png'} alt={club?.name} className="w-full h-full object-cover" />
               </div>
               <div>
-                <h2 className="text-white font-bold text-lg">{club?.name}</h2>
+                <h2 className="text-white font-bold text-lg">{club?.name || club?.nameUrdu}</h2>
                 {club?.nameUrdu && <p className="text-green-300 text-sm font-urdu" dir="rtl">{club.nameUrdu}</p>}
                 <p className="text-green-400 text-sm">{club?.city}{club?.cityUrdu ? ` · ${club.cityUrdu}` : ''}</p>
                 <p className="text-green-600 text-xs font-mono">{club?.loginEmail}</p>

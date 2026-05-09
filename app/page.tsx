@@ -90,7 +90,7 @@ export default async function HomePage() {
             pigeonCount: t.pigeonCount || 5,
             defaultStartTime: t.defaultStartTime || '',
             defaultEndTime: t.defaultEndTime || '',
-            clubId: club.id, clubName: club.name, clubSlug: club.slug, clubCity: club.city,
+            clubId: club.id, clubName: club.name || club.nameUrdu || '', clubNameUrdu: club.nameUrdu || '', clubSlug: club.slug, clubCity: club.city || club.cityUrdu || '', clubCityUrdu: club.cityUrdu || '',
             raceDays, participantIds,
             currentDay: Math.min(passed, nonGap.length) || 1,
             totalRaceDays: nonGap.length,

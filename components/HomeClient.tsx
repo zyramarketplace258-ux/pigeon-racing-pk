@@ -24,7 +24,7 @@ interface WinnerEntry { rank: number; name: string; nameUrdu?: string; area: str
 export interface ActiveTournament {
   id: string; name: string; pigeonCount: number
   defaultStartTime: string; defaultEndTime: string
-  clubId: string; clubName: string; clubSlug: string; clubCity: string
+  clubId: string; clubName: string; clubNameUrdu?: string; clubSlug: string; clubCity: string; clubCityUrdu?: string
   raceDays: RaceDay[]; currentDay: number; totalRaceDays: number
   participantIds: string[] | null
   topEntries: TopEntry[]; totalLanded: number; totalPigeons: number
@@ -395,8 +395,8 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                           }
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[#1a1a1a] font-semibold text-sm truncate group-hover:text-[#1b5e20] transition">{isUrdu && club.nameUrdu ? club.nameUrdu : club.name}</p>
-                          <p className="text-[#777] text-xs">{isUrdu && club.cityUrdu ? club.cityUrdu : club.city}</p>
+                          <p className="text-[#1a1a1a] font-semibold text-sm truncate group-hover:text-[#1b5e20] transition">{isUrdu ? (club.nameUrdu || club.name) : (club.name || club.nameUrdu)}</p>
+                          <p className="text-[#777] text-xs">{isUrdu ? (club.cityUrdu || club.city) : (club.city || club.cityUrdu)}</p>
                         </div>
                       </button>
                     ))}
@@ -564,7 +564,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                       </span>
                     )}
                   </div>
-                  <p className="text-green-300 text-xs mb-0.5">{tr.clubName} · {tr.clubCity}</p>
+                  <p className="text-green-300 text-xs mb-0.5">{isUrdu ? (tr.clubNameUrdu || tr.clubName) : (tr.clubName || tr.clubNameUrdu)} · {isUrdu ? (tr.clubCityUrdu || tr.clubCity) : (tr.clubCity || tr.clubCityUrdu)}</p>
                   <h3 className="text-white font-bold text-base leading-snug">{tr.name}</h3>
                 </div>
 

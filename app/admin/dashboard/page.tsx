@@ -13,8 +13,10 @@ import Link from 'next/link'
 interface Club {
   id: string
   name: string
+  nameUrdu?: string
   slug: string
   city: string
+  cityUrdu?: string
   loginEmail: string
   logoUrl?: string
 }
@@ -261,8 +263,8 @@ export default function AdminDashboard() {
                             <img src={club.logoUrl || '/pigeon.png'} alt={club.name} className="w-full h-full object-cover" />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-white font-bold text-sm truncate">{club.name}</p>
-                            <p className="text-green-500 text-xs">{club.city}</p>
+                            <p className="text-white font-bold text-sm truncate">{club.name || club.nameUrdu}</p>
+                            <p className="text-green-500 text-xs">{club.city || club.cityUrdu}</p>
                           </div>
                         </div>
                         <p className="text-green-800 text-xs mb-3 truncate">📧 {club.loginEmail}</p>

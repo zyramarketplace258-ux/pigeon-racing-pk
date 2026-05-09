@@ -13,7 +13,7 @@ import { auth, db, storage } from '@/lib/firebase'
 import { calculateHoursFlown, calculateGrandTotal, formatTimeDisplay } from '@/lib/timeUtils'
 import ProfileCropModal from '@/components/ProfileCropModal'
 
-interface Club { id: string; name: string; slug: string; city: string; logoUrl?: string }
+interface Club { id: string; name: string; nameUrdu?: string; slug: string; city: string; cityUrdu?: string; logoUrl?: string }
 interface RaceDay { dayNumber: number; date: string; isGap?: boolean }
 interface Tournament {
   id: string; name: string; status: string; totalDays: number
@@ -441,8 +441,8 @@ export default function ClubDashboard() {
               </div>
             </div>
             <div className="min-w-0">
-              <p className="text-secondary font-bold text-sm leading-tight truncate">{club?.name}</p>
-              <p className="text-green-600 text-xs truncate">{club?.city}</p>
+              <p className="text-secondary font-bold text-sm leading-tight truncate">{club?.name || club?.nameUrdu}</p>
+              <p className="text-green-600 text-xs truncate">{club?.city || club?.cityUrdu}</p>
             </div>
           </div>
         </div>
@@ -494,7 +494,7 @@ export default function ClubDashboard() {
                 <path strokeLinecap="round" d="M3 6h18M3 12h18M3 18h18" />
               </svg>
             </button>
-            <span className="text-secondary font-bold text-sm">{club?.name}</span>
+            <span className="text-secondary font-bold text-sm">{club?.name || club?.nameUrdu}</span>
             <img src={club?.logoUrl || '/pigeon.png'} alt="Logo" className="w-7 h-7 rounded-full object-cover border border-green-700" />
           </div>
           {/* Horizontal tab bar for mobile */}

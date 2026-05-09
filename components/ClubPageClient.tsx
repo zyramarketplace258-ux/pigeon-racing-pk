@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { useLanguage } from '@/lib/language-context'
 import { useT, fDayOf, fPctComplete, fDaysLeft, fDaysShort } from '@/lib/translations'
 
-export interface Club { id: string; name: string; slug: string; city: string; logoUrl?: string }
+export interface Club { id: string; name: string; nameUrdu?: string; slug: string; city: string; cityUrdu?: string; logoUrl?: string }
 export interface RaceDay { dayNumber: number; date: string; isGap?: boolean }
 export interface Tournament {
   id: string; name: string; status: string; totalDays: number
@@ -116,8 +116,8 @@ export default function ClubPageClient({
             {isUrdu ? 'ہوم →' : '← Home'}
           </Link>
           <img src={club?.logoUrl || '/pigeon.png'} alt="Logo" className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-full drop-shadow-lg mx-auto mb-2 border-2 border-green-600" />
-          <h1 className="text-white text-lg sm:text-2xl font-bold leading-tight">{club?.name}</h1>
-          <p className="text-green-300 text-xs mt-0.5">{club?.city} · {t('loveForTheLoft')}</p>
+          <h1 className="text-white text-lg sm:text-2xl font-bold leading-tight">{isUrdu ? (club?.nameUrdu || club?.name) : (club?.name || club?.nameUrdu)}</h1>
+          <p className="text-green-300 text-xs mt-0.5">{isUrdu ? (club?.cityUrdu || club?.city) : (club?.city || club?.cityUrdu)} · {t('loveForTheLoft')}</p>
         </div>
       </div>
       <nav className="bg-[#292929] px-4">
