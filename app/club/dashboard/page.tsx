@@ -487,16 +487,31 @@ export default function ClubDashboard() {
       <div className="flex-1 lg:ml-56 flex flex-col min-h-screen">
 
         {/* Mobile top bar */}
-        <div className="lg:hidden sticky top-0 z-20 bg-[#081208] border-b border-green-900 px-4 py-3 flex items-center justify-between">
-          <button onClick={() => setSidebarOpen(true)} className="text-green-400 hover:text-white transition p-1">
-            <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" d="M3 6h18M3 12h18M3 18h18" />
-            </svg>
-          </button>
-          <span className="text-secondary font-bold text-sm">
-            {NAV_ITEMS.find(n => n.key === tab)?.icon} {NAV_ITEMS.find(n => n.key === tab)?.label}
-          </span>
-          <img src={club?.logoUrl || '/pigeon.png'} alt="Logo" className="w-8 h-8 rounded-full object-cover border border-green-700" />
+        <div className="lg:hidden sticky top-0 z-20 bg-[#081208] border-b border-green-900">
+          <div className="px-4 py-2 flex items-center justify-between">
+            <button onClick={() => setSidebarOpen(true)} className="text-green-400 hover:text-white transition p-1" title="Menu">
+              <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" d="M3 6h18M3 12h18M3 18h18" />
+              </svg>
+            </button>
+            <span className="text-secondary font-bold text-sm">{club?.name}</span>
+            <img src={club?.logoUrl || '/pigeon.png'} alt="Logo" className="w-7 h-7 rounded-full object-cover border border-green-700" />
+          </div>
+          {/* Horizontal tab bar for mobile */}
+          <div className="flex border-t border-green-900">
+            {NAV_ITEMS.map(item => (
+              <button
+                key={item.key}
+                onClick={() => handleTabChange(item.key)}
+                className={`flex-1 py-2 text-xs font-semibold transition border-b-2 ${
+                  tab === item.key ? 'text-white border-[#66bb6a]' : 'text-gray-400 border-transparent hover:text-white'
+                }`}
+              >
+                <span className="block text-base leading-none">{item.icon}</span>
+                <span className="block mt-0.5">{item.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Stats bar */}
