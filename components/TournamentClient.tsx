@@ -204,7 +204,7 @@ export default function TournamentClient({
     ? tournament.raceDays.filter(r => !r.isGap && r.dayNumber <= selectedDay).length
     : selectedDay
   const selectedDateLabel = selectedRaceDay?.date
-    ? new Date(selectedRaceDay.date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+    ? new Date(selectedRaceDay.date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
     : ''
   const isUrdu = lang === 'ur'
 
