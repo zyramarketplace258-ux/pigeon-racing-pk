@@ -280,8 +280,10 @@ export default function ClubDashboard() {
     const trimName = memberName.trim()
     const trimArea = memberArea.trim()
     let valid = true
-    if (trimName.length < 3) { setNameError('Minimum 3 letters required'); valid = false }
-    if (trimArea.length < 2) { setAreaError('Minimum 2 characters required'); valid = false }
+    if (/[^a-zA-Z؀-ۿݐ-ݿ\s]/.test(trimName)) { setNameError('Only letters and spaces allowed'); valid = false }
+    else if (trimName.length < 3) { setNameError('Minimum 3 letters required'); valid = false }
+    if (/[^a-zA-Z0-9؀-ۿݐ-ݿ\s]/.test(trimArea)) { setAreaError('Only letters, numbers and spaces allowed'); valid = false }
+    else if (trimArea.length < 2) { setAreaError('Minimum 2 characters required'); valid = false }
     if (!valid) return
     const duplicate = participants.find(
       p => p.name.toLowerCase() === trimName.toLowerCase() && p.area.toLowerCase() === trimArea.toLowerCase()
@@ -506,9 +508,11 @@ export default function ClubDashboard() {
                   <div className="flex-1">
                     <input type="text" value={memberName}
                       onChange={e => {
-                        const val = e.target.value.replace(/[^a-zA-Z؀-ۿݐ-ݿ\s]/g, '')
+                        const val = e.target.value
                         setMemberName(val)
-                        setNameError(val.trim().length > 0 && val.trim().length < 3 ? 'Minimum 3 letters' : '')
+                        if (val && /[^a-zA-Z؀-ۿݐ-ݿ\s]/.test(val)) setNameError('Only letters and spaces allowed')
+                        else if (val.trim().length > 0 && val.trim().length < 3) setNameError('Minimum 3 letters required')
+                        else setNameError('')
                       }}
                       placeholder="Name (letters only)"
                       className={`w-full bg-primary border text-white rounded-lg px-4 py-2 text-sm focus:outline-none placeholder-green-700 ${nameError ? 'border-red-500 focus:border-red-400' : 'border-green-700 focus:border-secondary'}`} />
@@ -517,9 +521,11 @@ export default function ClubDashboard() {
                   <div className="flex-1">
                     <input type="text" value={memberArea}
                       onChange={e => {
-                        const val = e.target.value.replace(/[^a-zA-Z0-9؀-ۿݐ-ݿ\s]/g, '')
+                        const val = e.target.value
                         setMemberArea(val)
-                        setAreaError(val.trim().length > 0 && val.trim().length < 2 ? 'Minimum 2 characters' : '')
+                        if (val && /[^a-zA-Z0-9؀-ۿݐ-ݿ\s]/.test(val)) setAreaError('Only letters, numbers and spaces allowed')
+                        else if (val.trim().length > 0 && val.trim().length < 2) setAreaError('Minimum 2 characters required')
+                        else setAreaError('')
                       }}
                       placeholder="Village/Area"
                       className={`w-full bg-primary border text-white rounded-lg px-4 py-2 text-sm focus:outline-none placeholder-green-700 ${areaError ? 'border-red-500 focus:border-red-400' : 'border-green-700 focus:border-secondary'}`} />
