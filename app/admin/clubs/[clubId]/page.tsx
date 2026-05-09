@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { doc, getDoc, collection, getDocs, updateDoc, deleteDoc } from 'firebase/firestore'
+import { doc, getDoc, collection, getDocs, onSnapshot, updateDoc, deleteDoc } from 'firebase/firestore'
 import { db, auth } from '@/lib/firebase'
 import { onAuthStateChanged } from 'firebase/auth'
 import Link from 'next/link'
@@ -48,12 +48,13 @@ export default function ClubDetailPage() {
   const [savedClub, setSavedClub] = useState(false)
 
   useEffect(() => {
-    let unsubscribe: () => void = () => {}
+    let unsubscribeAuth: () => void = () => {}
+    let unsubscribeTournaments: (() => void) | null = null
     let active = true
 
     auth.authStateReady().then(() => {
       if (!active) return
-      unsubscribe = onAuthStateChanged(auth, async (user) => {
+      unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
         if (!active) return
         if (!user) { router.push('/admin/login'); return }
 
@@ -66,17 +67,19 @@ export default function ClubDetailPage() {
         if (!clubDoc.exists()) { router.push('/admin/dashboard'); return }
         setClub({ id: clubDoc.id, ...clubDoc.data() } as Club)
 
-        const tSnap = await getDocs(collection(db, 'clubs', clubId, 'tournaments'))
-        if (!active) return
-        const tList = tSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Tournament[]
-        setTournaments(tList)
-        setLoading(false)
+        unsubscribeTournaments?.()
+        unsubscribeTournaments = onSnapshot(collection(db, 'clubs', clubId, 'tournaments'), snap => {
+          if (!active) return
+          setTournaments(snap.docs.map(d => ({ id: d.id, ...d.data() })) as Tournament[])
+          setLoading(false)
+        })
       })
     })
 
     return () => {
       active = false
-      unsubscribe()
+      unsubscribeAuth()
+      unsubscribeTournaments?.()
     }
   }, [clubId, router])
 

@@ -99,6 +99,7 @@ export default function ClubDashboard() {
   useEffect(() => {
     let unsubscribe: () => void = () => {}
     let tUnsub: (() => void) | null = null
+    let pUnsub: (() => void) | null = null
     let active = true
     auth.authStateReady().then(() => {
       if (!active) return
@@ -111,13 +112,16 @@ export default function ClubDashboard() {
         if (snap.empty) { router.push('/club/login'); return }
         const clubData = { id: snap.docs[0].id, ...snap.docs[0].data() } as Club
         setClub(clubData)
-        const today = new Date().toISOString().split('T')[0]
+        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' })
         setTodayDate(today)
-        const pSnap = await getDocs(collection(db, 'clubs', clubData.id, 'participants'))
-        if (!active) return
-        const allParticipants = pSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Participant[]
-        participantsRef.current = allParticipants
-        setParticipants(allParticipants)
+
+        pUnsub?.()
+        pUnsub = onSnapshot(collection(db, 'clubs', clubData.id, 'participants'), pSnap => {
+          if (!active) return
+          const allParticipants = pSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Participant[]
+          participantsRef.current = allParticipants
+          setParticipants(allParticipants)
+        })
 
         let firstFire = true
         tUnsub?.()
@@ -162,7 +166,7 @@ export default function ClubDashboard() {
         })
       })
     })
-    return () => { active = false; unsubscribe(); tUnsub?.() }
+    return () => { active = false; unsubscribe(); tUnsub?.(); pUnsub?.() }
   }, [router])
 
   const handleTabChange = (t: typeof tab) => { setTab(t); sessionStorage.setItem('club-tab', t) }
@@ -209,7 +213,7 @@ export default function ClubDashboard() {
     const selected = activeTournaments.find(t => t.id === tournamentId)
     if (!selected) return
     setTournament(selected); setSaved(false); setEntriesLoading(true)
-    const today = new Date().toISOString().split('T')[0]
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' })
     const nonGap = selected.raceDays?.filter(rd => !rd.isGap) ?? []
     const todayRD = nonGap.find(rd => rd.date === today)
     const todayNum = todayRD?.dayNumber ?? null

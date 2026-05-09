@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { signOut } from 'firebase/auth'
-import { collection, getDocs, addDoc, deleteDoc, doc, serverTimestamp, query, orderBy } from 'firebase/firestore'
+import { collection, getDocs, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp, query, orderBy } from 'firebase/firestore'
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage'
 import { auth, db, storage } from '@/lib/firebase'
 import AdminGuard from '@/components/admin/AdminGuard'
@@ -44,14 +44,15 @@ export default function AdminDashboard() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    getDocs(collection(db, 'clubs')).then(snap => {
+    const unsubClubs = onSnapshot(collection(db, 'clubs'), snap => {
       setClubs(snap.docs.map(d => ({ id: d.id, ...d.data() })) as Club[])
       setLoading(false)
     })
-    getDocs(query(collection(db, 'gallery'), orderBy('createdAt', 'desc'))).then(snap => {
+    const unsubGallery = onSnapshot(query(collection(db, 'gallery'), orderBy('createdAt', 'desc')), snap => {
       setGalleryPosts(snap.docs.map(d => ({ id: d.id, ...d.data() })) as GalleryPost[])
       setGalleryLoading(false)
     })
+    return () => { unsubClubs(); unsubGallery() }
   }, [])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

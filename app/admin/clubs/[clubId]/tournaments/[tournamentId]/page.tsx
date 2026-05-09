@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { onAuthStateChanged } from 'firebase/auth'
-import { doc, getDoc, getDocs, collection, updateDoc } from 'firebase/firestore'
+import { doc, getDoc, getDocs, collection, onSnapshot, updateDoc } from 'firebase/firestore'
 import { auth, db } from '@/lib/firebase'
 import { formatTimeDisplay } from '@/lib/timeUtils'
 import Link from 'next/link'
@@ -55,12 +55,14 @@ export default function TournamentManagePage() {
     : allClubParticipants
 
   useEffect(() => {
-    let unsubscribe: () => void = () => {}
+    let unsubscribeAuth: () => void = () => {}
+    let unsubscribeParticipants: (() => void) | null = null
     let active = true
+    let initialParticipantIds: string[] | undefined
 
     auth.authStateReady().then(() => {
       if (!active) return
-      unsubscribe = onAuthStateChanged(auth, async (user) => {
+      unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
         if (!active) return
         if (!user) { router.push('/admin/login'); return }
 
@@ -73,31 +75,32 @@ export default function TournamentManagePage() {
         if (!tDoc.exists()) { router.push(`/admin/clubs/${clubId}`); return }
         const tData = { id: tDoc.id, ...tDoc.data() } as Tournament
         setTournament(tData)
+        initialParticipantIds = tData.participantIds
 
         if (tData.participantIds?.length) {
           setSelectedIds(new Set(tData.participantIds))
         }
 
-        const pSnap = await getDocs(collection(db, 'clubs', clubId, 'participants'))
-        if (!active) return
-        const pList = pSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Participant[]
-        setAllClubParticipants(pList)
-
-        // If no participantIds saved yet, select all by default
-        if (!tData.participantIds?.length) {
-          setSelectedIds(new Set(pList.map(p => p.id)))
-        }
-
-        const today = new Date().toISOString().split('T')[0]
+        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' })
         const todayDay = tData.raceDays?.find(rd => rd.date === today && !rd.isGap)
         const nonGapDays = tData.raceDays?.filter(rd => !rd.isGap) ?? []
         const defaultDay = todayDay?.dayNumber ?? nonGapDays[0]?.dayNumber ?? null
         setSelectedDay(defaultDay)
-        setLoading(false)
+
+        unsubscribeParticipants?.()
+        unsubscribeParticipants = onSnapshot(collection(db, 'clubs', clubId, 'participants'), snap => {
+          if (!active) return
+          const pList = snap.docs.map(d => ({ id: d.id, ...d.data() })) as Participant[]
+          setAllClubParticipants(pList)
+          if (!initialParticipantIds?.length) {
+            setSelectedIds(new Set(pList.map(p => p.id)))
+          }
+          setLoading(false)
+        })
       })
     })
 
-    return () => { active = false; unsubscribe() }
+    return () => { active = false; unsubscribeAuth(); unsubscribeParticipants?.() }
   }, [clubId, tournamentId, router])
 
   // Load entries for selected day
