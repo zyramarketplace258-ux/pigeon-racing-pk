@@ -3,8 +3,9 @@ export const dynamic = 'force-dynamic'
 
 import { useState } from 'react'
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
-import { createUserWithEmailAndPassword } from 'firebase/auth'
-import { auth, db } from '@/lib/firebase'
+import { initializeApp, deleteApp } from 'firebase/app'
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'
+import { db, firebaseConfig } from '@/lib/firebase'
 import Link from 'next/link'
 
 export default function NewClubPage() {
@@ -32,9 +33,12 @@ export default function NewClubPage() {
     const email = `${form.slug}@pigeonracing.pk`
 
     try {
-      // Create Firebase Auth account for club
-      const userCredential = await createUserWithEmailAndPassword(auth, email, form.password)
+      // Use a secondary app so the admin's auth session is not replaced
+      const secondaryApp = initializeApp(firebaseConfig, `club-create-${Date.now()}`)
+      const secondaryAuth = getAuth(secondaryApp)
+      const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, form.password)
       const uid = userCredential.user.uid
+      await deleteApp(secondaryApp)
 
       // Save club to Firestore
       await addDoc(collection(db, 'clubs'), {
