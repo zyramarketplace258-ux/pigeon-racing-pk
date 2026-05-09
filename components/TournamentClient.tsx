@@ -338,8 +338,8 @@ export default function TournamentClient({
                         : 'bg-white border-[#e9ecef] text-[#555] hover:border-[#388e3c]'
                     }`}
                   >
-                    <span className="block font-bold" dir="ltr">D{tournament.raceDays.filter(r => !r.isGap && r.dayNumber <= rd.dayNumber).length}</span>
-                    <span className={`block text-xs mt-0.5 ${isSelected ? 'opacity-70' : isToday ? 'text-[#388e3c]' : 'text-[#aaa]'}`} dir="ltr">{rd.date.slice(5)}</span>
+                    <span className="block font-bold text-[11px]" dir="ltr">Day {tournament.raceDays.filter(r => !r.isGap && r.dayNumber <= rd.dayNumber).length}</span>
+                    <span className={`block text-[10px] mt-0.5 ${isSelected ? 'opacity-70' : isToday ? 'text-[#388e3c]' : 'text-[#aaa]'}`} dir="ltr">{new Date(rd.date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
                     {isToday && !isSelected && <span className="block text-[#388e3c] text-xs leading-none">●</span>}
                   </button>
                 )
