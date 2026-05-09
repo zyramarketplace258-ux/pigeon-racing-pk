@@ -42,6 +42,7 @@ export default function TournamentManagePage() {
   const [editTAreaUrdu, setEditTAreaUrdu] = useState('')
   const [savingTournament, setSavingTournament] = useState(false)
   const [savedTournament, setSavedTournament] = useState(false)
+  const [nameEditError, setNameEditError] = useState('')
 
   const [tab, setTab] = useState<Tab>('entries')
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
@@ -147,6 +148,9 @@ export default function TournamentManagePage() {
 
   const saveTournamentInfo = async () => {
     if (!tournament || (!editTName.trim() && !editTNameUrdu.trim())) return
+    if (/[؀-ۿ]/.test(editTName)) { setNameEditError('Urdu text in English field — use the Urdu field'); return }
+    if (editTNameUrdu.trim() && /[a-zA-Z]/.test(editTNameUrdu) && !/[؀-ۿ]/.test(editTNameUrdu)) { setNameEditError('English text in Urdu field — use the English field'); return }
+    setNameEditError('')
     setSavingTournament(true)
     const updates: Record<string, string> = { name: editTName.trim() }
     if (editTNameUrdu.trim()) updates.nameUrdu = editTNameUrdu.trim()
@@ -209,14 +213,19 @@ export default function TournamentManagePage() {
           <div className="mt-3 pt-3 border-t border-green-800 grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-green-400 text-xs mb-1 block">Tournament Name (English)</label>
-              <input value={editTName} onChange={e => setEditTName(e.target.value)} placeholder="Tournament name"
-                className="w-full bg-dark border border-green-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-secondary" />
+              <input value={editTName}
+                onChange={e => { setEditTName(e.target.value); setNameEditError(/[؀-ۿ]/.test(e.target.value) ? 'Urdu text detected — use the Urdu field' : '') }}
+                placeholder="Tournament name"
+                className={`w-full bg-dark border text-white rounded-lg px-3 py-2 text-sm focus:outline-none ${nameEditError && /[؀-ۿ]/.test(editTName) ? 'border-red-500' : 'border-green-700 focus:border-secondary'}`} />
             </div>
             <div>
               <label className="text-green-400 text-xs mb-1 block">نام (اردو)</label>
-              <input value={editTNameUrdu} onChange={e => setEditTNameUrdu(e.target.value)} dir="rtl" placeholder="ٹورنامنٹ کا نام"
-                className="w-full bg-dark border border-green-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-secondary font-urdu" />
+              <input value={editTNameUrdu}
+                onChange={e => { setEditTNameUrdu(e.target.value); setNameEditError(e.target.value.trim() && /[a-zA-Z]/.test(e.target.value) && !/[؀-ۿ]/.test(e.target.value) ? 'English text detected — use the English field' : '') }}
+                dir="rtl" placeholder="ٹورنامنٹ کا نام"
+                className={`w-full bg-dark border text-white rounded-lg px-3 py-2 text-sm focus:outline-none font-urdu ${nameEditError && /[a-zA-Z]/.test(editTNameUrdu) ? 'border-red-500' : 'border-green-700 focus:border-secondary'}`} />
             </div>
+            {nameEditError && <div className="sm:col-span-2"><p className="text-red-400 text-xs">{nameEditError}</p></div>}
             <div>
               <label className="text-green-400 text-xs mb-1 block">Race Area / Location (English, optional)</label>
               <input value={editTArea} onChange={e => setEditTArea(e.target.value)} placeholder="e.g. Lahore Race Track"

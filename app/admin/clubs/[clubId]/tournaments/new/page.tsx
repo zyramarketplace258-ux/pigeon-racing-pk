@@ -68,6 +68,16 @@ export default function NewTournamentPage() {
       setLoading(false)
       return
     }
+    if (/[؀-ۿ]/.test(form.name)) {
+      setNameError('Urdu text detected in English field — use the Urdu field below')
+      setLoading(false)
+      return
+    }
+    if (form.nameUrdu.trim() && /[a-zA-Z]/.test(form.nameUrdu) && !/[؀-ۿ]/.test(form.nameUrdu)) {
+      setNameError('English text detected in Urdu field — use the English field above')
+      setLoading(false)
+      return
+    }
 
     try {
       await addDoc(collection(db, 'clubs', clubId, 'tournaments'), {
@@ -126,17 +136,27 @@ export default function NewTournamentPage() {
                 <input
                   type="text"
                   value={form.name}
-                  onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setNameError('') }}
+                  onChange={e => {
+                    const val = e.target.value
+                    setForm(f => ({ ...f, name: val }))
+                    if (/[؀-ۿ]/.test(val)) setNameError('Urdu text detected — use the Urdu field below')
+                    else setNameError('')
+                  }}
                   placeholder="English name (e.g. Spring Race 2026)"
-                  className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-secondary placeholder-green-700"
+                  className={`w-full bg-primary border text-white rounded-lg px-4 py-3 text-sm focus:outline-none placeholder-green-700 ${nameError && /[؀-ۿ]/.test(form.name) ? 'border-red-500 focus:border-red-400' : 'border-green-700 focus:border-secondary'}`}
                 />
                 <input
                   type="text"
                   value={form.nameUrdu}
-                  onChange={e => { setForm(f => ({ ...f, nameUrdu: e.target.value })); setNameError('') }}
+                  onChange={e => {
+                    const val = e.target.value
+                    setForm(f => ({ ...f, nameUrdu: val }))
+                    if (val.trim() && !/[؀-ۿ]/.test(val) && /[a-zA-Z]/.test(val)) setNameError('English text detected — use the English field above')
+                    else setNameError('')
+                  }}
                   dir="rtl"
                   placeholder="اردو نام (مثلاً بہار ریس ۲۰۲۶)"
-                  className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-secondary placeholder-green-700 font-urdu"
+                  className={`w-full bg-primary border text-white rounded-lg px-4 py-3 text-sm focus:outline-none placeholder-green-700 font-urdu ${nameError && /[a-zA-Z]/.test(form.nameUrdu) ? 'border-red-500 focus:border-red-400' : 'border-green-700 focus:border-secondary'}`}
                 />
               </div>
               {nameError && <p className="text-red-400 text-xs mt-1">{nameError}</p>}
