@@ -14,8 +14,7 @@ import { useT, fDayOf, fLanded, fStillFlying } from '@/lib/translations'
 
 const playfair = Playfair_Display({ subsets: ['latin'], weight: ['700'], style: ['italic'] })
 
-export interface Club { id: string; name: string; slug: string; city: string; cityUrdu?: string; logoUrl?: string }
-interface RecentTournament { id: string; name: string; nameUrdu?: string; clubName: string; clubSlug: string; clubCity: string; endDate: string }
+export interface Club { id: string; name: string; nameUrdu?: string; slug: string; city: string; cityUrdu?: string; logoUrl?: string }
 interface GalleryPost { id: string; imageUrl: string; title: string; description: string; postedBy: string; createdAt?: { seconds: number } }
 export interface RaceDay { dayNumber: number; date: string; isGap?: boolean }
 interface PigeonChip { landingTime: string; hoursFlown: string }
@@ -47,7 +46,6 @@ export interface InitialHomeData {
   activeTournaments: ActiveTournament[]
   topScorers: TopScorer[]
   winnerPigeons: WinnerEntry[]
-  recentTournaments: RecentTournament[]
   totalLandedToday: number
   totalStillFlying: number
   totalLotsCompeting: number
@@ -296,16 +294,9 @@ export default function HomeClient({ initialData, tInfos }: Props) {
           <img src="/pigeon.png" alt="Pigeon" className="absolute left-1/2 -translate-x-1/2 w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-lg" />
           <div className="flex flex-col items-end gap-1">
             {loggedInClub ? (
-              <div className="flex items-center gap-2">
-                <Link href="/club/dashboard" className="flex items-center gap-1.5 text-xs text-green-200 border border-green-600 px-2.5 py-1.5 rounded hover:bg-green-800 transition font-medium">
-                  <img src={loggedInClub.logoUrl || '/pigeon.png'} alt="" className="w-5 h-5 rounded-full object-cover border border-green-500" />
-                  <span className="hidden sm:inline max-w-[80px] truncate">{loggedInClub.name}</span>
-                  <span className="sm:hidden">Dashboard</span>
-                </Link>
-                <button onClick={() => signOut(auth)} className="text-xs text-red-300 border border-red-700 px-2 py-1.5 rounded hover:bg-red-900 transition font-medium">
-                  Logout
-                </button>
-              </div>
+              <button onClick={() => signOut(auth)} className="text-xs text-red-300 border border-red-700 px-2 py-1.5 rounded hover:bg-red-900 transition font-medium">
+                Logout
+              </button>
             ) : (
               <Link href="/club/login" className="text-xs text-green-200 border border-green-600 px-2.5 py-1.5 rounded hover:bg-green-800 transition font-medium">
                 {t('clubLogin')}
@@ -320,9 +311,17 @@ export default function HomeClient({ initialData, tInfos }: Props) {
           <button onClick={() => setTab('home')} className={`text-sm font-semibold pb-0.5 transition ${activeTab === 'home' ? 'text-white border-b-2 border-[#66bb6a]' : 'text-gray-400 hover:text-white'}`}>{t('tabHome')}</button>
           <button onClick={() => setTab('clubs')} className={`text-sm font-semibold pb-0.5 transition ${activeTab === 'clubs' ? 'text-white border-b-2 border-[#66bb6a]' : 'text-gray-400 hover:text-white'}`}>{t('tabClubs')}</button>
           <button onClick={() => setTab('gallery')} className={`text-sm font-semibold pb-0.5 transition ${activeTab === 'gallery' ? 'text-white border-b-2 border-[#66bb6a]' : 'text-gray-400 hover:text-white'}`}>{t('tabGallery')}</button>
-          <button onClick={toggle} className="ms-auto text-xs text-green-300 border border-green-700 px-2.5 py-1 rounded hover:bg-green-800 transition font-medium">
-            {isUrdu ? 'EN' : 'اردو'}
-          </button>
+          <div className="ms-auto flex items-center gap-2">
+            {loggedInClub && (
+              <Link href="/club/dashboard" className="flex items-center gap-1.5 text-xs text-green-300 border border-green-700 px-2.5 py-1 rounded hover:bg-green-800 transition font-medium">
+                <img src={loggedInClub.logoUrl || '/pigeon.png'} alt="" className="w-4 h-4 rounded-full object-cover" />
+                <span>Dashboard</span>
+              </Link>
+            )}
+            <button onClick={toggle} className="text-xs text-green-300 border border-green-700 px-2.5 py-1 rounded hover:bg-green-800 transition font-medium">
+              {isUrdu ? 'EN' : 'اردو'}
+            </button>
+          </div>
         </div>
       </nav>
 
@@ -396,7 +395,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                           }
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[#1a1a1a] font-semibold text-sm truncate group-hover:text-[#1b5e20] transition">{club.name}</p>
+                          <p className="text-[#1a1a1a] font-semibold text-sm truncate group-hover:text-[#1b5e20] transition">{isUrdu && club.nameUrdu ? club.nameUrdu : club.name}</p>
                           <p className="text-[#777] text-xs">{isUrdu && club.cityUrdu ? club.cityUrdu : club.city}</p>
                         </div>
                       </button>
@@ -652,31 +651,6 @@ export default function HomeClient({ initialData, tInfos }: Props) {
             <p className="text-4xl mb-3">🐦</p>
             <p className="text-gray-700 font-bold">{t('noLiveTournaments')}</p>
             <p className="text-gray-400 text-sm mt-1">{t('checkBackSoon')}</p>
-          </div>
-        )}
-
-        {initialData.recentTournaments.length > 0 && (
-          <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden mb-4">
-            <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-2">
-              <p className="text-green-200 text-xs font-bold uppercase tracking-widest">{t('recentResults')}</p>
-            </div>
-            <div className="divide-y divide-[#f0f0f0]">
-              {initialData.recentTournaments.map((rt, i) => (
-                <Link key={i} href={`/${rt.clubSlug}/${rt.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-[#f9fdf9] transition">
-                  <span className="text-lg shrink-0">🏁</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm text-[#1a1a1a] truncate">{isUrdu && rt.nameUrdu ? rt.nameUrdu : rt.name}</p>
-                    <p className="text-[#888] text-xs truncate">{rt.clubName} · {rt.clubCity}</p>
-                  </div>
-                  {rt.endDate && (
-                    <p className="text-[#bbb] text-xs shrink-0" dir="ltr">
-                      {new Date(rt.endDate + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                    </p>
-                  )}
-                  <span className="text-[#ccc] text-sm">→</span>
-                </Link>
-              ))}
-            </div>
           </div>
         )}
 

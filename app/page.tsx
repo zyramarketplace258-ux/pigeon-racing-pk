@@ -2,9 +2,7 @@ import { getAdminDb } from '@/lib/firebase-admin'
 import HomeClient from '@/components/HomeClient'
 import { compareHours } from '@/lib/timeUtils'
 import { getPKTDate } from '@/lib/pkt'
-import type { TInfoClient, InitialHomeData, ActiveTournament, RaceDay, Club } from '@/components/HomeClient'
-
-type RecentTournament = InitialHomeData['recentTournaments'][number]
+import type { TInfoClient, InitialHomeData, ActiveTournament, RaceDay } from '@/components/HomeClient'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,7 +13,7 @@ type TopEntry = { name: string; nameUrdu: string; area: string; areaUrdu: string
 
 export default async function HomePage() {
   const empty: InitialHomeData = {
-    clubs: [], activeTournaments: [], topScorers: [], winnerPigeons: [], recentTournaments: [],
+    clubs: [], activeTournaments: [], topScorers: [], winnerPigeons: [],
     totalLandedToday: 0, totalStillFlying: 0, totalLotsCompeting: 0,
   }
   let initialData: InitialHomeData = empty
@@ -33,6 +31,7 @@ export default async function HomePage() {
       return {
         id: d.id,
         name: String(data.name || ''),
+        ...(data.nameUrdu ? { nameUrdu: String(data.nameUrdu) } : {}),
         slug: String(data.slug || ''),
         city: String(data.city || ''),
         ...(data.cityUrdu ? { cityUrdu: String(data.cityUrdu) } : {}),
@@ -40,12 +39,11 @@ export default async function HomePage() {
       }
     })
 
-    // 2. Fetch active tournaments, completed tournaments, and participants per club (all parallel)
+    // 2. Fetch active tournaments + participants per club (all parallel)
     const perClub = await Promise.all(clubs.map(async (club) => {
-      const [tSnap, pSnap, cSnap] = await Promise.all([
+      const [tSnap, pSnap] = await Promise.all([
         db.collection('clubs').doc(club.id).collection('tournaments').where('status', '==', 'active').get(),
         db.collection('clubs').doc(club.id).collection('participants').get(),
-        db.collection('clubs').doc(club.id).collection('tournaments').where('status', '==', 'completed').get(),
       ])
       return {
         club,
@@ -53,8 +51,6 @@ export default async function HomePage() {
         tournaments: tSnap.docs.map(d => ({ id: d.id, ...(d.data() as any) })),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         participants: pSnap.docs.map(d => ({ id: d.id, ...(d.data() as any) })),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        completedTournaments: cSnap.docs.map(d => ({ id: d.id, ...(d.data() as any) })),
       }
     }))
 
@@ -224,34 +220,11 @@ export default async function HomePage() {
       winnerPigeons.push({ name: p.name, nameUrdu: p.nameUrdu, area: p.area, areaUrdu: p.areaUrdu, photoUrl: p.photoUrl, landingTime: p.landingTime, hoursFlown: p.hoursFlown, tournament: p.tournament, clubSlug: p.clubSlug, tournamentId: p.tournamentId, rank: rankW })
     }
 
-    // 10. Recent completed tournaments
-    const allRecent: RecentTournament[] = []
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for (const { club, completedTournaments } of perClub as any[]) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      for (const t of completedTournaments as any[]) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const nonGapDays: string[] = (t.raceDays || []).filter((rd: any) => !rd.isGap).map((rd: any) => String(rd.date))
-        const endDate = nonGapDays.sort().reverse()[0] || ''
-        allRecent.push({
-          id: t.id,
-          name: String(t.name || ''),
-          nameUrdu: t.nameUrdu ? String(t.nameUrdu) : undefined,
-          clubName: String((club as Club).name),
-          clubSlug: String((club as Club).slug),
-          clubCity: String((club as Club).city),
-          endDate,
-        })
-      }
-    }
-    const recentTournaments = allRecent.sort((a, b) => b.endDate.localeCompare(a.endDate)).slice(0, 5)
-
     initialData = {
       clubs,
       activeTournaments,
       topScorers,
       winnerPigeons,
-      recentTournaments,
       totalLandedToday: gLanded,
       totalStillFlying: gStillFlying,
       totalLotsCompeting: gLots,
