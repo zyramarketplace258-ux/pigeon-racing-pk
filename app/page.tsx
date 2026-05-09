@@ -72,8 +72,10 @@ export default async function HomePage() {
         const filteredAm: Record<string, string> = {}
         const filteredPm: Record<string, string> = {}
         enrolledIds.forEach(id => { filteredNm[id] = nm[id] || ''; filteredAm[id] = am[id] || ''; filteredPm[id] = pm[id] || '' })
-        const todayRD = nonGap.find(rd => rd.date === today)
-        const currentDayNum = todayRD?.dayNumber ?? nonGap[nonGap.length - 1]?.dayNumber
+        const pastDays = nonGap.filter(rd => rd.date <= today)
+        const currentDayNum = pastDays.length > 0
+          ? pastDays[pastDays.length - 1].dayNumber
+          : nonGap[0]?.dayNumber
 
         tInfos.push({
           base: {
