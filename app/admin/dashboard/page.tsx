@@ -32,7 +32,6 @@ export default function AdminDashboard() {
   const router = useRouter()
   const [clubs, setClubs] = useState<Club[]>([])
   const [loading, setLoading] = useState(true)
-
   const [galleryPosts, setGalleryPosts] = useState<GalleryPost[]>([])
   const [galleryLoading, setGalleryLoading] = useState(true)
   const [form, setForm] = useState({ title: '', description: '', postedBy: '' })
@@ -42,6 +41,10 @@ export default function AdminDashboard() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const [activeSection, setActiveSection] = useState<'clubs' | 'gallery'>('clubs')
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [galleryFormOpen, setGalleryFormOpen] = useState(false)
 
   useEffect(() => {
     const unsubClubs = onSnapshot(collection(db, 'clubs'), snap => {
@@ -85,33 +88,22 @@ export default function AdminDashboard() {
     if (!form.title) { setError('Title is required.'); return }
     setError('')
     setSubmitting(true)
-
     try {
       const compressed = await compressImage(imageFile)
       const storagePath = `gallery/${Date.now()}.jpg`
       const storageRef = ref(storage, storagePath)
       const uploadTask = uploadBytesResumable(storageRef, compressed)
-
       await new Promise<void>((resolve, reject) => {
-        uploadTask.on(
-          'state_changed',
-          snap => setUploadProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
-          reject,
-          () => resolve()
-        )
+        uploadTask.on('state_changed', snap => setUploadProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)), reject, () => resolve())
       })
-
       const imageUrl = await getDownloadURL(storageRef)
-
-      const docRef = await addDoc(collection(db, 'gallery'), {
-        imageUrl, storagePath, ...form, createdAt: serverTimestamp(),
-      })
-
+      const docRef = await addDoc(collection(db, 'gallery'), { imageUrl, storagePath, ...form, createdAt: serverTimestamp() })
       setGalleryPosts(prev => [{ id: docRef.id, imageUrl, storagePath, ...form }, ...prev])
       setForm({ title: '', description: '', postedBy: '' })
       setImageFile(null)
       setImagePreview(null)
       setUploadProgress(null)
+      setGalleryFormOpen(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to post.')
@@ -132,183 +124,277 @@ export default function AdminDashboard() {
     router.push('/admin/login')
   }
 
+  const navTo = (section: typeof activeSection) => {
+    setActiveSection(section)
+    setSidebarOpen(false)
+  }
+
   return (
     <AdminGuard>
-      <main className="min-h-screen bg-dark">
-        <header className="bg-primary border-b border-secondary px-6 py-3 relative">
-          <Link href="/" target="_blank" className="absolute left-4 top-1/2 -translate-y-1/2 text-xs text-green-400 hover:text-secondary transition">
-            View Site
-          </Link>
-          <div className="text-center">
-            <img src="/pigeon.png" alt="Pigeon" className="w-10 h-10 object-contain drop-shadow mx-auto" />
-            <h1 className="text-sm font-bold text-secondary leading-tight mt-0.5">Admin Dashboard</h1>
-            <p className="text-green-400 text-xs">Pakistan Pigeon Racing</p>
+      <div className="min-h-screen bg-[#0d1a0d] flex">
+
+        {/* ── Sidebar ── */}
+        <aside className={`fixed inset-y-0 left-0 z-40 w-56 bg-[#081208] border-r border-green-900 flex flex-col transition-transform duration-200 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
+
+          {/* Brand */}
+          <div className="flex items-center gap-3 px-5 py-5 border-b border-green-900">
+            <img src="/pigeon.png" alt="" className="w-9 h-9 object-contain drop-shadow" />
+            <div>
+              <p className="text-white font-bold text-sm leading-tight">Admin Panel</p>
+              <p className="text-green-600 text-[11px]">Pakistan Pigeon Racing</p>
+            </div>
           </div>
-          <div className="absolute right-4 top-1/2 -translate-y-1/2">
-            <button onClick={handleLogout} className="text-xs bg-red-900 hover:bg-red-700 text-white px-3 py-1.5 rounded transition">
-              Logout
+
+          {/* Nav */}
+          <nav className="flex-1 px-3 py-4 space-y-1">
+            <button
+              onClick={() => navTo('clubs')}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition ${activeSection === 'clubs' ? 'bg-green-800 text-white' : 'text-green-400 hover:bg-green-900 hover:text-white'}`}
+            >
+              <span>🏟️</span>
+              <span className="flex-1 text-left">Clubs</span>
+              <span className="bg-green-900 text-green-300 text-xs px-1.5 py-0.5 rounded-full">{clubs.length}</span>
+            </button>
+            <button
+              onClick={() => navTo('gallery')}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition ${activeSection === 'gallery' ? 'bg-green-800 text-white' : 'text-green-400 hover:bg-green-900 hover:text-white'}`}
+            >
+              <span>🖼️</span>
+              <span className="flex-1 text-left">Gallery</span>
+              <span className="bg-green-900 text-green-300 text-xs px-1.5 py-0.5 rounded-full">{galleryPosts.length}</span>
+            </button>
+          </nav>
+
+          {/* Bottom actions */}
+          <div className="px-3 py-4 border-t border-green-900 space-y-1">
+            <Link
+              href="/"
+              target="_blank"
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-green-400 hover:bg-green-900 hover:text-white transition"
+            >
+              🌐 <span>View Site</span>
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-400 hover:bg-red-900/40 hover:text-red-300 transition"
+            >
+              🚪 <span>Logout</span>
             </button>
           </div>
-        </header>
+        </aside>
 
-        <div className="px-6 py-8 max-w-6xl mx-auto">
+        {/* Sidebar backdrop (mobile) */}
+        {sidebarOpen && (
+          <div className="fixed inset-0 z-30 bg-black/60 lg:hidden" onClick={() => setSidebarOpen(false)} />
+        )}
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-            <div className="bg-surface border border-green-800 rounded-xl p-5">
-              <p className="text-green-400 text-sm">Total Clubs</p>
-              <p className="text-4xl font-bold text-secondary mt-1">{clubs.length}</p>
-            </div>
-            <div className="bg-surface border border-green-800 rounded-xl p-5">
-              <p className="text-green-400 text-sm">Platform</p>
-              <p className="text-xl font-bold text-white mt-1">Pakistan Pigeon Racing</p>
-            </div>
-            <div className="bg-surface border border-green-800 rounded-xl p-5">
-              <p className="text-green-400 text-sm">Status</p>
-              <p className="text-xl font-bold text-green-400 mt-1">🟢 Live</p>
-            </div>
-          </div>
+        {/* ── Main area ── */}
+        <div className="flex-1 lg:ml-56 flex flex-col min-h-screen">
 
-          {/* Clubs */}
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-secondary font-bold text-lg uppercase tracking-widest">🏟️ Clubs</h2>
-            <Link href="/admin/clubs/new" className="bg-secondary hover:bg-accent text-dark text-sm font-bold px-4 py-2 rounded-lg transition">
-              + Add New Club
-            </Link>
-          </div>
+          {/* Top bar */}
+          <header className="sticky top-0 z-20 bg-[#081208] border-b border-green-900 px-4 py-3 flex items-center gap-3">
+            <button
+              className="lg:hidden text-green-400 hover:text-white text-xl leading-none"
+              onClick={() => setSidebarOpen(true)}
+            >
+              ☰
+            </button>
+            <h1 className="text-white font-bold text-base">
+              {activeSection === 'clubs' ? '🏟️ Clubs' : '🖼️ Gallery'}
+            </h1>
+            <button
+              onClick={handleLogout}
+              className="lg:hidden ml-auto text-xs text-red-400 border border-red-900 px-2.5 py-1 rounded hover:bg-red-900/40 transition"
+            >
+              Logout
+            </button>
+          </header>
 
-          {loading ? (
-            <p className="text-green-400">Loading clubs...</p>
-          ) : clubs.length === 0 ? (
-            <div className="bg-surface border border-green-800 rounded-xl p-10 text-center">
-              <p className="text-4xl mb-3">🏟️</p>
-              <p className="text-white font-bold text-lg">No clubs yet</p>
-              <Link href="/admin/clubs/new" className="bg-secondary hover:bg-accent text-dark text-sm font-bold px-6 py-2 rounded-lg transition inline-block mt-3">
-                + Create First Club
-              </Link>
+          {/* Page content */}
+          <main className="flex-1 p-5 max-w-5xl w-full mx-auto">
+
+            {/* Stats bar */}
+            <div className="grid grid-cols-3 gap-3 mb-6">
+              <div className="bg-[#081208] border border-green-900 rounded-xl p-4 text-center">
+                <p className="text-3xl font-bold text-white">{loading ? '—' : clubs.length}</p>
+                <p className="text-green-500 text-xs mt-1">Total Clubs</p>
+              </div>
+              <div className="bg-[#081208] border border-green-900 rounded-xl p-4 text-center">
+                <p className="text-3xl font-bold text-white">{galleryLoading ? '—' : galleryPosts.length}</p>
+                <p className="text-green-500 text-xs mt-1">Gallery Posts</p>
+              </div>
+              <div className="bg-[#081208] border border-green-900 rounded-xl p-4 text-center">
+                <p className="text-2xl font-bold text-green-400">🟢</p>
+                <p className="text-green-500 text-xs mt-1">Live</p>
+              </div>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {clubs.map(club => (
-                <div key={club.id} className="bg-surface border border-green-800 hover:border-secondary rounded-xl p-5 transition">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-full bg-primary border border-secondary overflow-hidden">
-                      <img src={club.logoUrl || '/pigeon.png'} alt={club.name} className="w-full h-full object-cover" />
-                    </div>
-                    <div>
-                      <h3 className="text-white font-bold">{club.name}</h3>
-                      <p className="text-green-400 text-xs">{club.city}</p>
-                    </div>
-                  </div>
-                  <p className="text-green-600 text-xs mb-4">📧 {club.loginEmail}</p>
-                  <div className="flex gap-2">
-                    <Link href={`/admin/clubs/${club.id}`} className="flex-1 text-center bg-primary hover:bg-green-800 text-white text-xs py-2 rounded-lg transition">
-                      Manage
-                    </Link>
-                    <Link href={`/${club.slug}`} target="_blank" className="flex-1 text-center bg-secondary hover:bg-accent text-dark text-xs font-bold py-2 rounded-lg transition">
-                      View
-                    </Link>
-                  </div>
+
+            {/* ── Clubs section ── */}
+            {activeSection === 'clubs' && (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-green-600 text-sm">{clubs.length} registered</p>
+                  <Link
+                    href="/admin/clubs/new"
+                    className="bg-secondary hover:bg-accent text-dark text-sm font-bold px-4 py-2 rounded-lg transition"
+                  >
+                    + Add Club
+                  </Link>
                 </div>
-              ))}
-            </div>
-          )}
 
-          {/* Gallery */}
-          <div className="mt-10">
-            <h2 className="text-secondary font-bold text-lg uppercase tracking-widest mb-4">🖼️ Gallery Posts</h2>
+                {loading ? (
+                  <p className="text-green-500 text-sm">Loading clubs...</p>
+                ) : clubs.length === 0 ? (
+                  <div className="bg-[#081208] border border-green-900 rounded-xl p-10 text-center">
+                    <p className="text-4xl mb-3">🏟️</p>
+                    <p className="text-white font-bold">No clubs yet</p>
+                    <Link href="/admin/clubs/new" className="bg-secondary hover:bg-accent text-dark text-sm font-bold px-6 py-2 rounded-lg transition inline-block mt-4">
+                      + Create First Club
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {clubs.map(club => (
+                      <div key={club.id} className="bg-[#081208] border border-green-900 hover:border-green-600 rounded-xl p-4 transition">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-11 h-11 rounded-full bg-green-900 border border-green-700 overflow-hidden shrink-0">
+                            <img src={club.logoUrl || '/pigeon.png'} alt={club.name} className="w-full h-full object-cover" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-white font-bold text-sm truncate">{club.name}</p>
+                            <p className="text-green-500 text-xs">{club.city}</p>
+                          </div>
+                        </div>
+                        <p className="text-green-800 text-xs mb-3 truncate">📧 {club.loginEmail}</p>
+                        <div className="flex gap-2">
+                          <Link href={`/admin/clubs/${club.id}`} className="flex-1 text-center bg-green-900 hover:bg-green-800 text-white text-xs py-2 rounded-lg transition font-medium">
+                            Manage
+                          </Link>
+                          <Link href={`/${club.slug}`} target="_blank" className="flex-1 text-center bg-secondary hover:bg-accent text-dark text-xs font-bold py-2 rounded-lg transition">
+                            View
+                          </Link>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
-            <div className="bg-surface border border-green-800 rounded-xl p-6 mb-6">
-              {error && (
-                <div className="bg-red-900 border border-red-600 text-red-200 px-4 py-2 rounded-lg mb-4 text-sm">{error}</div>
-              )}
-              <form onSubmit={handleSubmit} className="space-y-3">
-
-                {/* Image picker */}
-                <div
-                  className="border-2 border-dashed border-green-700 rounded-lg p-4 text-center cursor-pointer hover:border-secondary transition"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  {imagePreview ? (
-                    <img src={imagePreview} alt="preview" className="mx-auto max-h-40 rounded object-cover" />
-                  ) : (
-                    <div>
-                      <p className="text-green-400 text-sm">Click to select image</p>
-                      <p className="text-green-700 text-xs mt-1">JPG, PNG, WEBP</p>
-                    </div>
-                  )}
+            {/* ── Gallery section ── */}
+            {activeSection === 'gallery' && (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-green-600 text-sm">{galleryPosts.length} posts</p>
+                  <button
+                    onClick={() => setGalleryFormOpen(v => !v)}
+                    className="bg-secondary hover:bg-accent text-dark text-sm font-bold px-4 py-2 rounded-lg transition"
+                  >
+                    {galleryFormOpen ? '✕ Cancel' : '+ New Post'}
+                  </button>
                 </div>
-                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
 
-                <input
-                  type="text"
-                  placeholder="Title (e.g. Spring Championship 2026)"
-                  value={form.title}
-                  onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                  required
-                  className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-secondary placeholder-green-700"
-                />
-                <textarea
-                  placeholder="Description / event details..."
-                  value={form.description}
-                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                  rows={3}
-                  className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-secondary placeholder-green-700 resize-none"
-                />
-                <input
-                  type="text"
-                  placeholder="Posted by (e.g. Lahore Pigeon Club)"
-                  value={form.postedBy}
-                  onChange={e => setForm(f => ({ ...f, postedBy: e.target.value }))}
-                  className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-secondary placeholder-green-700"
-                />
-
-                {uploadProgress !== null && (
-                  <div>
-                    <div className="h-2 bg-green-900 rounded overflow-hidden">
-                      <div className="h-full bg-secondary transition-all" style={{ width: `${uploadProgress}%` }} />
-                    </div>
-                    <p className="text-green-400 text-xs mt-1 text-right">{uploadProgress}%</p>
+                {/* Collapsible upload form */}
+                {galleryFormOpen && (
+                  <div className="bg-[#081208] border border-green-900 rounded-xl p-5 mb-5">
+                    {error && (
+                      <div className="bg-red-900/50 border border-red-700 text-red-300 px-4 py-2 rounded-lg mb-4 text-sm">{error}</div>
+                    )}
+                    <form onSubmit={handleSubmit} className="space-y-3">
+                      <div
+                        className="border-2 border-dashed border-green-800 rounded-xl p-5 text-center cursor-pointer hover:border-green-500 transition"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        {imagePreview ? (
+                          <img src={imagePreview} alt="preview" className="mx-auto max-h-44 rounded object-cover" />
+                        ) : (
+                          <>
+                            <p className="text-3xl mb-2">📷</p>
+                            <p className="text-green-400 text-sm font-semibold">Click to select image</p>
+                            <p className="text-green-700 text-xs mt-1">JPG, PNG, WEBP</p>
+                          </>
+                        )}
+                      </div>
+                      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                      <input
+                        type="text"
+                        placeholder="Title"
+                        value={form.title}
+                        onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                        required
+                        className="w-full bg-[#0d1a0d] border border-green-800 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-green-500 placeholder-green-800"
+                      />
+                      <textarea
+                        placeholder="Description / event details..."
+                        value={form.description}
+                        onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                        rows={3}
+                        className="w-full bg-[#0d1a0d] border border-green-800 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-green-500 placeholder-green-800 resize-none"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Posted by"
+                        value={form.postedBy}
+                        onChange={e => setForm(f => ({ ...f, postedBy: e.target.value }))}
+                        className="w-full bg-[#0d1a0d] border border-green-800 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-green-500 placeholder-green-800"
+                      />
+                      {uploadProgress !== null && (
+                        <div>
+                          <div className="h-2 bg-green-900 rounded overflow-hidden">
+                            <div className="h-full bg-secondary transition-all" style={{ width: `${uploadProgress}%` }} />
+                          </div>
+                          <p className="text-green-400 text-xs mt-1 text-right">{uploadProgress}%</p>
+                        </div>
+                      )}
+                      <button
+                        type="submit"
+                        disabled={submitting}
+                        className="w-full bg-secondary hover:bg-accent text-dark font-bold py-2.5 rounded-lg text-sm transition disabled:opacity-50"
+                      >
+                        {submitting ? 'Uploading...' : '+ Post to Gallery'}
+                      </button>
+                    </form>
                   </div>
                 )}
 
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="bg-secondary hover:bg-accent text-dark font-bold px-6 py-2.5 rounded-lg text-sm transition disabled:opacity-50"
-                >
-                  {submitting ? 'Uploading...' : '+ Post to Gallery'}
-                </button>
-              </form>
-            </div>
-
-            {galleryLoading ? (
-              <p className="text-green-400 text-sm">Loading posts...</p>
-            ) : galleryPosts.length === 0 ? (
-              <p className="text-green-600 text-sm">No gallery posts yet.</p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {galleryPosts.map(post => (
-                  <div key={post.id} className="bg-surface border border-green-800 rounded-xl overflow-hidden">
-                    <div className="w-full bg-[#111] flex items-center justify-center" style={{ height: 160 }}>
-                      <img src={post.imageUrl} alt={post.title} className="max-w-full max-h-full object-contain" style={{ maxHeight: 160 }} />
-                    </div>
-                    <div className="p-4">
-                      <p className="text-white font-bold text-sm mb-1 truncate">{post.title}</p>
-                      {post.description && <p className="text-green-400 text-xs line-clamp-2 mb-3">{post.description}</p>}
-                      {post.postedBy && <p className="text-green-600 text-xs mb-3">By: {post.postedBy}</p>}
-                      <button onClick={() => deletePost(post)} className="text-xs text-red-400 hover:text-red-300 transition">
-                        🗑 Delete
-                      </button>
-                    </div>
+                {galleryLoading ? (
+                  <p className="text-green-500 text-sm">Loading posts...</p>
+                ) : galleryPosts.length === 0 ? (
+                  <div className="bg-[#081208] border border-green-900 rounded-xl p-10 text-center">
+                    <p className="text-4xl mb-3">🖼️</p>
+                    <p className="text-white font-bold">No gallery posts yet</p>
+                    <button
+                      onClick={() => setGalleryFormOpen(true)}
+                      className="bg-secondary hover:bg-accent text-dark text-sm font-bold px-6 py-2 rounded-lg transition inline-block mt-4"
+                    >
+                      + Add First Post
+                    </button>
                   </div>
-                ))}
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {galleryPosts.map(post => (
+                      <div key={post.id} className="bg-[#081208] border border-green-900 rounded-xl overflow-hidden">
+                        <div className="w-full bg-black flex items-center justify-center" style={{ height: 160 }}>
+                          <img src={post.imageUrl} alt={post.title} className="max-w-full max-h-full object-contain" style={{ maxHeight: 160 }} />
+                        </div>
+                        <div className="p-4">
+                          <p className="text-white font-bold text-sm mb-1 truncate">{post.title}</p>
+                          {post.description && <p className="text-green-500 text-xs line-clamp-2 mb-2">{post.description}</p>}
+                          {post.postedBy && <p className="text-green-700 text-xs mb-3">By: {post.postedBy}</p>}
+                          <button onClick={() => deletePost(post)} className="text-xs text-red-500 hover:text-red-400 transition">
+                            🗑 Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
-          </div>
 
+          </main>
         </div>
-      </main>
+      </div>
     </AdminGuard>
   )
 }
