@@ -200,6 +200,12 @@ export default function TournamentClient({
 
   const today = new Date().toISOString().split('T')[0]
   const selectedRaceDay = tournament?.raceDays?.find(rd => rd.dayNumber === selectedDay)
+  const selectedDisplayDay = tournament?.raceDays
+    ? tournament.raceDays.filter(r => !r.isGap && r.dayNumber <= selectedDay).length
+    : selectedDay
+  const selectedDateLabel = selectedRaceDay?.date
+    ? new Date(selectedRaceDay.date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+    : ''
   const isUrdu = lang === 'ur'
 
   if (initialData.notFound || !club || !tournament) return (
@@ -415,7 +421,7 @@ export default function TournamentClient({
           <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
             <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-2 flex items-center justify-between">
               <p className="text-green-200 text-xs font-bold uppercase tracking-widest">
-                {fDayHeader(lang, selectedDay, selectedRaceDay?.date ?? '')}
+                {fDayHeader(lang, selectedDisplayDay, selectedDateLabel)}
                 {selectedRaceDay?.date === today && <span className="ms-2 text-green-300">{t('live')}</span>}
               </p>
               <p className="text-green-300 text-xs">{fFlewCount(lang, dayEntries.filter(e => e.hasData).length)}</p>
