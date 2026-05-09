@@ -380,7 +380,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                   {clubs
                     .filter(club => {
                       const q = searchQuery.toLowerCase()
-                      return !q || club.name.toLowerCase().includes(q) || club.city.toLowerCase().includes(q) || (club.cityUrdu || '').includes(searchQuery)
+                      return !q || club.name.toLowerCase().includes(q) || (club.nameUrdu || '').includes(searchQuery) || club.city.toLowerCase().includes(q) || (club.cityUrdu || '').includes(searchQuery)
                     })
                     .map(club => (
                       <button
@@ -395,8 +395,8 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                           }
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[#1a1a1a] font-semibold text-sm truncate group-hover:text-[#1b5e20] transition">{isUrdu ? (club.nameUrdu || club.name) : (club.name || club.nameUrdu)}</p>
-                          <p className="text-[#777] text-xs">{isUrdu ? (club.cityUrdu || club.city) : (club.city || club.cityUrdu)}</p>
+                          <p className="text-[#1a1a1a] font-semibold text-sm truncate group-hover:text-[#1b5e20] transition">{club.nameUrdu || club.name}</p>
+                          <p className="text-[#777] text-xs">{club.cityUrdu || club.city}</p>
                         </div>
                       </button>
                     ))}
@@ -564,7 +564,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                       </span>
                     )}
                   </div>
-                  <p className="text-green-300 text-xs mb-0.5">{isUrdu ? (tr.clubNameUrdu || tr.clubName) : (tr.clubName || tr.clubNameUrdu)} · {isUrdu ? (tr.clubCityUrdu || tr.clubCity) : (tr.clubCity || tr.clubCityUrdu)}</p>
+                  <p className="text-green-300 text-xs mb-0.5">{tr.clubNameUrdu || tr.clubName} · {tr.clubCityUrdu || tr.clubCity}</p>
                   <h3 className="text-white font-bold text-base leading-snug">{tr.name}</h3>
                 </div>
 
