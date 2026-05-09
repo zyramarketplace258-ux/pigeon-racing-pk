@@ -220,7 +220,7 @@ export default async function HomePage() {
     const winnerPigeons: InitialHomeData['winnerPigeons'] = []
     let prevHW = '', rankW = 0
     for (const p of sortedPR) {
-      if (p.hoursFlown !== prevHW) { rankW++; if (rankW > 3) break; prevHW = p.hoursFlown }
+      if (p.hoursFlown !== prevHW) { rankW++; if (rankW > 1) break; prevHW = p.hoursFlown }
       winnerPigeons.push({ name: p.name, nameUrdu: p.nameUrdu, area: p.area, areaUrdu: p.areaUrdu, landingTime: p.landingTime, hoursFlown: p.hoursFlown, tournament: p.tournament, clubSlug: p.clubSlug, tournamentId: p.tournamentId, rank: rankW })
     }
 

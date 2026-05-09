@@ -159,7 +159,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
       const wp: WinnerEntry[] = []
       let prevHW = '', rankW = 0
       for (const p of sorted) {
-        if (p.hoursFlown !== prevHW) { rankW++; if (rankW > 3) break; prevHW = p.hoursFlown }
+        if (p.hoursFlown !== prevHW) { rankW++; if (rankW > 1) break; prevHW = p.hoursFlown }
         wp.push({ name: p.name, nameUrdu: p.nameUrdu, area: p.area, areaUrdu: p.areaUrdu, landingTime: p.landingTime, hoursFlown: p.hoursFlown, tournament: p.tournament, clubSlug: p.clubSlug, tournamentId: p.tournamentId, rank: rankW })
       }
       setWinnerPigeons(wp)
@@ -521,26 +521,18 @@ export default function HomeClient({ initialData, tInfos }: Props) {
               <p className="text-green-200 text-xs font-bold uppercase tracking-widest">{t('winnerPigeonToday')}</p>
             </div>
             <div className="divide-y divide-[#f0f0f0]">
-              {winnerPigeons.map((w, i) => {
-                const medal = w.rank === 1 ? '🥇' : w.rank === 2 ? '🥈' : '🥉'
-                const rankLabel = w.rank === 1 ? '1st' : w.rank === 2 ? '2nd' : '3rd'
-                return (
-                  <Link key={i} href={`/${w.clubSlug}/${w.tournamentId}`} className="flex items-center gap-3 px-4 py-3 hover:bg-[#f9fdf9] transition">
-                    <div className="shrink-0 text-center w-10">
-                      <span className="text-xl">{medal}</span>
-                      <p className="text-[10px] font-bold text-[#888] leading-none mt-0.5">{rankLabel}</p>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm text-[#1a1a1a] truncate">{isUrdu && w.nameUrdu ? w.nameUrdu : w.name}</p>
-                      <p className="text-[#999] text-xs truncate">{(isUrdu && w.areaUrdu ? w.areaUrdu : w.area) || '—'}</p>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <p className="font-bold text-base text-[#1b5e20]">{formatTimeDisplay(w.hoursFlown)}</p>
-                      <p className="text-[#888] text-xs">{t('landedAt')} {w.landingTime}</p>
-                    </div>
-                  </Link>
-                )
-              })}
+              {winnerPigeons.map((w, i) => (
+                <Link key={i} href={`/${w.clubSlug}/${w.tournamentId}`} className="flex items-center gap-3 px-4 py-3 hover:bg-[#f9fdf9] transition">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm text-[#1a1a1a] truncate">{isUrdu && w.nameUrdu ? w.nameUrdu : w.name}</p>
+                    <p className="text-[#999] text-xs truncate">{(isUrdu && w.areaUrdu ? w.areaUrdu : w.area) || '—'}</p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="font-bold text-base text-[#1b5e20]">{formatTimeDisplay(w.hoursFlown)}</p>
+                    <p className="text-[#888] text-xs">{t('landedAt')} {w.landingTime}</p>
+                  </div>
+                </Link>
+              ))}
             </div>
           </div>
         )}
