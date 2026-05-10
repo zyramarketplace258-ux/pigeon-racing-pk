@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { LanguageProvider } from "@/lib/language-context";
 import PWARegister from "@/components/PWARegister";
+import SplashScreen from "@/components/SplashScreen";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -37,6 +38,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <SplashScreen />
         <LanguageProvider>{children}</LanguageProvider>
         <PWARegister />
       </body>
