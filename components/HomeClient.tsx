@@ -91,9 +91,6 @@ export default function HomeClient({ initialData, tInfos }: Props) {
   const [galleryPosts, setGalleryPosts] = useState<GalleryPost[]>([])
   const [galleryLoading, setGalleryLoading] = useState(true)
   const [loggedInClub, setLoggedInClub] = useState<Club | null>(null)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [installPrompt, setInstallPrompt] = useState<any>(null)
-  const [appInstalled, setAppInstalled] = useState(false)
   // Set up real-time listeners — structural data already provided by SSR
   useEffect(() => {
     if (tInfos.length === 0) return
@@ -254,22 +251,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
     return () => unsub()
   }, [])
 
-  useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handler = (e: any) => { e.preventDefault(); setInstallPrompt(e) }
-    window.addEventListener('beforeinstallprompt', handler)
-    window.addEventListener('appinstalled', () => { setInstallPrompt(null); setAppInstalled(true) })
-    return () => window.removeEventListener('beforeinstallprompt', handler)
-  }, [])
-
-  const handleInstall = async () => {
-    if (!installPrompt) return
-    installPrompt.prompt()
-    const { outcome } = await installPrompt.userChoice
-    if (outcome === 'accepted') { setInstallPrompt(null); setAppInstalled(true) }
-  }
-
-  const getRank = (entry: TopEntry, entries: TopEntry[]) => {
+const getRank = (entry: TopEntry, entries: TopEntry[]) => {
     const seen: string[] = []
     entries.forEach(e => { if (!seen.includes(e.totalHours)) seen.push(e.totalHours) })
     return seen.indexOf(entry.totalHours)
@@ -311,12 +293,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                 <span>Dashboard</span>
               </Link>
             )}
-            {!appInstalled && installPrompt && (
-              <button onClick={handleInstall} className="flex items-center gap-1 text-xs text-white bg-[#388e3c] border border-green-500 px-2.5 py-1 rounded active:scale-95 transition font-medium">
-                ⬇ Install
-              </button>
-            )}
-            <button onClick={toggle} className="text-xs text-green-300 border border-green-700 px-2.5 py-1 rounded hover:bg-green-800 active:scale-95 transition font-medium">
+<button onClick={toggle} className="text-xs text-green-300 border border-green-700 px-2.5 py-1 rounded hover:bg-green-800 active:scale-95 transition font-medium">
               {isUrdu ? 'EN' : 'اردو'}
             </button>
           </div>
