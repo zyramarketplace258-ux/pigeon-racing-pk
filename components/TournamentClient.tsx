@@ -256,11 +256,11 @@ export default function TournamentClient({
       <SiteHeader />
       <nav className="bg-[#292929] px-4">
         <div className="max-w-6xl mx-auto flex items-center h-9 gap-2">
-          <Link href={`/${clubSlug}`} className="text-green-300 hover:text-white text-xs font-medium transition shrink-0">{t('clubBack')}</Link>
+          <Link href={`/${clubSlug}`} className="text-green-300 hover:text-white active:opacity-60 text-xs font-medium transition shrink-0">{t('clubBack')}</Link>
           <span className="text-green-700 shrink-0">›</span>
           <span className="text-white text-sm font-semibold border-b-2 border-[#66bb6a] pb-0.5 shrink-0">{t('results')}</span>
           {viewerCount > 1 && <span className="text-green-600 text-xs shrink-0">· 👁 {viewerCount}</span>}
-          <button onClick={toggle} className="ms-auto text-xs text-green-300 border border-green-700 px-2.5 py-1 rounded hover:bg-green-800 transition font-medium shrink-0">
+          <button onClick={toggle} className="ms-auto text-xs text-green-300 border border-green-700 px-2.5 py-1 rounded hover:bg-green-800 active:scale-95 transition font-medium shrink-0">
             {isUrdu ? 'EN' : 'اردو'}
           </button>
         </div>
@@ -309,7 +309,7 @@ export default function TournamentClient({
 
               <button
                 onClick={() => setShowDetailResults(true)}
-                className="w-full py-3 rounded-xl bg-[#1b5e20] hover:bg-[#2e7d32] text-white font-bold text-sm transition"
+                className="w-full py-3 rounded-xl bg-[#1b5e20] hover:bg-[#2e7d32] active:scale-95 text-white font-bold text-sm transition"
               >
                 {t('openDetailResults')}
               </button>
@@ -368,7 +368,7 @@ export default function TournamentClient({
                   <button
                     key={rd.dayNumber}
                     onClick={() => { setShowTotal(false); setSelectedDay(rd.dayNumber) }}
-                    className={`px-3 py-2 rounded-lg text-xs font-semibold transition text-center min-w-[58px] border ${
+                    className={`px-3 py-2 rounded-lg text-xs font-semibold transition text-center min-w-[58px] border active:scale-95 ${
                       isSelected ? 'bg-[#1b5e20] text-white border-[#1b5e20]'
                         : isToday ? 'bg-white border-[#388e3c] text-[#1b5e20]'
                         : 'bg-white border-[#e9ecef] text-[#555] hover:border-[#388e3c]'
@@ -382,7 +382,7 @@ export default function TournamentClient({
               })}
               <button
                 onClick={() => setShowTotal(true)}
-                className={`px-3 py-2 rounded-lg text-xs font-bold transition text-center min-w-[58px] border ${
+                className={`px-3 py-2 rounded-lg text-xs font-bold transition text-center min-w-[58px] border active:scale-95 ${
                   showTotal ? 'bg-[#1b5e20] text-white border-[#1b5e20]' : 'bg-white border-[#388e3c] text-[#1b5e20] hover:bg-[#f1faf2]'
                 }`}
               >

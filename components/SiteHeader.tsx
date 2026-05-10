@@ -30,18 +30,18 @@ export default function SiteHeader() {
   return (
     <div className="bg-gradient-to-r from-[#1b5e20] to-[#2e7d32] px-4 py-3">
       <div className="max-w-5xl mx-auto relative flex items-center justify-between">
-        <Link href="/" className="block">
+        <Link href="/" className="block active:opacity-70 transition">
           <h1 className={`${!isUrdu ? playfair.className : ''} text-white text-2xl sm:text-3xl leading-tight`}>{t('pakistanPigeon')}</h1>
           <p className="text-green-300 text-xs tracking-widest uppercase">{t('loveForTheLoft')}</p>
         </Link>
         <img src="/pigeon.png" alt="" aria-hidden="true" className="absolute left-1/2 -translate-x-1/2 w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-lg pointer-events-none" />
         <div className="flex flex-col items-end gap-1">
           {loggedIn ? (
-            <button onClick={() => signOut(auth)} className="text-xs text-red-300 border border-red-700 px-2 py-1.5 rounded hover:bg-red-900 transition font-medium">
+            <button onClick={() => signOut(auth)} className="text-xs text-red-300 border border-red-700 px-2 py-1.5 rounded hover:bg-red-900 active:scale-95 transition font-medium">
               Logout
             </button>
           ) : (
-            <Link href="/club/login" className="text-xs text-green-200 border border-green-600 px-2.5 py-1.5 rounded hover:bg-green-800 transition font-medium">
+            <Link href="/club/login" className="text-xs text-green-200 border border-green-600 px-2.5 py-1.5 rounded hover:bg-green-800 active:scale-95 transition font-medium">
               {t('clubLogin')}
             </Link>
           )}

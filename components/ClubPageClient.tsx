@@ -113,18 +113,18 @@ export default function ClubPageClient({
       <SiteHeader />
       <nav className="bg-[#292929] px-4">
         <div className="max-w-4xl mx-auto flex items-center h-9 gap-1">
-          <Link href="/" className="text-green-300 hover:text-white text-xs font-medium transition shrink-0 me-2">
+          <Link href="/" className="text-green-300 hover:text-white active:opacity-60 text-xs font-medium transition shrink-0 me-2">
             {isUrdu ? 'ہوم →' : '← Home'}
           </Link>
           {(['tournaments', 'history'] as const).map(v => (
             <button key={v} onClick={() => setView(v)}
-              className={`px-4 h-full text-sm font-semibold transition border-b-2 ${
+              className={`px-4 h-full text-sm font-semibold transition border-b-2 active:opacity-60 ${
                 activeView === v ? 'text-white border-[#66bb6a]' : 'text-gray-400 border-transparent hover:text-white'
               }`}>
               {v === 'tournaments' ? t('tabTournaments') : t('tabHistory')}
             </button>
           ))}
-          <button onClick={toggle} className="ms-auto text-xs text-green-300 border border-green-700 px-2.5 py-1 rounded hover:bg-green-800 transition font-medium">
+          <button onClick={toggle} className="ms-auto text-xs text-green-300 border border-green-700 px-2.5 py-1 rounded hover:bg-green-800 active:scale-95 transition font-medium">
             {isUrdu ? 'EN' : 'اردو'}
           </button>
         </div>
@@ -195,7 +195,7 @@ export default function ClubPageClient({
                             </div>
                           )}
                         </div>
-                        <Link href={`/${clubSlug}/${tr.id}`} className="flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-[#23592b] bg-[#f1faf2] border-t border-[#d4edda] hover:bg-[#e8f5e9] transition">
+                        <Link href={`/${clubSlug}/${tr.id}`} className="flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-[#23592b] bg-[#f1faf2] border-t border-[#d4edda] hover:bg-[#e8f5e9] active:scale-95 transition">
                           {t('viewResults')}
                         </Link>
                       </div>
@@ -253,7 +253,7 @@ export default function ClubPageClient({
                   {completed.map(tr => {
                     const progress = getDayProgress(tr)
                     return (
-                      <Link key={tr.id} href={`/${clubSlug}/${tr.id}`} className="block px-4 py-3 hover:bg-[#f9fdf9] transition group">
+                      <Link key={tr.id} href={`/${clubSlug}/${tr.id}`} className="block px-4 py-3 hover:bg-[#f9fdf9] active:opacity-60 transition group">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
                             <h3 className="text-[#1a1a1a] font-semibold text-sm group-hover:text-[#1b5e20] transition truncate">{tr.nameUrdu || tr.name}</h3>

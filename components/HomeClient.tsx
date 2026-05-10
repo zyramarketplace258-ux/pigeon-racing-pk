@@ -283,17 +283,17 @@ export default function HomeClient({ initialData, tInfos }: Props) {
       <SiteHeader />
       <nav className="bg-[#292929] px-4">
         <div className="max-w-5xl mx-auto flex items-center gap-4 h-9">
-          <button onClick={() => setTab('home')} className={`text-sm font-semibold pb-0.5 transition ${activeTab === 'home' ? 'text-white border-b-2 border-[#66bb6a]' : 'text-gray-400 hover:text-white'}`}>{t('tabHome')}</button>
-          <button onClick={() => setTab('clubs')} className={`text-sm font-semibold pb-0.5 transition ${activeTab === 'clubs' ? 'text-white border-b-2 border-[#66bb6a]' : 'text-gray-400 hover:text-white'}`}>{t('tabClubs')}</button>
-          <button onClick={() => setTab('gallery')} className={`text-sm font-semibold pb-0.5 transition ${activeTab === 'gallery' ? 'text-white border-b-2 border-[#66bb6a]' : 'text-gray-400 hover:text-white'}`}>{t('tabGallery')}</button>
+          <button onClick={() => setTab('home')} className={`text-sm font-semibold pb-0.5 transition active:opacity-60 ${activeTab === 'home' ? 'text-white border-b-2 border-[#66bb6a]' : 'text-gray-400 hover:text-white'}`}>{t('tabHome')}</button>
+          <button onClick={() => setTab('clubs')} className={`text-sm font-semibold pb-0.5 transition active:opacity-60 ${activeTab === 'clubs' ? 'text-white border-b-2 border-[#66bb6a]' : 'text-gray-400 hover:text-white'}`}>{t('tabClubs')}</button>
+          <button onClick={() => setTab('gallery')} className={`text-sm font-semibold pb-0.5 transition active:opacity-60 ${activeTab === 'gallery' ? 'text-white border-b-2 border-[#66bb6a]' : 'text-gray-400 hover:text-white'}`}>{t('tabGallery')}</button>
           <div className="ms-auto flex items-center gap-2">
             {loggedInClub && (
-              <Link href="/club/dashboard" className="flex items-center gap-1.5 text-xs text-green-300 border border-green-700 px-2.5 py-1 rounded hover:bg-green-800 transition font-medium">
+              <Link href="/club/dashboard" className="flex items-center gap-1.5 text-xs text-green-300 border border-green-700 px-2.5 py-1 rounded hover:bg-green-800 active:scale-95 transition font-medium">
                 <img src={loggedInClub.logoUrl || '/pigeon.png'} alt="" className="w-4 h-4 rounded-full object-cover" />
                 <span>Dashboard</span>
               </Link>
             )}
-            <button onClick={toggle} className="text-xs text-green-300 border border-green-700 px-2.5 py-1 rounded hover:bg-green-800 transition font-medium">
+            <button onClick={toggle} className="text-xs text-green-300 border border-green-700 px-2.5 py-1 rounded hover:bg-green-800 active:scale-95 transition font-medium">
               {isUrdu ? 'EN' : 'اردو'}
             </button>
           </div>
@@ -368,7 +368,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                       <button
                         key={club.id}
                         onClick={() => { setNavLoading(`club-${club.id}`); router.push(`/${club.slug}`) }}
-                        className="flex items-center gap-3 p-3 border border-[#d4edda] rounded-lg hover:border-[#388e3c] hover:bg-[#f1faf2] transition group text-left w-full"
+                        className="flex items-center gap-3 p-3 border border-[#d4edda] rounded-lg hover:border-[#388e3c] hover:bg-[#f1faf2] active:scale-95 transition group text-left w-full"
                       >
                         <div className="w-10 h-10 shrink-0 rounded-full bg-white border border-[#d4edda] overflow-hidden">
                           {navLoading === `club-${club.id}`
@@ -432,7 +432,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                 {galleryPosts.map(post => (
                   <div key={post.id} className="bg-white rounded-2xl shadow-md overflow-hidden border border-[#e8f5e9] flex flex-col">
                     <div
-                      className="relative w-full bg-[#111] overflow-hidden cursor-pointer"
+                      className="relative w-full bg-[#111] overflow-hidden cursor-pointer active:opacity-70"
                       style={{ paddingBottom: '75%' }}
                       onClick={() => setLightboxSrc(post.imageUrl)}
                     >
@@ -481,7 +481,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
               {topScorers.map((s, i) => {
                 const medal = s.rank === 1 ? '🥇' : s.rank === 2 ? '🥈' : '🥉'
                 return (
-                  <Link key={i} href={`/${s.clubSlug}/${s.tournamentId}`} className="flex items-center gap-3 px-4 py-3 hover:bg-[#f9fdf9] transition">
+                  <Link key={i} href={`/${s.clubSlug}/${s.tournamentId}`} className="flex items-center gap-3 px-4 py-3 hover:bg-[#f9fdf9] active:opacity-60 transition">
                     <span className="text-xl shrink-0">{medal}</span>
                     {s.photoUrl ? (
                       <img src={s.photoUrl} alt={s.name} className="w-8 h-8 rounded-full object-cover shrink-0" />
@@ -508,7 +508,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
             </div>
             <div className="divide-y divide-[#f0f0f0]">
               {winnerPigeons.map((w, i) => (
-                <Link key={i} href={`/${w.clubSlug}/${w.tournamentId}`} className="flex items-center gap-3 px-4 py-3 hover:bg-[#f9fdf9] transition">
+                <Link key={i} href={`/${w.clubSlug}/${w.tournamentId}`} className="flex items-center gap-3 px-4 py-3 hover:bg-[#f9fdf9] active:opacity-60 transition">
                   {w.photoUrl ? (
                     <div
                       className="w-9 h-9 rounded-full shrink-0 border-2 border-[#c8900a] bg-cover bg-center bg-no-repeat"
@@ -627,7 +627,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
 
                 <button
                   onClick={() => { setNavLoading(`${tr.clubId}-${tr.id}`); router.push(`/${tr.clubSlug}/${tr.id}`) }}
-                  className="flex items-center justify-center gap-2 py-3 text-sm font-semibold text-[#23592b] bg-[#f1faf2] border-t border-[#d4edda] hover:bg-[#e8f5e9] transition w-full"
+                  className="flex items-center justify-center gap-2 py-3 text-sm font-semibold text-[#23592b] bg-[#f1faf2] border-t border-[#d4edda] hover:bg-[#e8f5e9] active:scale-95 transition w-full"
                 >
                   {navLoading === `${tr.clubId}-${tr.id}` ? <span className="inline-block w-3 h-3 border-2 border-[#23592b] border-t-transparent rounded-full animate-spin" /> : null}
                   {t('fullResults')} <span>→</span>
@@ -665,7 +665,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
             onClick={e => e.stopPropagation()}
           />
           <button
-            className="absolute top-4 right-4 text-white text-3xl font-bold leading-none"
+            className="absolute top-4 right-4 text-white text-3xl font-bold leading-none active:scale-75 transition"
             onClick={() => setLightboxSrc(null)}
           >
             ✕
