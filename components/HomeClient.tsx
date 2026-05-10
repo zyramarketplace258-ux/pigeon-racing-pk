@@ -5,7 +5,7 @@ import { collection, getDocs, query, where, onSnapshot, orderBy } from 'firebase
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { db, auth } from '@/lib/firebase'
 import { compareHours, formatTimeDisplay } from '@/lib/timeUtils'
-import { getPKTDate, getPKTClock } from '@/lib/pkt'
+import { getPKTClock } from '@/lib/pkt'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Playfair_Display } from 'next/font/google'
