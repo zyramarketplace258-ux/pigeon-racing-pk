@@ -1,105 +1,196 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { collection, getDocs, query, orderBy } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
 
-const DEFAULT = {
-  tournament: 'High Fly Spring Championship',
-  player: 'Muhammad Ali',
-  playerUrdu: 'محمد علی',
-  area: 'Lahore',
-  date: '10 May 2026',
-  rank: '1',
-  score: '05:32',
-  times: '06:12,06:45,07:20,07:55,08:30,09:10,09:45,10:20,',
-}
+interface Club { id: string; name: string; nameUrdu?: string }
+interface Tournament { id: string; name: string; nameUrdu?: string; pigeonCount: number; raceDays: { dayNumber: number; date: string }[] }
+interface Participant { id: string; name: string; nameUrdu?: string; area: string; areaUrdu?: string; photoUrl?: string }
+interface EntryData { totalHours: string; pigeons: { landingTime: string; hoursFlown: string }[] }
 
 export default function CardTestPage() {
-  const [form, setForm] = useState(DEFAULT)
-  const [preview, setPreview] = useState(false)
+  const [clubs, setClubs] = useState<Club[]>([])
+  const [tournaments, setTournaments] = useState<Tournament[]>([])
+  const [participants, setParticipants] = useState<Participant[]>([])
 
-  const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
+  const [clubId, setClubId] = useState('')
+  const [tournamentId, setTournamentId] = useState('')
+  const [participantId, setParticipantId] = useState('')
+  const [day, setDay] = useState(1)
 
-  const cardUrl = `/api/card?${new URLSearchParams(form)}`
+  const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null)
+  const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null)
+  const [entryData, setEntryData] = useState<EntryData | null>(null)
+  const [rank, setRank] = useState(1)
+
+  const [loading, setLoading] = useState(false)
+  const [cardReady, setCardReady] = useState(false)
+
+  // Load clubs
+  useEffect(() => {
+    getDocs(collection(db, 'clubs')).then(snap => {
+      setClubs(snap.docs.map(d => ({ id: d.id, ...d.data() } as Club)))
+    })
+  }, [])
+
+  // Load tournaments when club selected
+  useEffect(() => {
+    if (!clubId) return
+    setTournamentId(''); setParticipantId(''); setCardReady(false)
+    getDocs(query(collection(db, 'clubs', clubId, 'tournaments'), orderBy('createdAt', 'desc'))).then(snap => {
+      setTournaments(snap.docs.map(d => ({ id: d.id, ...d.data() } as Tournament)))
+    })
+  }, [clubId])
+
+  // Load participants when tournament selected
+  useEffect(() => {
+    if (!clubId || !tournamentId) return
+    setParticipantId(''); setCardReady(false)
+    const t = tournaments.find(t => t.id === tournamentId) || null
+    setSelectedTournament(t)
+    setDay(t?.raceDays?.[0]?.dayNumber || 1)
+    getDocs(collection(db, 'clubs', clubId, 'tournaments', tournamentId, 'participants')).then(snap => {
+      setParticipants(snap.docs.map(d => ({ id: d.id, ...d.data() } as Participant)))
+    })
+  }, [tournamentId])
+
+  const generate = async () => {
+    if (!clubId || !tournamentId || !participantId) return
+    setLoading(true); setCardReady(false)
+
+    const p = participants.find(p => p.id === participantId)
+    setSelectedParticipant(p || null)
+
+    // Find day suffix
+    const t = selectedTournament
+    const dayObj = t?.raceDays?.find(r => r.dayNumber === day)
+    const suffix = dayObj ? `-day${day}` : ''
+
+    const entrySnap = await getDocs(collection(db, 'clubs', clubId, 'tournaments', tournamentId, 'entries'))
+    const entryDoc = entrySnap.docs.find(d => d.id === `${participantId}${suffix}`)
+    const data = entryDoc?.data() as EntryData | undefined
+
+    if (data) {
+      setEntryData(data)
+      // Calculate rank among all entries for this day
+      const allEntries = entrySnap.docs
+        .filter(d => suffix ? d.id.endsWith(suffix) : !d.id.includes('-day'))
+        .map(d => d.data().totalHours as string)
+        .filter(Boolean)
+        .sort()
+      const myRank = allEntries.indexOf(data.totalHours) + 1
+      setRank(myRank || 1)
+    } else {
+      setEntryData(null); setRank(1)
+    }
+
+    setLoading(false); setCardReady(true)
+  }
+
+  const participant = selectedParticipant
+  const t = selectedTournament
+  const club = clubs.find(c => c.id === clubId)
+  const dayObj = t?.raceDays?.find(r => r.dayNumber === day)
+
+  const cardParams = new URLSearchParams({
+    tournament: t?.nameUrdu || t?.name || '',
+    club: club?.nameUrdu || club?.name || '',
+    player: participant?.name || '',
+    playerUrdu: participant?.nameUrdu || '',
+    area: participant?.area || '',
+    areaUrdu: participant?.areaUrdu || '',
+    photoUrl: participant?.photoUrl || '',
+    date: dayObj?.date || '',
+    rank: String(rank),
+    score: entryData?.totalHours || '',
+    times: (entryData?.pigeons || []).map(p => p.landingTime || '').join(','),
+  })
+  const cardUrl = `/api/card?${cardParams}`
 
   const download = async () => {
     const res = await fetch(cardUrl)
     const blob = await res.blob()
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
-    a.download = `card-${form.player}-${form.date}.png`
+    a.download = `card-${participant?.name}-day${day}.png`
     a.click()
   }
 
-  const field = (label: string, key: string, placeholder?: string) => (
+  const sel = (label: string, value: string, onChange: (v: string) => void, options: { value: string; label: string }[], placeholder: string) => (
     <div className="flex flex-col gap-1">
       <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{label}</label>
-      <input
-        className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500"
-        value={form[key as keyof typeof form]}
-        placeholder={placeholder}
-        onChange={e => set(key, e.target.value)}
-      />
+      <select
+        className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500 bg-white"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+      >
+        <option value="">{placeholder}</option>
+        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+      <div className="max-w-2xl mx-auto">
 
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Card Generator — Test Page</h1>
-          <p className="text-gray-500 text-sm mt-1">Fill in the data, click Preview to generate the card image.</p>
+        <div className="bg-gradient-to-r from-[#1b5e20] to-[#2e7d32] rounded-2xl p-5 mb-6 flex items-center gap-4">
+          <span className="text-4xl">🕊️</span>
+          <div>
+            <h1 className="text-white font-bold text-xl">Card Generator</h1>
+            <p className="text-green-300 text-sm">Select club → tournament → participant</p>
+          </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {field('Tournament Name', 'tournament')}
-            {field('Date', 'date', '10 May 2026')}
-            {field('Player Name (English)', 'player')}
-            {field('Player Name (Urdu)', 'playerUrdu')}
-            {field('Area / City', 'area')}
-            {field('Rank', 'rank', '1')}
-            {field('Total Score', 'score', '05:32')}
-            <div className="flex flex-col gap-1 sm:col-span-2">
-              <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                Pigeon Times (9 values, comma separated)
-              </label>
-              <input
-                className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500 font-mono"
-                value={form.times}
-                placeholder="06:12,06:45,07:20,07:55,08:30,09:10,09:45,10:20,"
-                onChange={e => set('times', e.target.value)}
-              />
-              <p className="text-xs text-gray-400">Leave empty slots with no value between commas e.g. 06:12,,07:20</p>
-            </div>
-          </div>
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 mb-5 space-y-4">
+          {sel('Club', clubId, setClubId,
+            clubs.map(c => ({ value: c.id, label: c.nameUrdu || c.name })),
+            'Select a club...'
+          )}
 
-          <div className="flex gap-3 mt-6">
-            <button
-              onClick={() => setPreview(true)}
-              className="bg-green-700 text-white px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-green-800 active:scale-95 transition"
-            >
-              Preview Card
-            </button>
-            {preview && (
+          {clubId && sel('Tournament', tournamentId, setTournamentId,
+            tournaments.map(t => ({ value: t.id, label: t.nameUrdu || t.name })),
+            'Select a tournament...'
+          )}
+
+          {tournamentId && selectedTournament?.raceDays?.length ? (
+            sel('Race Day', String(day), v => setDay(Number(v)),
+              (selectedTournament.raceDays || []).map(r => ({ value: String(r.dayNumber), label: `Day ${r.dayNumber} — ${r.date}` })),
+              'Select day...'
+            )
+          ) : null}
+
+          {tournamentId && sel('Participant', participantId, setParticipantId,
+            participants.map(p => ({ value: p.id, label: `${p.nameUrdu || p.name} · ${p.area}` })),
+            'Select a participant...'
+          )}
+
+          <button
+            onClick={generate}
+            disabled={!clubId || !tournamentId || !participantId || loading}
+            className="w-full bg-[#1b5e20] text-white py-3 rounded-xl font-bold text-sm hover:bg-[#2e7d32] active:scale-95 transition disabled:opacity-40"
+          >
+            {loading ? 'Generating...' : 'Generate Card'}
+          </button>
+        </div>
+
+        {cardReady && (
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+            <img key={cardUrl} src={cardUrl} alt="Result card" className="w-full rounded-xl border border-gray-100" />
+            <div className="flex gap-3 mt-4">
               <button
                 onClick={download}
-                className="border border-green-700 text-green-700 px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-green-50 active:scale-95 transition"
+                className="flex-1 bg-[#1b5e20] text-white py-2.5 rounded-xl font-bold text-sm hover:bg-[#2e7d32] active:scale-95 transition"
               >
                 Download PNG
               </button>
-            )}
-          </div>
-        </div>
-
-        {preview && (
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
-            <p className="text-xs text-gray-400 mb-3 font-mono break-all">{cardUrl}</p>
-            <img
-              key={cardUrl}
-              src={cardUrl}
-              alt="Generated card"
-              className="w-full rounded-lg border border-gray-100"
-            />
+              <button
+                onClick={() => navigator.clipboard.writeText(window.location.origin + cardUrl)}
+                className="flex-1 border border-[#1b5e20] text-[#1b5e20] py-2.5 rounded-xl font-bold text-sm hover:bg-green-50 active:scale-95 transition"
+              >
+                Copy Link
+              </button>
+            </div>
           </div>
         )}
 
