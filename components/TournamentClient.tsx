@@ -268,8 +268,7 @@ export default function TournamentClient({
               {totalRows[0]?.grandTotal && (
                 <div className="flex flex-col items-center mb-5">
                   <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-lg mb-2" style={{ background: 'linear-gradient(145deg,#ffe066,#c8900a)' }}>1</div>
-                  <p className="text-[#1a1a1a] font-bold text-lg leading-tight text-center">{totalRows[0].nameUrdu || totalRows[0].name}</p>
-                  <p className="text-[#777] text-xs text-center mb-1">{totalRows[0].areaUrdu || totalRows[0].area}</p>
+                  <p className="text-[#1a1a1a] font-bold text-lg leading-tight text-center">{totalRows[0].nameUrdu || totalRows[0].name}{(totalRows[0].areaUrdu || totalRows[0].area) ? <span className="font-normal text-[#777] text-sm"> · {totalRows[0].areaUrdu || totalRows[0].area}</span> : ''}</p>
                   <p className="text-[#1b5e20] font-extrabold text-3xl">{formatTimeDisplay(totalRows[0].grandTotal)}</p>
                   <p className="text-[#999] text-xs">{fDaysFlown(lang, totalRows[0].daysFlown)}</p>
                 </div>
@@ -282,8 +281,7 @@ export default function TournamentClient({
                       style={{ background: i === 0 ? 'linear-gradient(145deg,#e8e8e8,#8a8a8a)' : '#cd7f32' }}>
                       {i + 2}
                     </div>
-                    <p className="text-[#1a1a1a] font-bold text-sm truncate">{row.nameUrdu || row.name}</p>
-                    <p className="text-[#777] text-xs truncate mb-1">{row.areaUrdu || row.area}</p>
+                    <p className="text-[#1a1a1a] font-bold text-sm truncate">{row.nameUrdu || row.name}{(row.areaUrdu || row.area) ? <span className="font-normal text-[#777]"> · {row.areaUrdu || row.area}</span> : ''}</p>
                     <p className="text-[#1b5e20] font-bold text-lg">{formatTimeDisplay(row.grandTotal)}</p>
                     <p className="text-[#999] text-xs">{fDaysShort(lang, row.daysFlown)}</p>
                   </div>
@@ -328,8 +326,7 @@ export default function TournamentClient({
             <div className="px-4 py-3 flex items-center gap-3">
               <div className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center font-bold text-white text-sm shadow-md" style={{ background: 'linear-gradient(145deg,#ffe066,#c8900a)' }}>1</div>
               <div className="min-w-0">
-                <p className="text-[#1a1a1a] font-bold truncate">{winnerPigeon.nameUrdu || winnerPigeon.name}</p>
-                <p className="text-[#777] text-xs truncate">{winnerPigeon.areaUrdu || winnerPigeon.area} · {fLandedAt(lang, winnerPigeon.landingTime, formatTimeDisplay(winnerPigeon.hoursFlown))}</p>
+                <p className="text-[#1a1a1a] font-bold truncate">{winnerPigeon.nameUrdu || winnerPigeon.name}{(winnerPigeon.areaUrdu || winnerPigeon.area) ? <span className="font-normal text-[#777] text-sm"> · {winnerPigeon.areaUrdu || winnerPigeon.area}</span> : ''} <span className="font-normal text-[#777] text-xs">· {fLandedAt(lang, winnerPigeon.landingTime, formatTimeDisplay(winnerPigeon.hoursFlown))}</span></p>
               </div>
             </div>
           </div>
@@ -396,8 +393,7 @@ export default function TournamentClient({
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[#1a1a1a] font-semibold text-sm truncate">{row.nameUrdu || row.name}</p>
-                      <p className="text-[#777] text-xs">{row.areaUrdu || row.area}</p>
+                      <p className="text-[#1a1a1a] font-semibold text-sm truncate">{row.nameUrdu || row.name}{(row.areaUrdu || row.area) ? <span className="font-normal text-[#777]"> · {row.areaUrdu || row.area}</span> : ''}</p>
                     </div>
                     <div className="text-right shrink-0">
                       {row.grandTotal
@@ -456,8 +452,7 @@ export default function TournamentClient({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 mb-1.5">
                         <div className="min-w-0">
-                          <p className="font-semibold text-sm text-[#1a1a1a] truncate">{entry.nameUrdu || entry.name}</p>
-                          <p className="text-[#777] text-xs">{entry.areaUrdu || entry.area}{entry.hasData ? ` · ${entry.startTime}` : ''}</p>
+                          <p className="font-semibold text-sm text-[#1a1a1a] truncate">{entry.nameUrdu || entry.name}{(entry.areaUrdu || entry.area) ? <span className="font-normal text-[#777]"> · {entry.areaUrdu || entry.area}</span> : ''}{entry.hasData ? <span className="font-normal text-[#777]"> · {entry.startTime}</span> : ''}</p>
                         </div>
                         <div className="shrink-0 text-right">
                           {entry.totalHours

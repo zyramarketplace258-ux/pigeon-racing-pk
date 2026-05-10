@@ -520,8 +520,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm text-[#1a1a1a] truncate">{s.nameUrdu || s.name}</p>
-                      <p className="text-[#888] text-xs truncate">{s.areaUrdu || s.area || '—'}</p>
+                      <p className="font-semibold text-sm text-[#1a1a1a] truncate">{s.nameUrdu || s.name}{(s.areaUrdu || s.area) ? <span className="font-normal text-[#888]"> · {s.areaUrdu || s.area}</span> : ''}</p>
                     </div>
                     <p className="font-bold text-lg text-[#1b5e20] shrink-0">{formatTimeDisplay(s.totalHours)}</p>
                   </Link>
@@ -550,8 +549,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm text-[#1a1a1a] truncate">{w.nameUrdu || w.name}</p>
-                    <p className="text-[#999] text-xs truncate">{w.areaUrdu || w.area || '—'}</p>
+                    <p className="font-semibold text-sm text-[#1a1a1a] truncate">{w.nameUrdu || w.name}{(w.areaUrdu || w.area) ? <span className="font-normal text-[#999]"> · {w.areaUrdu || w.area}</span> : ''}</p>
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="font-bold text-base text-[#1b5e20]">{formatTimeDisplay(w.hoursFlown)}</p>
@@ -635,8 +633,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm text-[#1a1a1a] truncate">{entry.nameUrdu || entry.name}</p>
-                          <p className="text-[#777] text-xs">{entry.areaUrdu || entry.area}</p>
+                          <p className="font-semibold text-sm text-[#1a1a1a] truncate">{entry.nameUrdu || entry.name}{(entry.areaUrdu || entry.area) ? <span className="font-normal text-[#777]"> · {entry.areaUrdu || entry.area}</span> : ''}</p>
                           {entry.pigeons.some(pg => pg.landingTime) && (
                             <div className="flex flex-wrap gap-1 mt-1">
                               {entry.pigeons.filter(pg => pg.landingTime).map((pg, pi) => (
