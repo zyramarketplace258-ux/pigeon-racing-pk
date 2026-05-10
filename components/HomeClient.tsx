@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { collection, getDocs, query, where, onSnapshot, orderBy } from 'firebase/firestore'
-import { onAuthStateChanged, signOut } from 'firebase/auth'
+import { onAuthStateChanged } from 'firebase/auth'
 import { db, auth } from '@/lib/firebase'
 import { compareHours, formatTimeDisplay } from '@/lib/timeUtils'
-import { getPKTClock } from '@/lib/pkt'
 
 function getCountdown(endTime: string): string | null {
   if (!endTime) return null
@@ -20,12 +19,9 @@ function getCountdown(endTime: string): string | null {
 }
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Playfair_Display } from 'next/font/google'
 import { useLanguage } from '@/lib/language-context'
 import { useT, fDayOf, fLanded, fStillFlying } from '@/lib/translations'
 import SiteHeader from './SiteHeader'
-
-const playfair = Playfair_Display({ subsets: ['latin'], weight: ['700'], style: ['italic'] })
 
 export interface Club { id: string; name: string; nameUrdu?: string; slug: string; city: string; cityUrdu?: string; logoUrl?: string }
 interface GalleryPost { id: string; imageUrl: string; title: string; description: string; postedBy: string; createdAt?: { seconds: number } }
@@ -273,11 +269,6 @@ export default function HomeClient({ initialData, tInfos }: Props) {
 
   const isUrdu = lang === 'ur'
 
-  const [clockLabel, setClockLabel] = useState(getPKTClock)
-  useEffect(() => {
-    const iv = setInterval(() => setClockLabel(getPKTClock()), 60000)
-    return () => clearInterval(iv)
-  }, [])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setLightboxSrc(null) }
