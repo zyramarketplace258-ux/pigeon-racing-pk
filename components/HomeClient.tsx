@@ -516,12 +516,12 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                       <img src={s.photoUrl} alt={s.name} className="w-8 h-8 rounded-full object-cover shrink-0" />
                     ) : (
                       <div className="w-8 h-8 rounded-full bg-[#e8f5e9] flex items-center justify-center shrink-0">
-                        <span className="text-[#2e7d32] text-xs font-bold">{s.name.charAt(0)}</span>
+                        <span className="text-[#2e7d32] text-xs font-bold">{(s.nameUrdu || s.name).charAt(0)}</span>
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm text-[#1a1a1a] truncate">{isUrdu && s.nameUrdu ? s.nameUrdu : s.name}</p>
-                      <p className="text-[#888] text-xs truncate">{(isUrdu && s.areaUrdu ? s.areaUrdu : s.area) || '—'}</p>
+                      <p className="font-semibold text-sm text-[#1a1a1a] truncate">{s.nameUrdu || s.name}</p>
+                      <p className="text-[#888] text-xs truncate">{s.areaUrdu || s.area || '—'}</p>
                     </div>
                     <p className="font-bold text-lg text-[#1b5e20] shrink-0">{formatTimeDisplay(s.totalHours)}</p>
                   </Link>
@@ -546,12 +546,12 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                     />
                   ) : (
                     <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#ffe066] to-[#c8900a] flex items-center justify-center shrink-0">
-                      <span className="text-white text-xs font-bold">{w.name.charAt(0)}</span>
+                      <span className="text-white text-xs font-bold">{(w.nameUrdu || w.name).charAt(0)}</span>
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm text-[#1a1a1a] truncate">{isUrdu && w.nameUrdu ? w.nameUrdu : w.name}</p>
-                    <p className="text-[#999] text-xs truncate">{(isUrdu && w.areaUrdu ? w.areaUrdu : w.area) || '—'}</p>
+                    <p className="font-semibold text-sm text-[#1a1a1a] truncate">{w.nameUrdu || w.name}</p>
+                    <p className="text-[#999] text-xs truncate">{w.areaUrdu || w.area || '—'}</p>
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="font-bold text-base text-[#1b5e20]">{formatTimeDisplay(w.hoursFlown)}</p>
@@ -635,8 +635,8 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm text-[#1a1a1a] truncate">{isUrdu && entry.nameUrdu ? entry.nameUrdu : entry.name}</p>
-                          <p className="text-[#777] text-xs">{isUrdu && entry.areaUrdu ? entry.areaUrdu : entry.area}</p>
+                          <p className="font-semibold text-sm text-[#1a1a1a] truncate">{entry.nameUrdu || entry.name}</p>
+                          <p className="text-[#777] text-xs">{entry.areaUrdu || entry.area}</p>
                           {entry.pigeons.some(pg => pg.landingTime) && (
                             <div className="flex flex-wrap gap-1 mt-1">
                               {entry.pigeons.filter(pg => pg.landingTime).map((pg, pi) => (
