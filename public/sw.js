@@ -1,4 +1,4 @@
-const CACHE = 'highfly-v1'
+const CACHE = 'highfly-v2'
 
 const STATIC_ASSETS = [
   '/',
