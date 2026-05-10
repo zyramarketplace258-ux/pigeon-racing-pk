@@ -302,7 +302,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                 {t('clubLogin')}
               </Link>
             )}
-            <span className="text-[10px] text-white/50 leading-none" dir="ltr">{clockLabel} PKT</span>
+            <span className="text-[10px] text-green-200 leading-none" dir="ltr">{clockLabel} PKT</span>
           </div>
         </div>
       </div>
@@ -327,7 +327,6 @@ export default function HomeClient({ initialData, tInfos }: Props) {
 
       {/* Stats Bar */}
       <div className="bg-[#2e7d32] px-4 py-3">
-        <p className="text-green-200 text-xs font-bold uppercase tracking-widest text-center mb-2">{raceDateLabel}</p>
         <div className="flex flex-col gap-2 max-w-sm mx-auto">
           {/* Row 1 — 2 stats */}
           <div className="grid grid-cols-2 gap-2">
