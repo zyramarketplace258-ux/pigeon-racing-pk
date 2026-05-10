@@ -472,6 +472,10 @@ export default function TournamentClient({
                 <div className="bg-[#388e3c] h-2 rounded-full transition-all duration-500"
                   style={{ width: totalLanded + stillFlying > 0 ? `${(totalLanded / (totalLanded + stillFlying)) * 100}%` : '0%' }} />
               </div>
+              <div className="flex items-center justify-between text-xs mt-1.5">
+                <span className="text-[#1b5e20] font-semibold">{totalLanded} {t('landedStat')}</span>
+                <span className="text-[#555]">{stillFlying} {t('flyingStat')}</span>
+              </div>
             </div>
 
             <div className="divide-y divide-[#e9ecef]">
