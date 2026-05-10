@@ -328,26 +328,32 @@ export default function HomeClient({ initialData, tInfos }: Props) {
       {/* Stats Bar */}
       <div className="bg-[#2e7d32] px-4 py-3">
         <p className="text-green-200 text-xs font-bold uppercase tracking-widest text-center mb-2">{raceDateLabel}</p>
-        <div className="grid grid-cols-2 gap-2 max-w-sm mx-auto">
-          <div className="bg-[#1b5e20] bg-opacity-60 rounded-lg py-2 px-3 text-center">
-            <p className="text-white font-bold text-xl leading-none">{activeTournaments.length}</p>
-            <p className="text-green-300 text-xs mt-0.5">{t('tournamentsLive')}</p>
+        <div className="flex flex-col gap-2 max-w-sm mx-auto">
+          {/* Row 1 — 2 stats */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-[#1b5e20] bg-opacity-60 rounded-lg py-2 px-3 text-center">
+              <p className="text-white font-bold text-xl leading-none">{activeTournaments.length}</p>
+              <p className="text-green-300 text-xs mt-0.5">{t('tournamentsLive')}</p>
+            </div>
+            <div className="bg-[#1b5e20] bg-opacity-60 rounded-lg py-2 px-3 text-center">
+              <p className="text-white font-bold text-xl leading-none">{totalLotsCompeting}</p>
+              <p className="text-green-300 text-xs mt-0.5">{t('loftsCompeting')}</p>
+            </div>
           </div>
-          <div className="bg-[#1b5e20] bg-opacity-60 rounded-lg py-2 px-3 text-center">
-            <p className="text-white font-bold text-xl leading-none">{totalLotsCompeting}</p>
-            <p className="text-green-300 text-xs mt-0.5">{t('loftsCompeting')}</p>
-          </div>
-          <div className="bg-[#1b5e20] bg-opacity-60 rounded-lg py-2 px-3 text-center">
-            <p className="text-white font-bold text-xl leading-none">{totalLandedToday}</p>
-            <p className="text-green-300 text-xs mt-0.5">{t('pigeonsLandedToday')}</p>
-          </div>
-          <div className="bg-[#1b5e20] bg-opacity-60 rounded-lg py-2 px-3 text-center">
-            <p className="text-white font-bold text-xl leading-none">{totalStillFlying}</p>
-            <p className="text-green-300 text-xs mt-0.5">{t('stillFlying')}</p>
-          </div>
-          <div className="col-span-2 bg-[#1b5e20] bg-opacity-60 rounded-lg py-2 px-3 text-center">
-            <p className="text-white font-bold text-xl leading-none">{clubs.length}</p>
-            <p className="text-green-300 text-xs mt-0.5">{t('tabClubs')}</p>
+          {/* Row 2 — 3 stats */}
+          <div className="grid grid-cols-3 gap-2">
+            <div className="bg-[#1b5e20] bg-opacity-60 rounded-lg py-2 px-3 text-center">
+              <p className="text-white font-bold text-xl leading-none">{totalLandedToday}</p>
+              <p className="text-green-300 text-xs mt-0.5">{t('pigeonsLandedToday')}</p>
+            </div>
+            <div className="bg-[#1b5e20] bg-opacity-60 rounded-lg py-2 px-3 text-center">
+              <p className="text-white font-bold text-xl leading-none">{totalStillFlying}</p>
+              <p className="text-green-300 text-xs mt-0.5">{t('stillFlying')}</p>
+            </div>
+            <div className="bg-[#1b5e20] bg-opacity-60 rounded-lg py-2 px-3 text-center">
+              <p className="text-white font-bold text-xl leading-none">{clubs.length}</p>
+              <p className="text-green-300 text-xs mt-0.5">{t('tabClubs')}</p>
+            </div>
           </div>
         </div>
       </div>
