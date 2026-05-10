@@ -200,7 +200,7 @@ export default function TournamentClient({
         })
         setAllEntryDocs(entries)
         if (newBlinks.size > 0) {
-          setBlinkingChips(prev => new Set([...prev, ...newBlinks]))
+          setBlinkingChips(prev => new Set([...Array.from(prev), ...Array.from(newBlinks)]))
           setTimeout(() => setBlinkingChips(prev => { const n = new Set(prev); newBlinks.forEach(k => n.delete(k)); return n }), 90000)
         }
       }
