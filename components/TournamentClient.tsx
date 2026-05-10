@@ -180,6 +180,8 @@ export default function TournamentClient({
   // Real-time entries listener with blink detection
   useEffect(() => {
     if (!club || !tournament) return
+    let isFirst = true
+    prevPigeonsRef.current.clear()
     const unsub = onSnapshot(
       collection(db, 'clubs', club.id, 'tournaments', tournament.id, 'entries'),
       snapshot => {
@@ -190,18 +192,21 @@ export default function TournamentClient({
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const pigeons = (data.pigeons || []).map((pg: any, idx: number) => {
             const key = `${d.id}_${idx}`
-            const prev = prevPigeonsRef.current.get(key) ?? ''
             const curr = String(pg.landingTime || '')
-            if (curr && curr !== prev) newBlinks.add(key)
+            if (!isFirst) {
+              const prev = prevPigeonsRef.current.get(key) ?? ''
+              if (curr && curr !== prev) newBlinks.add(key)
+            }
             prevPigeonsRef.current.set(key, curr)
             return { landingTime: curr, hoursFlown: String(pg.hoursFlown || '') }
           })
           return { id: d.id, startTime: String(data.startTime || ''), totalHours: String(data.totalHours || ''), pigeons }
         })
+        isFirst = false
         setAllEntryDocs(entries)
         if (newBlinks.size > 0) {
-          setBlinkingChips(prev => new Set([...Array.from(prev), ...Array.from(newBlinks)]))
-          setTimeout(() => setBlinkingChips(prev => { const n = new Set(prev); newBlinks.forEach(k => n.delete(k)); return n }), 90000)
+          setBlinkingChips(prev => { const n = new Set(Array.from(prev)); newBlinks.forEach(k => n.add(k)); return n })
+          setTimeout(() => setBlinkingChips(prev => { const n = new Set(Array.from(prev)); newBlinks.forEach(k => n.delete(k)); return n }), 90000)
         }
       }
     )
