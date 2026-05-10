@@ -331,32 +331,16 @@ export default function TournamentClient({
               </span>
             )}
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-xs text-[#888] mt-1">
-            <span>🕐 {tournament.defaultStartTime}</span>
-            {tournament.defaultEndTime && <span>🏁 {tournament.defaultEndTime}</span>}
-            <span>🐦 {tournament.pigeonCount}</span>
-            <span>📅 {nonGapRaceDays.length} {t('days')}</span>
+          <div className="flex items-center justify-center mt-1">
             <button
               onClick={() => { navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 2000) }}
-              className="text-[#888] hover:text-[#1b5e20] transition"
+              className="text-xs text-[#888] hover:text-[#1b5e20] transition"
             >
               {copied ? '✓ Copied!' : '🔗 Share'}
             </button>
           </div>
         </div>
 
-        {/* Stats bar */}
-        <div className="bg-white rounded-lg border border-[#d4edda] shadow-sm px-4 py-2 flex items-center justify-center gap-3 text-sm">
-          {showTotal ? (
-            <span className="text-[#555]">{t('participantsStat')}: <strong className="text-[#1b5e20]">{participants.length}</strong></span>
-          ) : (
-            <>
-              <span className="text-[#555]">{t('landedStat')}: <strong className="text-[#1b5e20]">{totalLanded}</strong></span>
-              <span className="text-[#ccc]">|</span>
-              <span className="text-[#555]">{t('flyingStat')}: <strong className="text-[#388e3c]">{stillFlying}</strong></span>
-            </>
-          )}
-        </div>
 
         {/* Winner Pigeon */}
         {!showTotal && winnerPigeon && (
@@ -472,16 +456,26 @@ export default function TournamentClient({
               <p className="text-green-300 text-xs">{fFlewCount(lang, dayEntries.filter(e => e.hasData).length)}</p>
             </div>
 
-            {/* Progress bar + countdown */}
-            <div className="px-4 py-2 bg-[#f8fdf8] border-b border-[#d4edda] flex items-center gap-3">
-              <div className="flex-1 bg-[#d4edda] rounded-full h-2 overflow-hidden">
+            {/* Progress bar + times + stats */}
+            <div className="px-4 pt-2 pb-2.5 bg-[#f8fdf8] border-b border-[#d4edda]">
+              <div className="flex items-center justify-between text-xs text-[#666] mb-1.5">
+                <div className="flex items-center gap-2 shrink-0" dir="ltr">
+                  <span>🕐 {tournament.defaultStartTime}</span>
+                  {tournament.defaultEndTime && <span>🏁 {tournament.defaultEndTime}</span>}
+                  {cutoffCountdown && selectedRaceDay?.date === today && (
+                    <span className="text-orange-600 font-semibold">⏱ {cutoffCountdown}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-[#1b5e20] font-semibold">🐦 {totalLanded}</span>
+                  <span className="text-[#bbb]">·</span>
+                  <span className="text-[#555]">{stillFlying} {t('flyingStat')}</span>
+                </div>
+              </div>
+              <div className="bg-[#d4edda] rounded-full h-2 overflow-hidden">
                 <div className="bg-[#388e3c] h-2 rounded-full transition-all duration-500"
                   style={{ width: totalLanded + stillFlying > 0 ? `${(totalLanded / (totalLanded + stillFlying)) * 100}%` : '0%' }} />
               </div>
-              <span className="text-[#555] text-xs shrink-0">{totalLanded}/{totalLanded + stillFlying}</span>
-              {cutoffCountdown && selectedRaceDay?.date === today && (
-                <span className="text-orange-600 text-xs font-semibold shrink-0">⏱ {cutoffCountdown}</span>
-              )}
             </div>
 
             <div className="divide-y divide-[#e9ecef]">
