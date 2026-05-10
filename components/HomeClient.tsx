@@ -6,6 +6,18 @@ import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { db, auth } from '@/lib/firebase'
 import { compareHours, formatTimeDisplay } from '@/lib/timeUtils'
 import { getPKTClock } from '@/lib/pkt'
+
+function getCountdown(endTime: string): string | null {
+  if (!endTime) return null
+  const now = new Date()
+  const pktMinutes = (now.getUTCHours() * 60 + now.getUTCMinutes() + 300) % 1440
+  const [endH, endM] = endTime.split(':').map(Number)
+  const diff = (endH * 60 + endM) - pktMinutes
+  if (diff <= 0) return null
+  const h = Math.floor(diff / 60)
+  const m = diff % 60
+  return h > 0 ? `${h}h ${m}m left` : `${m}m left`
+}
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Playfair_Display } from 'next/font/google'
@@ -280,7 +292,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
       <div className="bg-gradient-to-r from-[#1b5e20] to-[#2e7d32] px-4 py-3">
         <div className="max-w-5xl mx-auto relative flex items-center justify-between">
           <div>
-            <h1 className={`${!isUrdu ? playfair.className : ''} text-white text-xl sm:text-2xl leading-tight`}>{t('pakistanPigeon')}</h1>
+            <h1 className={`${!isUrdu ? playfair.className : ''} text-white text-2xl sm:text-3xl leading-tight`}>{t('pakistanPigeon')}</h1>
             <p className="text-green-300 text-xs tracking-widest uppercase">{t('loveForTheLoft')}</p>
           </div>
           <img src="/pigeon.png" alt="Pigeon" className="absolute left-1/2 -translate-x-1/2 w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-lg" />
@@ -319,9 +331,9 @@ export default function HomeClient({ initialData, tInfos }: Props) {
 
       {/* Stats Bar */}
       <div className="bg-[#2e7d32] px-4 py-3">
-        <div className="flex flex-col gap-2 max-w-sm mx-auto">
-          {/* Row 1 — 2 stats */}
-          <div className="grid grid-cols-2 gap-2">
+        <div className="flex flex-col gap-2 max-w-lg mx-auto">
+          {/* Row 1 — 3 stats */}
+          <div className="grid grid-cols-3 gap-2">
             <div className="bg-[#1b5e20] bg-opacity-60 rounded-lg py-2 px-3 text-center">
               <p className="text-white font-bold text-xl leading-none">{activeTournaments.length}</p>
               <p className="text-green-300 text-xs mt-0.5">{t('tournamentsLive')}</p>
@@ -329,6 +341,10 @@ export default function HomeClient({ initialData, tInfos }: Props) {
             <div className="bg-[#1b5e20] bg-opacity-60 rounded-lg py-2 px-3 text-center">
               <p className="text-white font-bold text-xl leading-none">{totalLotsCompeting}</p>
               <p className="text-green-300 text-xs mt-0.5">{t('loftsCompeting')}</p>
+            </div>
+            <div className="bg-[#1b5e20] bg-opacity-60 rounded-lg py-2 px-3 text-center">
+              <p className="text-white font-bold text-xl leading-none">{winnerPigeons[0] ? formatTimeDisplay(winnerPigeons[0].hoursFlown) : '—'}</p>
+              <p className="text-green-300 text-xs mt-0.5">Today&apos;s Best</p>
             </div>
           </div>
           {/* Row 2 — 3 stats */}
@@ -352,7 +368,9 @@ export default function HomeClient({ initialData, tInfos }: Props) {
       <div className="max-w-5xl mx-auto px-3 sm:px-4 py-4">
 
         {/* CLUBS TAB */}
-        {activeTab === 'clubs' && (
+        {activeTab === 'clubs' && (() => {
+          const liveClubIds = new Set(activeTournaments.map(tr => tr.clubId))
+          return (
           <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden mb-4">
             <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-2">
               <p className="text-green-200 text-xs font-bold uppercase tracking-widest">{t('registeredClubs')} ({clubs.length})</p>
@@ -391,8 +409,13 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                             : <img src={club.logoUrl || '/pigeon.png'} alt={club.name} className="w-full h-full object-cover" />
                           }
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-[#1a1a1a] font-semibold text-sm truncate group-hover:text-[#1b5e20] transition">{club.nameUrdu || club.name}</p>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="text-[#1a1a1a] font-semibold text-sm truncate group-hover:text-[#1b5e20] transition">{club.nameUrdu || club.name}</p>
+                            {liveClubIds.has(club.id) && (
+                              <span className="shrink-0 bg-[#e65100] text-white text-[10px] px-1.5 py-0.5 rounded font-bold animate-pulse">LIVE</span>
+                            )}
+                          </div>
                           <p className="text-[#777] text-xs">{club.cityUrdu || club.city}</p>
                         </div>
                       </button>
@@ -401,7 +424,8 @@ export default function HomeClient({ initialData, tInfos }: Props) {
               </>
             )}
           </div>
-        )}
+          )
+        })()}
 
         {/* GALLERY TAB */}
         {activeTab === 'gallery' && (
@@ -555,14 +579,20 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                         {tr.defaultStartTime}{tr.defaultEndTime ? ` → ${tr.defaultEndTime}` : ''}
                       </span>
                     </div>
-                    {tr.totalRaceDays > 0 && (
-                      <span className="text-green-200 text-xs font-semibold bg-green-900 bg-opacity-40 px-2 py-0.5 rounded-full">
-                        {fDayOf(lang, tr.currentDay, tr.totalRaceDays)}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {tr.defaultEndTime && getCountdown(tr.defaultEndTime) && (
+                        <span className="text-yellow-300 text-xs font-semibold">⏱ {getCountdown(tr.defaultEndTime)}</span>
+                      )}
+                      {tr.totalRaceDays > 0 && (
+                        <span className="text-green-200 text-xs font-semibold bg-green-900 bg-opacity-40 px-2 py-0.5 rounded-full">
+                          {fDayOf(lang, tr.currentDay, tr.totalRaceDays)}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-green-300 text-xs mb-0.5">{tr.clubNameUrdu || tr.clubName} · {tr.clubCityUrdu || tr.clubCity}</p>
-                  <h3 className="text-white font-bold text-base leading-snug">{tr.name}</h3>
+                  <p className="text-white font-bold text-sm mb-0.5">{tr.clubNameUrdu || tr.clubName}</p>
+                  <p className="text-green-300 text-xs mb-1">{tr.clubCityUrdu || tr.clubCity}</p>
+                  <h3 className="text-green-100 text-sm leading-snug">{tr.name}</h3>
                 </div>
 
                 {tr.totalPigeons > 0 && (
