@@ -34,7 +34,7 @@ interface TopEntry { name: string; nameUrdu: string; area: string; areaUrdu: str
 interface TopScorer { rank: number; name: string; nameUrdu?: string; area: string; areaUrdu?: string; photoUrl?: string; totalHours: string; tournament: string; clubSlug: string; tournamentId: string }
 interface WinnerEntry { rank: number; name: string; nameUrdu?: string; area: string; areaUrdu?: string; photoUrl?: string; landingTime: string; hoursFlown: string; tournament: string; clubSlug: string; tournamentId: string }
 export interface ActiveTournament {
-  id: string; name: string; pigeonCount: number
+  id: string; name: string; nameUrdu?: string; pigeonCount: number
   defaultStartTime: string; defaultEndTime: string
   clubId: string; clubName: string; clubNameUrdu?: string; clubSlug: string; clubCity: string; clubCityUrdu?: string
   raceDays: RaceDay[]; currentDay: number; totalRaceDays: number
@@ -592,7 +592,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
                   </div>
                   <p className="text-white font-bold text-sm mb-0.5">{tr.clubNameUrdu || tr.clubName}</p>
                   <p className="text-green-300 text-xs mb-1">{tr.clubCityUrdu || tr.clubCity}</p>
-                  <h3 className="text-green-100 text-sm leading-snug">{tr.name}</h3>
+                  <h3 className="text-green-100 text-sm leading-snug">{tr.nameUrdu || tr.name}</h3>
                 </div>
 
                 {tr.totalPigeons > 0 && (

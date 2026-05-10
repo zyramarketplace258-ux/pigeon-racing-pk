@@ -10,7 +10,7 @@ import { useT, fDayOf, fPctComplete, fDaysLeft, fDaysShort } from '@/lib/transla
 export interface Club { id: string; name: string; nameUrdu?: string; slug: string; city: string; cityUrdu?: string; logoUrl?: string }
 export interface RaceDay { dayNumber: number; date: string; isGap?: boolean }
 export interface Tournament {
-  id: string; name: string; status: string; totalDays: number
+  id: string; name: string; nameUrdu?: string; status: string; totalDays: number
   defaultStartTime: string; defaultEndTime?: string; raceDays?: RaceDay[]
 }
 interface Weather { temp: string; desc: string; icon: string }
@@ -176,7 +176,7 @@ export default function ClubPageClient({
                           )}
                         </div>
                         <div className="px-4 py-3">
-                          <h3 className="text-[#1a1a1a] font-bold text-base mb-2">{tr.name}</h3>
+                          <h3 className="text-[#1a1a1a] font-bold text-base mb-2">{tr.nameUrdu || tr.name}</h3>
                           {progress && (
                             <div className="mb-3">
                               <div className="h-2 bg-[#e9ecef] rounded overflow-hidden mb-1">
@@ -209,7 +209,7 @@ export default function ClubPageClient({
                     <div key={tr.id} className="px-4 py-3 opacity-60">
                       <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0">
-                          <h3 className="text-[#1a1a1a] font-semibold text-sm truncate">{tr.name}</h3>
+                          <h3 className="text-[#1a1a1a] font-semibold text-sm truncate">{tr.nameUrdu || tr.name}</h3>
                           <p className="text-[#777] text-xs mt-0.5">{fDaysShort(lang, tr.totalDays)}</p>
                         </div>
                         <span className="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full shrink-0 font-semibold">{t('soon')}</span>
@@ -250,7 +250,7 @@ export default function ClubPageClient({
                       <Link key={tr.id} href={`/${clubSlug}/${tr.id}`} className="block px-4 py-3 hover:bg-[#f9fdf9] transition group">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <h3 className="text-[#1a1a1a] font-semibold text-sm group-hover:text-[#1b5e20] transition truncate">{tr.name}</h3>
+                            <h3 className="text-[#1a1a1a] font-semibold text-sm group-hover:text-[#1b5e20] transition truncate">{tr.nameUrdu || tr.name}</h3>
                             <p className="text-[#777] text-xs mt-0.5">
                               {fDaysShort(lang, progress ? progress.total : tr.totalDays)}
                               {tr.defaultStartTime ? ` · ${t('start')}: ${tr.defaultStartTime}` : ''}

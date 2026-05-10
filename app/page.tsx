@@ -86,7 +86,7 @@ export default async function HomePage() {
 
         tInfos.push({
           base: {
-            id: t.id, name: t.name,
+            id: t.id, name: t.name, nameUrdu: t.nameUrdu || '',
             pigeonCount: t.pigeonCount || 5,
             defaultStartTime: t.defaultStartTime || '',
             defaultEndTime: t.defaultEndTime || '',

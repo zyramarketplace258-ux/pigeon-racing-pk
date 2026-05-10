@@ -22,6 +22,7 @@ interface Club {
 interface Tournament {
   id: string
   name: string
+  nameUrdu?: string
   status: 'active' | 'inactive' | 'completed'
   totalDays: number
   defaultStartTime: string
@@ -311,7 +312,7 @@ export default function ClubDetailPage() {
               {filtered.map((t) => (
                 <div key={t.id} className="bg-surface border border-green-800 hover:border-secondary rounded-xl p-5 transition">
                   <div className="flex items-center gap-3 mb-3">
-                    <h3 className="text-white font-bold text-base">{t.name}</h3>
+                    <h3 className="text-white font-bold text-base">{t.nameUrdu || t.name}</h3>
                     <span className={`text-xs px-2 py-1 rounded-full font-semibold ${statusBadge(t.status)}`}>
                       {t.status.toUpperCase()}
                     </span>
@@ -370,7 +371,7 @@ export default function ClubDetailPage() {
                       Manage
                     </Link>
                     <button
-                      onClick={() => deleteTournament(t.id, t.name)}
+                      onClick={() => deleteTournament(t.id, t.nameUrdu || t.name)}
                       className="bg-red-900 hover:bg-red-700 text-white text-xs px-4 py-2 rounded-lg transition ml-auto"
                     >
                       Delete

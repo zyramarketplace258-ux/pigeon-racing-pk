@@ -23,8 +23,7 @@ export default function NewTournamentPage() {
   const [raceDays, setRaceDays] = useState<RaceDay[]>([])
 
   const [form, setForm] = useState({
-    name: '',
-    nameUrdu: '',
+    nameInput: '',
     totalDays: 0,
     defaultStartTime: '06:00',
     defaultEndTime: '20:00',
@@ -32,6 +31,7 @@ export default function NewTournamentPage() {
     startDate: '',
   })
   const [nameError, setNameError] = useState('')
+  const isUrduScript = (text: string) => /[؀-ۿ]/.test(text)
 
   // Regenerate race days whenever startDate or totalDays changes
   useEffect(() => {
@@ -63,26 +63,19 @@ export default function NewTournamentPage() {
     setError('')
     setNameError('')
 
-    if (!form.name.trim() && !form.nameUrdu.trim()) {
-      setNameError('Enter tournament name in English or Urdu (at least one)')
-      setLoading(false)
-      return
-    }
-    if (/[؀-ۿ]/.test(form.name)) {
-      setNameError('Urdu text detected in English field — use the Urdu field below')
-      setLoading(false)
-      return
-    }
-    if (form.nameUrdu.trim() && /[a-zA-Z]/.test(form.nameUrdu) && !/[؀-ۿ]/.test(form.nameUrdu)) {
-      setNameError('English text detected in Urdu field — use the English field above')
+    const trimName = form.nameInput.trim()
+    if (!trimName) {
+      setNameError('Tournament name is required')
       setLoading(false)
       return
     }
 
+    const nameIsUrdu = isUrduScript(trimName)
+
     try {
       await addDoc(collection(db, 'clubs', clubId, 'tournaments'), {
-        name: form.name,
-        ...(form.nameUrdu.trim() ? { nameUrdu: form.nameUrdu.trim() } : {}),
+        name: nameIsUrdu ? '' : trimName,
+        ...(nameIsUrdu ? { nameUrdu: trimName } : {}),
         status: 'inactive',
         totalDays: form.totalDays,
         defaultStartTime: form.defaultStartTime,
@@ -131,34 +124,16 @@ export default function NewTournamentPage() {
 
             <div>
               <label className="block text-green-300 text-sm mb-1">Tournament Name</label>
-              <p className="text-green-600 text-xs mb-2">At least one of English or Urdu is required</p>
-              <div className="space-y-2">
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={e => {
-                    const val = e.target.value
-                    setForm(f => ({ ...f, name: val }))
-                    if (/[؀-ۿ]/.test(val)) setNameError('Urdu text detected — use the Urdu field below')
-                    else setNameError('')
-                  }}
-                  placeholder="English name (e.g. Spring Race 2026)"
-                  className={`w-full bg-primary border text-white rounded-lg px-4 py-3 text-sm focus:outline-none placeholder-green-700 ${nameError && /[؀-ۿ]/.test(form.name) ? 'border-red-500 focus:border-red-400' : 'border-green-700 focus:border-secondary'}`}
-                />
-                <input
-                  type="text"
-                  value={form.nameUrdu}
-                  onChange={e => {
-                    const val = e.target.value
-                    setForm(f => ({ ...f, nameUrdu: val }))
-                    if (val.trim() && !/[؀-ۿ]/.test(val) && /[a-zA-Z]/.test(val)) setNameError('English text detected — use the English field above')
-                    else setNameError('')
-                  }}
-                  dir="rtl"
-                  placeholder="اردو نام (مثلاً بہار ریس ۲۰۲۶)"
-                  className={`w-full bg-primary border text-white rounded-lg px-4 py-3 text-sm focus:outline-none placeholder-green-700 font-urdu ${nameError && /[a-zA-Z]/.test(form.nameUrdu) ? 'border-red-500 focus:border-red-400' : 'border-green-700 focus:border-secondary'}`}
-                />
-              </div>
+              <p className="text-green-600 text-xs mb-2">Type in English or Urdu — detected automatically</p>
+              <input
+                type="text"
+                value={form.nameInput}
+                onChange={e => { setForm(f => ({ ...f, nameInput: e.target.value })); setNameError('') }}
+                dir={isUrduScript(form.nameInput) ? 'rtl' : 'ltr'}
+                placeholder="e.g. Spring Race 2026 / بہار ریس ۲۰۲۶"
+                className="w-full bg-primary border border-green-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-secondary placeholder-green-700"
+              />
+              {isUrduScript(form.nameInput) && <p className="text-green-500 text-xs mt-1">Urdu detected ✓</p>}
               {nameError && <p className="text-red-400 text-xs mt-1">{nameError}</p>}
             </div>
 

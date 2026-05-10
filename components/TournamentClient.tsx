@@ -11,7 +11,7 @@ import { useT, fDayHeader, fDaysFlown, fDaysShort, fFlewCount, fParticipants, fL
 
 export interface RaceDay { dayNumber: number; date: string; isGap?: boolean }
 export interface Tournament {
-  id: string; name: string; status: string; totalDays: number
+  id: string; name: string; nameUrdu?: string; status: string; totalDays: number
   defaultStartTime: string; pigeonCount: number
   raceDays: RaceDay[]; participantIds?: string[]
 }
@@ -261,7 +261,7 @@ export default function TournamentClient({
           <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
             <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-3 text-center">
               <p className="text-green-200 text-xs font-bold uppercase tracking-widest mb-0.5">{t('tournamentComplete')}</p>
-              <h2 className="text-white font-bold text-lg">{tournament.name}</h2>
+              <h2 className="text-white font-bold text-lg">{tournament.nameUrdu || tournament.name}</h2>
             </div>
 
             <div className="px-4 pt-6 pb-4">
@@ -304,7 +304,7 @@ export default function TournamentClient({
         {(tournament.status !== 'completed' || showDetailResults) && (<>
 
         {/* Tournament name */}
-        <h1 className="text-[#1b5e20] font-bold text-xl sm:text-2xl leading-tight text-center">{tournament.name}</h1>
+        <h1 className="text-[#1b5e20] font-bold text-xl sm:text-2xl leading-tight text-center">{tournament.nameUrdu || tournament.name}</h1>
 
         {/* Stats bar */}
         <div className="bg-white rounded-lg border border-[#d4edda] shadow-sm px-4 py-2 flex items-center justify-center gap-3 text-sm">
