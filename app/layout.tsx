@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { LanguageProvider } from "@/lib/language-context";
+import PWARegister from "@/components/PWARegister";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -17,6 +18,13 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: "High Fly Pigeons",
   description: "High Fly Pigeons — Love for the Loft",
+  manifest: "/manifest.json",
+  themeColor: "#1b5e20",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "High Fly",
+  },
 };
 
 export default function RootLayout({
@@ -30,6 +38,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <LanguageProvider>{children}</LanguageProvider>
+        <PWARegister />
       </body>
     </html>
   );
