@@ -16,7 +16,7 @@ import ProfileCropModal from '@/components/ProfileCropModal'
 interface Club { id: string; name: string; nameUrdu?: string; slug: string; city: string; cityUrdu?: string; logoUrl?: string }
 interface RaceDay { dayNumber: number; date: string; isGap?: boolean }
 interface Tournament {
-  id: string; name: string; status: string; totalDays: number
+  id: string; name: string; nameUrdu?: string; status: string; totalDays: number
   defaultStartTime: string; defaultEndTime?: string; pigeonCount: number
   raceDays: RaceDay[]; participantIds?: string[]
 }
@@ -44,7 +44,7 @@ async function fetchEntries(
     }
     const filled = pigeons.filter(pg => pg.hoursFlown)
     return {
-      participantId: p.id, name: p.name, area: p.area, startTime, pigeons,
+      participantId: p.id, name: p.nameUrdu || p.name, area: p.areaUrdu || p.area, startTime, pigeons,
       totalHours: filled.length > 0 ? calculateGrandTotal(filled.map(pg => pg.hoursFlown)) : '',
       hadData
     }
@@ -84,14 +84,11 @@ export default function ClubDashboard() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [timeError, setTimeError] = useState('')
-  const [memberName, setMemberName] = useState('')
-  const [memberNameUrdu, setMemberNameUrdu] = useState('')
-  const [memberArea, setMemberArea] = useState('')
-  const [memberAreaUrdu, setMemberAreaUrdu] = useState('')
+  const [memberNameInput, setMemberNameInput] = useState('')
+  const [memberAreaInput, setMemberAreaInput] = useState('')
   const [nameError, setNameError] = useState('')
-  const [nameUrduError, setNameUrduError] = useState('')
   const [areaError, setAreaError] = useState('')
-  const [areaUrduError, setAreaUrduError] = useState('')
+  const isUrduScript = (text: string) => /[؀-ۿ]/.test(text)
   const [addingMember, setAddingMember] = useState(false)
   const [addMemberOpen, setAddMemberOpen] = useState(false)
   const [memberSearch, setMemberSearch] = useState('')
@@ -297,36 +294,45 @@ export default function ClubDashboard() {
   const addMember = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!club) return
-    const trimName = memberName.trim()
-    const trimNameUrdu = memberNameUrdu.trim()
-    const trimArea = memberArea.trim()
-    const trimAreaUrdu = memberAreaUrdu.trim()
+    const trimName = memberNameInput.trim()
+    const trimArea = memberAreaInput.trim()
     let valid = true
-    if (!trimName && !trimNameUrdu) { setNameError('Enter name in English or Urdu (at least one)'); valid = false }
-    else if (trimName && /[^a-zA-Z؀-ۿݐ-ݿ\s]/.test(trimName)) { setNameError('Only letters and spaces allowed'); valid = false }
-    else if (trimName && trimName.length < 3) { setNameError('Minimum 3 letters required'); valid = false }
-    if (trimNameUrdu && /[^؀-ۿݐ-ݿ\s]/.test(trimNameUrdu)) { setNameUrduError('صرف اردو حروف اور خالی جگہ'); valid = false }
-    if (!trimArea && !trimAreaUrdu) { setAreaError('Enter area in English or Urdu (at least one)'); valid = false }
-    else if (trimArea && /[^a-zA-Z0-9؀-ۿݐ-ݿ\s]/.test(trimArea)) { setAreaError('Only letters, numbers and spaces allowed'); valid = false }
-    else if (trimArea && trimArea.length < 2) { setAreaError('Minimum 2 characters required'); valid = false }
-    if (trimAreaUrdu && /[^؀-ۿݐ-ݿ0-9\s]/.test(trimAreaUrdu)) { setAreaUrduError('صرف اردو حروف اور نمبر'); valid = false }
+    if (!trimName) { setNameError('Name is required'); valid = false }
+    else if (trimName.length < 3) { setNameError('Minimum 3 characters required'); valid = false }
+    if (!trimArea) { setAreaError('Area is required'); valid = false }
+    else if (trimArea.length < 2) { setAreaError('Minimum 2 characters required'); valid = false }
     if (!valid) return
+    const nameIsUrdu = isUrduScript(trimName)
+    const areaIsUrdu = isUrduScript(trimArea)
     const duplicate = participants.find(
-      p => p.name.toLowerCase() === trimName.toLowerCase() && p.area.toLowerCase() === trimArea.toLowerCase()
+      p => (p.nameUrdu || p.name).toLowerCase() === trimName.toLowerCase() &&
+           (p.areaUrdu || p.area).toLowerCase() === trimArea.toLowerCase()
     )
     if (duplicate && !window.confirm(`A member named "${trimName}" from "${trimArea}" already exists. Add again?`)) return
     setAddingMember(true)
-    const data: Record<string, unknown> = { name: trimName, area: trimArea, createdAt: serverTimestamp() }
-    if (trimNameUrdu) data.nameUrdu = trimNameUrdu
-    if (trimAreaUrdu) data.areaUrdu = trimAreaUrdu
+    const data: Record<string, unknown> = {
+      name: nameIsUrdu ? '' : trimName,
+      ...(nameIsUrdu ? { nameUrdu: trimName } : {}),
+      area: areaIsUrdu ? '' : trimArea,
+      ...(areaIsUrdu ? { areaUrdu: trimArea } : {}),
+      createdAt: serverTimestamp(),
+    }
     const docRef = await addDoc(collection(db, 'clubs', club.id, 'participants'), data)
     setParticipants(prev => {
-      const updated = [...prev, { id: docRef.id, name: trimName, ...(trimNameUrdu ? { nameUrdu: trimNameUrdu } : {}), area: trimArea, ...(trimAreaUrdu ? { areaUrdu: trimAreaUrdu } : {}) }]
+      const updated = [...prev, {
+        id: docRef.id,
+        name: nameIsUrdu ? '' : trimName,
+        ...(nameIsUrdu ? { nameUrdu: trimName } : {}),
+        area: areaIsUrdu ? '' : trimArea,
+        ...(areaIsUrdu ? { areaUrdu: trimArea } : {}),
+      }]
       participantsRef.current = updated
       return updated
     })
-    setMemberName(''); setMemberNameUrdu(''); setMemberArea(''); setMemberAreaUrdu('')
-    setNameError(''); setNameUrduError(''); setAreaError(''); setAreaUrduError('')
+    setMemberNameInput('')
+    setMemberAreaInput('')
+    setNameError('')
+    setAreaError('')
     setAddingMember(false)
     setAddMemberOpen(false)
   }
@@ -406,8 +412,8 @@ export default function ClubDashboard() {
   const totalPigeons = entries.reduce((sum, e) => sum + e.pigeons.length, 0)
   const filteredMembers = participants.filter(p =>
     !memberSearch ||
-    p.name.toLowerCase().includes(memberSearch.toLowerCase()) ||
-    p.area.toLowerCase().includes(memberSearch.toLowerCase())
+    (p.nameUrdu || p.name).toLowerCase().includes(memberSearch.toLowerCase()) ||
+    (p.areaUrdu || p.area).toLowerCase().includes(memberSearch.toLowerCase())
   )
 
   if (loading) return (
@@ -441,8 +447,8 @@ export default function ClubDashboard() {
               </div>
             </div>
             <div className="min-w-0">
-              <p className="text-secondary font-bold text-sm leading-tight truncate">{club?.name || club?.nameUrdu}</p>
-              <p className="text-green-600 text-xs truncate">{club?.city || club?.cityUrdu}</p>
+              <p className="text-secondary font-bold text-sm leading-tight truncate">{club?.nameUrdu || club?.name}</p>
+              <p className="text-green-600 text-xs truncate">{club?.cityUrdu || club?.city}</p>
             </div>
           </div>
         </div>
@@ -494,7 +500,7 @@ export default function ClubDashboard() {
                 <path strokeLinecap="round" d="M3 6h18M3 12h18M3 18h18" />
               </svg>
             </button>
-            <span className="text-secondary font-bold text-sm">{club?.name || club?.nameUrdu}</span>
+            <span className="text-secondary font-bold text-sm">{club?.nameUrdu || club?.name}</span>
             <img src={club?.logoUrl || '/pigeon.png'} alt="Logo" className="w-7 h-7 rounded-full object-cover border border-green-700" />
           </div>
           {/* Horizontal tab bar for mobile */}
@@ -525,7 +531,7 @@ export default function ClubDashboard() {
             <p className="text-green-600 text-xs">Landed Today</p>
           </div>
           <div className="text-center px-2">
-            <p className="text-secondary font-bold text-sm truncate leading-snug mt-0.5">{tournament?.name || '—'}</p>
+            <p className="text-secondary font-bold text-sm truncate leading-snug mt-0.5">{tournament ? (tournament.nameUrdu || tournament.name) : '—'}</p>
             <p className="text-green-600 text-xs">Active Race</p>
           </div>
         </div>
@@ -557,7 +563,7 @@ export default function ClubDashboard() {
                               ? 'bg-secondary text-dark'
                               : 'bg-primary border border-green-700 text-green-300 hover:border-secondary'
                           }`}>
-                          {t.name}
+                          {t.nameUrdu || t.name}
                           <span className="ml-1.5 text-xs opacity-60">
                             ({t.participantIds?.length ?? participants.filter(p => !p.disabled).length}/{participants.filter(p => !p.disabled).length})
                           </span>
@@ -588,8 +594,8 @@ export default function ClubDashboard() {
                               <input type="checkbox" checked={assignedIds.has(p.id)} onChange={() => toggleAssigned(p.id)}
                                 className="accent-yellow-400 w-4 h-4 shrink-0" />
                               <div>
-                                <p className="text-white text-sm font-semibold">{p.name}</p>
-                                <p className="text-green-400 text-xs">{p.area}</p>
+                                <p className="text-white text-sm font-semibold" dir={p.nameUrdu ? 'rtl' : 'ltr'}>{p.nameUrdu || p.name}</p>
+                                <p className="text-green-400 text-xs" dir={p.areaUrdu ? 'rtl' : 'ltr'}>{p.areaUrdu || p.area}</p>
                               </div>
                             </label>
                           ))}
@@ -632,50 +638,26 @@ export default function ClubDashboard() {
                   <form onSubmit={addMember} className="space-y-2">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div>
-                        <input type="text" value={memberName}
-                          onChange={e => {
-                            const val = e.target.value; setMemberName(val)
-                            if (val && /[^a-zA-Z؀-ۿݐ-ݿ\s]/.test(val)) setNameError('Only letters and spaces allowed')
-                            else if (val.trim().length > 0 && val.trim().length < 3) setNameError('Minimum 3 letters required')
-                            else setNameError('')
-                          }}
-                          placeholder="Name (English)"
-                          className={`w-full bg-primary border text-white rounded-lg px-4 py-2 text-sm focus:outline-none placeholder-green-700 ${nameError ? 'border-red-500' : 'border-green-700 focus:border-secondary'}`} />
+                        <input
+                          type="text"
+                          value={memberNameInput}
+                          dir={isUrduScript(memberNameInput) ? 'rtl' : 'ltr'}
+                          onChange={e => { setMemberNameInput(e.target.value); setNameError('') }}
+                          placeholder="Name / نام"
+                          className={`w-full bg-primary border text-white rounded-lg px-4 py-2 text-sm focus:outline-none placeholder-green-700 ${nameError ? 'border-red-500' : 'border-green-700 focus:border-secondary'}`}
+                        />
                         {nameError && <p className="text-red-400 text-xs mt-0.5 px-1">{nameError}</p>}
                       </div>
                       <div>
-                        <input type="text" value={memberNameUrdu} dir="rtl"
-                          onChange={e => {
-                            const val = e.target.value; setMemberNameUrdu(val)
-                            if (val.trim() && /[^؀-ۿݐ-ݿ\s]/.test(val.trim())) setNameUrduError('صرف اردو حروف اور خالی جگہ')
-                            else setNameUrduError('')
-                          }}
-                          placeholder="نام (اردو، اختیاری)"
-                          className={`w-full bg-primary border text-white rounded-lg px-4 py-2 text-sm focus:outline-none placeholder-green-700 font-urdu ${nameUrduError ? 'border-red-500' : 'border-green-700 focus:border-secondary'}`} />
-                        {nameUrduError && <p className="text-red-400 text-xs mt-0.5 px-1 text-right">{nameUrduError}</p>}
-                      </div>
-                      <div>
-                        <input type="text" value={memberArea}
-                          onChange={e => {
-                            const val = e.target.value; setMemberArea(val)
-                            if (val && /[^a-zA-Z0-9؀-ۿݐ-ݿ\s]/.test(val)) setAreaError('Only letters, numbers and spaces allowed')
-                            else if (val.trim().length > 0 && val.trim().length < 2) setAreaError('Minimum 2 characters required')
-                            else setAreaError('')
-                          }}
-                          placeholder="Village/Area (English)"
-                          className={`w-full bg-primary border text-white rounded-lg px-4 py-2 text-sm focus:outline-none placeholder-green-700 ${areaError ? 'border-red-500' : 'border-green-700 focus:border-secondary'}`} />
+                        <input
+                          type="text"
+                          value={memberAreaInput}
+                          dir={isUrduScript(memberAreaInput) ? 'rtl' : 'ltr'}
+                          onChange={e => { setMemberAreaInput(e.target.value); setAreaError('') }}
+                          placeholder="Village/Area / گاؤں/علاقہ"
+                          className={`w-full bg-primary border text-white rounded-lg px-4 py-2 text-sm focus:outline-none placeholder-green-700 ${areaError ? 'border-red-500' : 'border-green-700 focus:border-secondary'}`}
+                        />
                         {areaError && <p className="text-red-400 text-xs mt-0.5 px-1">{areaError}</p>}
-                      </div>
-                      <div>
-                        <input type="text" value={memberAreaUrdu} dir="rtl"
-                          onChange={e => {
-                            const val = e.target.value; setMemberAreaUrdu(val)
-                            if (val.trim() && /[^؀-ۿݐ-ݿ0-9\s]/.test(val.trim())) setAreaUrduError('صرف اردو حروف اور نمبر')
-                            else setAreaUrduError('')
-                          }}
-                          placeholder="گاؤں/علاقہ (اردو، اختیاری)"
-                          className={`w-full bg-primary border text-white rounded-lg px-4 py-2 text-sm focus:outline-none placeholder-green-700 font-urdu ${areaUrduError ? 'border-red-500' : 'border-green-700 focus:border-secondary'}`} />
-                        {areaUrduError && <p className="text-red-400 text-xs mt-0.5 px-1 text-right">{areaUrduError}</p>}
                       </div>
                     </div>
                     <div className="flex items-center gap-3 pt-1">
@@ -684,7 +666,7 @@ export default function ClubDashboard() {
                         {addingMember && <span className="inline-block w-3 h-3 border-2 border-dark border-t-transparent rounded-full animate-spin" />}
                         Add Member
                       </button>
-                      <p className="text-green-700 text-xs">At least one of English or Urdu required for each field</p>
+                      <p className="text-green-700 text-xs">Type in English or Urdu — auto detected</p>
                     </div>
                   </form>
                 </div>
@@ -718,8 +700,8 @@ export default function ClubDashboard() {
                           onClick={() => { setCropTarget(p.id); memberInputRefs.current[p.id]?.click() }}>
                           <div className="w-10 h-10 rounded-full border overflow-hidden" style={{ borderColor: p.disabled ? '#1a3a1a' : '#4ade80' }}>
                             {p.photoUrl
-                              ? <img src={p.photoUrl} alt={p.name} className="w-full h-full object-cover" />
-                              : <div className={`w-full h-full flex items-center justify-center font-bold text-sm ${p.disabled ? 'bg-primary text-green-700' : 'bg-primary text-secondary'}`}>{(p.name || '').charAt(0)}</div>
+                              ? <img src={p.photoUrl} alt={p.nameUrdu || p.name} className="w-full h-full object-cover" />
+                              : <div className={`w-full h-full flex items-center justify-center font-bold text-sm ${p.disabled ? 'bg-primary text-green-700' : 'bg-primary text-secondary'}`}>{(p.nameUrdu || p.name || '').charAt(0)}</div>
                             }
                           </div>
                           <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-green-700 rounded-full flex items-center justify-center border-2 border-surface shadow z-10">
@@ -730,9 +712,8 @@ export default function ClubDashboard() {
                           ref={el => { memberInputRefs.current[p.id] = el }}
                           onChange={e => { const f = e.target.files?.[0]; if (f) setCropFile(f); e.target.value = '' }} />
                         <div className="flex-1 min-w-0">
-                          <p className={`font-semibold text-sm truncate ${p.disabled ? 'text-green-700 line-through' : 'text-white'}`}>{p.name}</p>
-                          {p.nameUrdu && <p className="text-green-400 text-xs font-urdu" dir="rtl">{p.nameUrdu}</p>}
-                          <p className="text-green-600 text-xs">{p.area}{p.areaUrdu ? ` · ${p.areaUrdu}` : ''}{p.disabled ? ' · Disabled' : ''}</p>
+                          <p className={`font-semibold text-sm truncate ${p.disabled ? 'text-green-700 line-through' : 'text-white'}`} dir={p.nameUrdu ? 'rtl' : 'ltr'}>{p.nameUrdu || p.name}</p>
+                          <p className="text-green-600 text-xs" dir={p.areaUrdu ? 'rtl' : 'ltr'}>{p.areaUrdu || p.area}{p.disabled ? ' · Disabled' : ''}</p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <button onClick={() => toggleDisabled(p)}
@@ -771,7 +752,7 @@ export default function ClubDashboard() {
                         <a key={t.id} href={`/${club?.slug}/${t.id}`} target="_blank" rel="noreferrer"
                           className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-primary transition group">
                           <div className="min-w-0">
-                            <p className="text-white font-semibold text-sm truncate group-hover:text-secondary transition">{t.name}</p>
+                            <p className="text-white font-semibold text-sm truncate group-hover:text-secondary transition">{t.nameUrdu || t.name}</p>
                             <p className="text-green-600 text-xs mt-0.5">
                               {nonGap.length} days{firstDate && lastDate ? ` · ${firstDate} → ${lastDate}` : ''}
                             </p>
@@ -804,10 +785,10 @@ export default function ClubDashboard() {
                     {activeTournaments.length > 1 ? (
                       <select value={tournament?.id} onChange={e => handleTournamentChange(e.target.value)}
                         className="bg-primary border border-secondary text-secondary font-bold text-base rounded-lg px-3 py-1 focus:outline-none focus:border-accent">
-                        {activeTournaments.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                        {activeTournaments.map(t => <option key={t.id} value={t.id}>{t.nameUrdu || t.name}</option>)}
                       </select>
                     ) : (
-                      <h2 className="text-secondary font-bold text-lg">{tournament?.name}</h2>
+                      <h2 className="text-secondary font-bold text-lg">{tournament ? (tournament.nameUrdu || tournament.name) : ''}</h2>
                     )}
                   </div>
                   <div className="flex items-center justify-between mt-1">
