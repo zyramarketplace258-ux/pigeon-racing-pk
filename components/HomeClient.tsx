@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { collection, getDocs, query, where, onSnapshot, orderBy } from 'firebase/firestore'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { db, auth } from '@/lib/firebase'
@@ -272,14 +272,6 @@ export default function HomeClient({ initialData, tInfos }: Props) {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  const raceDateLabel = useMemo(() => {
-    const todayStr = getPKTDate()
-    const allDays = activeTournaments.flatMap(tr => (tr.raceDays || []).filter(rd => !rd.isGap))
-    const past = allDays.filter(rd => rd.date <= todayStr).sort((a, b) => b.date.localeCompare(a.date))
-    const ref = past[0] ?? allDays.filter(rd => rd.date > todayStr).sort((a, b) => a.date.localeCompare(b.date))[0]
-    if (!ref) return new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-    return new Date(ref.date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-  }, [activeTournaments])
 
   return (
     <main className={`min-h-screen bg-[#e8f5e9] ${isUrdu ? 'font-urdu' : ''}`} dir={isUrdu ? 'rtl' : 'ltr'}>
