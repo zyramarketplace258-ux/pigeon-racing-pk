@@ -31,8 +31,8 @@ export default function SiteHeader() {
     <div className="bg-gradient-to-r from-[#1b5e20] to-[#2e7d32] px-4 py-3">
       <div className="max-w-5xl mx-auto relative flex items-center justify-between">
         <Link href="/" className="block active:opacity-70 transition">
-          <h1 className={`${!isUrdu ? playfair.className : ''} text-white text-2xl sm:text-3xl leading-tight`}>{t('pakistanPigeon')}</h1>
-          <p className="text-green-300 text-xs tracking-widest uppercase">{t('loveForTheLoft')}</p>
+          <h1 className={`${!isUrdu ? playfair.className : ''} text-white text-lg sm:text-3xl leading-tight`}>{t('pakistanPigeon')}</h1>
+          <p className="text-green-300 text-[10px] sm:text-xs tracking-widest uppercase">{t('loveForTheLoft')}</p>
         </Link>
         <img src="/pigeon.png" alt="" aria-hidden="true" className="absolute left-1/2 -translate-x-1/2 w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-lg pointer-events-none" />
         <div className="flex flex-col items-end gap-1">
