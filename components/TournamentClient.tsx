@@ -456,19 +456,22 @@ export default function TournamentClient({
               <p className="text-green-300 text-xs">{fFlewCount(lang, dayEntries.filter(e => e.hasData).length)}</p>
             </div>
 
-            {/* Progress bar row */}
-            <div className="px-4 py-2 bg-[#f8fdf8] border-b border-[#d4edda] flex items-center gap-2">
-              <span className="text-xs text-[#666] shrink-0" dir="ltr">
-                {tournament.defaultStartTime}{tournament.defaultEndTime ? ` → ${tournament.defaultEndTime}` : ''}
-              </span>
-              {cutoffCountdown && selectedRaceDay?.date === today && (
-                <span className="text-orange-600 text-xs font-semibold shrink-0">⏱ {cutoffCountdown}</span>
-              )}
-              <div className="flex-1 bg-[#d4edda] rounded-full h-2 overflow-hidden">
+            {/* Progress bar */}
+            <div className="px-4 pt-2 pb-2.5 bg-[#f8fdf8] border-b border-[#d4edda]">
+              <div className="flex items-center justify-between text-xs mb-1.5">
+                <span className="text-[#666]" dir="ltr">
+                  {tournament.defaultStartTime}{tournament.defaultEndTime ? ` → ${tournament.defaultEndTime}` : ''}
+                </span>
+                <span className="text-[#555]">
+                  {cutoffCountdown && selectedRaceDay?.date === today
+                    ? <span className="text-orange-600 font-semibold">{cutoffCountdown}</span>
+                    : `${totalLanded}/${totalLanded + stillFlying}`}
+                </span>
+              </div>
+              <div className="bg-[#d4edda] rounded-full h-2 overflow-hidden">
                 <div className="bg-[#388e3c] h-2 rounded-full transition-all duration-500"
                   style={{ width: totalLanded + stillFlying > 0 ? `${(totalLanded / (totalLanded + stillFlying)) * 100}%` : '0%' }} />
               </div>
-              <span className="text-xs text-[#555] shrink-0">{totalLanded}/{totalLanded + stillFlying}</span>
             </div>
 
             <div className="divide-y divide-[#e9ecef]">
