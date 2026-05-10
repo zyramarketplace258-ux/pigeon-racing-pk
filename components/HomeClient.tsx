@@ -23,6 +23,7 @@ import Link from 'next/link'
 import { Playfair_Display } from 'next/font/google'
 import { useLanguage } from '@/lib/language-context'
 import { useT, fDayOf, fLanded, fStillFlying } from '@/lib/translations'
+import SiteHeader from './SiteHeader'
 
 const playfair = Playfair_Display({ subsets: ['latin'], weight: ['700'], style: ['italic'] })
 
@@ -288,28 +289,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
   return (
     <main className={`min-h-screen bg-[#e8f5e9] ${isUrdu ? 'font-urdu' : ''}`} dir={isUrdu ? 'rtl' : 'ltr'}>
 
-      {/* Header */}
-      <div className="bg-gradient-to-r from-[#1b5e20] to-[#2e7d32] px-4 py-3">
-        <div className="max-w-5xl mx-auto relative flex items-center justify-between">
-          <div>
-            <h1 className={`${!isUrdu ? playfair.className : ''} text-white text-2xl sm:text-3xl leading-tight`}>{t('pakistanPigeon')}</h1>
-            <p className="text-green-300 text-xs tracking-widest uppercase">{t('loveForTheLoft')}</p>
-          </div>
-          <img src="/pigeon.png" alt="Pigeon" className="absolute left-1/2 -translate-x-1/2 w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-lg" />
-          <div className="flex flex-col items-end gap-1">
-            {loggedInClub ? (
-              <button onClick={() => signOut(auth)} className="text-xs text-red-300 border border-red-700 px-2 py-1.5 rounded hover:bg-red-900 transition font-medium">
-                Logout
-              </button>
-            ) : (
-              <Link href="/club/login" className="text-xs text-green-200 border border-green-600 px-2.5 py-1.5 rounded hover:bg-green-800 transition font-medium">
-                {t('clubLogin')}
-              </Link>
-            )}
-            <span className="text-[10px] text-green-200 leading-none" dir="ltr">{clockLabel} PKT</span>
-          </div>
-        </div>
-      </div>
+      <SiteHeader />
       <nav className="bg-[#292929] px-4">
         <div className="max-w-5xl mx-auto flex items-center gap-4 h-9">
           <button onClick={() => setTab('home')} className={`text-sm font-semibold pb-0.5 transition ${activeTab === 'home' ? 'text-white border-b-2 border-[#66bb6a]' : 'text-gray-400 hover:text-white'}`}>{t('tabHome')}</button>

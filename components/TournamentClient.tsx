@@ -4,7 +4,8 @@ import { useEffect, useState, useRef, useMemo } from 'react'
 import { collection, doc, onSnapshot, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { compareHours, formatTimeDisplay, calculateGrandTotal } from '@/lib/timeUtils'
-import { getPKTDate, getPKTClock } from '@/lib/pkt'
+import { getPKTDate } from '@/lib/pkt'
+import SiteHeader from './SiteHeader'
 import Link from 'next/link'
 import { useLanguage } from '@/lib/language-context'
 import { useT, fDayHeader, fDaysFlown, fDaysShort, fFlewCount, fParticipants, fLandedAt } from '@/lib/translations'
@@ -188,11 +189,6 @@ export default function TournamentClient({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [club?.id, tournament?.id])
 
-  const [clockLabel, setClockLabel] = useState(getPKTClock)
-  useEffect(() => {
-    const interval = setInterval(() => setClockLabel(getPKTClock()), 15000)
-    return () => clearInterval(interval)
-  }, [])
 
   const isRecentLanding = (landingTime: string) => {
     if (!landingTime) return false
@@ -229,30 +225,25 @@ export default function TournamentClient({
   return (
     <main className={`min-h-screen bg-[#e8f5e9] ${isUrdu ? 'font-urdu' : ''}`} dir={isUrdu ? 'rtl' : 'ltr'}>
 
-      {/* Header */}
-      <div className="bg-gradient-to-r from-[#1b5e20] to-[#2e7d32] px-4 pt-4 pb-3">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-2 min-w-0">
-              <p className="text-green-200 text-sm font-semibold truncate">{club.nameUrdu || club.name} · {club.cityUrdu || club.city}</p>
-              {viewerCount > 1 && <span className="text-green-400 text-xs shrink-0">· 👁 {viewerCount}</span>}
-            </div>
-            <div className="flex items-center gap-3 shrink-0">
-              <Link href={`/${clubSlug}`} className="text-green-300 hover:text-white text-xs font-medium transition">{t('clubBack')}</Link>
-              <Link href="/" className="text-green-300 hover:text-white text-xs font-medium transition">{t('home')}</Link>
-            </div>
-          </div>
-          <p className="text-white/50 text-[10px] leading-none" dir="ltr">{clockLabel}</p>
-        </div>
-      </div>
+      <SiteHeader />
       <nav className="bg-[#292929] px-4">
-        <div className="max-w-6xl mx-auto flex items-center h-9">
-          <span className="text-white text-sm font-semibold border-b-2 border-[#66bb6a] pb-0.5">{t('results')}</span>
-          <button onClick={toggle} className="ms-auto text-xs text-green-300 border border-green-700 px-2.5 py-1 rounded hover:bg-green-800 transition font-medium">
+        <div className="max-w-6xl mx-auto flex items-center h-9 gap-2">
+          <Link href={`/${clubSlug}`} className="text-green-300 hover:text-white text-xs font-medium transition shrink-0">{t('clubBack')}</Link>
+          <span className="text-green-700 shrink-0">›</span>
+          <span className="text-white text-sm font-semibold border-b-2 border-[#66bb6a] pb-0.5 shrink-0">{t('results')}</span>
+          {viewerCount > 1 && <span className="text-green-600 text-xs shrink-0">· 👁 {viewerCount}</span>}
+          <button onClick={toggle} className="ms-auto text-xs text-green-300 border border-green-700 px-2.5 py-1 rounded hover:bg-green-800 transition font-medium shrink-0">
             {isUrdu ? 'EN' : 'اردو'}
           </button>
         </div>
       </nav>
+
+      {/* Club identity strip */}
+      <div className="bg-white border-b border-[#d4edda] px-4 py-2">
+        <div className="max-w-6xl mx-auto">
+          <p className="text-[#1b5e20] text-sm font-semibold truncate">{club.nameUrdu || club.name}<span className="text-[#888] font-normal"> · {club.cityUrdu || club.city}</span></p>
+        </div>
+      </div>
 
       <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 space-y-4">
 

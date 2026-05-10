@@ -6,6 +6,7 @@ import { db } from '@/lib/firebase'
 import Link from 'next/link'
 import { useLanguage } from '@/lib/language-context'
 import { useT, fDayOf, fPctComplete, fDaysLeft, fDaysShort } from '@/lib/translations'
+import SiteHeader from './SiteHeader'
 
 export interface Club { id: string; name: string; nameUrdu?: string; slug: string; city: string; cityUrdu?: string; logoUrl?: string }
 export interface RaceDay { dayNumber: number; date: string; isGap?: boolean }
@@ -109,17 +110,7 @@ export default function ClubPageClient({
   return (
     <main className={`min-h-screen bg-[#e8f5e9] ${isUrdu ? 'font-urdu' : ''}`} dir={isUrdu ? 'rtl' : 'ltr'}>
 
-      {/* Header */}
-      <div className="bg-gradient-to-r from-[#1b5e20] to-[#2e7d32] px-4 pt-5 pb-4">
-        <div className="max-w-4xl mx-auto text-center relative">
-          <Link href="/" className="absolute start-0 top-0 text-green-300 hover:text-white text-xs font-medium transition">
-            {isUrdu ? 'ہوم →' : '← Home'}
-          </Link>
-          <img src={club?.logoUrl || '/pigeon.png'} alt="Logo" className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-full drop-shadow-lg mx-auto mb-2 border-2 border-green-600" />
-          <h1 className="text-white text-lg sm:text-2xl font-bold leading-tight">{club?.nameUrdu || club?.name}</h1>
-          <p className="text-green-300 text-xs mt-0.5">{club?.cityUrdu || club?.city} · {t('loveForTheLoft')}</p>
-        </div>
-      </div>
+      <SiteHeader />
       <nav className="bg-[#292929] px-4">
         <div className="max-w-4xl mx-auto flex items-center h-9 gap-1">
           {(['tournaments', 'history'] as const).map(v => (
@@ -135,6 +126,18 @@ export default function ClubPageClient({
           </button>
         </div>
       </nav>
+
+      {/* Club identity strip */}
+      <div className="bg-white border-b border-[#d4edda] px-4 py-2.5">
+        <div className="max-w-4xl mx-auto flex items-center gap-3">
+          <img src={club?.logoUrl || '/pigeon.png'} alt="Logo" className="w-9 h-9 rounded-full object-cover border border-[#a5d6a7] shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[#1b5e20] font-bold text-sm leading-tight truncate">{club?.nameUrdu || club?.name}</p>
+            <p className="text-[#4caf50] text-xs">{club?.cityUrdu || club?.city}</p>
+          </div>
+          {weather && <p className="text-xs text-[#777] shrink-0">{weather.icon} {weather.temp}</p>}
+        </div>
+      </div>
 
       <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 space-y-4">
 
