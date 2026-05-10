@@ -66,7 +66,7 @@ const strings = {
     totalDays: 'Total Days',
     participantsStat: 'Participants',
     landedStat: 'Landed',
-    flyingStat: 'Flying',
+    flyingStat: 'still flying',
     tournamentComplete: 'Tournament Complete',
     openDetailResults: 'Open Detail Results →',
     winnerPigeonToday: '🏆 Winner Pigeon Today',
