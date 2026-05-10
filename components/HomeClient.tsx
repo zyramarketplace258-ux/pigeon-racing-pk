@@ -77,13 +77,11 @@ export default function HomeClient({ initialData, tInfos }: Props) {
   const [totalStillFlying, setTotalStillFlying] = useState(initialData.totalStillFlying)
   const [winnerPigeons, setWinnerPigeons] = useState<WinnerEntry[]>(initialData.winnerPigeons)
   const [totalLotsCompeting, setTotalLotsCompeting] = useState(initialData.totalLotsCompeting)
-  const [activeTab, setActiveTab] = useState<'home' | 'clubs' | 'gallery'>(() => {
-    if (typeof window !== 'undefined') {
-      const s = sessionStorage.getItem('home-tab') as string
-      if (s === 'home' || s === 'clubs' || s === 'gallery') return s
-    }
-    return 'home'
-  })
+  const [activeTab, setActiveTab] = useState<'home' | 'clubs' | 'gallery'>('home')
+  useEffect(() => {
+    const s = sessionStorage.getItem('home-tab')
+    if (s === 'home' || s === 'clubs' || s === 'gallery') setActiveTab(s)
+  }, [])
   const setTab = (tab: typeof activeTab) => { setActiveTab(tab); sessionStorage.setItem('home-tab', tab) }
   const [navLoading, setNavLoading] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
