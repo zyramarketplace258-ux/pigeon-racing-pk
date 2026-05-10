@@ -332,8 +332,8 @@ export default function HomeClient({ initialData, tInfos }: Props) {
       {/* Stats Bar */}
       <div className="bg-[#2e7d32] px-4 py-3">
         <div className="flex flex-col gap-2 max-w-lg mx-auto">
-          {/* Row 1 — 3 stats */}
-          <div className="grid grid-cols-3 gap-2">
+          {/* Row 1 — 2 stats */}
+          <div className="grid grid-cols-2 gap-2">
             <div className="bg-[#1b5e20] bg-opacity-60 rounded-lg py-2 px-3 text-center">
               <p className="text-white font-bold text-xl leading-none">{activeTournaments.length}</p>
               <p className="text-green-300 text-xs mt-0.5">{t('tournamentsLive')}</p>
@@ -341,10 +341,6 @@ export default function HomeClient({ initialData, tInfos }: Props) {
             <div className="bg-[#1b5e20] bg-opacity-60 rounded-lg py-2 px-3 text-center">
               <p className="text-white font-bold text-xl leading-none">{totalLotsCompeting}</p>
               <p className="text-green-300 text-xs mt-0.5">{t('loftsCompeting')}</p>
-            </div>
-            <div className="bg-[#1b5e20] bg-opacity-60 rounded-lg py-2 px-3 text-center">
-              <p className="text-white font-bold text-xl leading-none">{winnerPigeons[0] ? formatTimeDisplay(winnerPigeons[0].hoursFlown) : '—'}</p>
-              <p className="text-green-300 text-xs mt-0.5">Today&apos;s Best</p>
             </div>
           </div>
           {/* Row 2 — 3 stats */}
