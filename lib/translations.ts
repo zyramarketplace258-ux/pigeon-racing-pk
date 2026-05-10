@@ -66,7 +66,7 @@ const strings = {
     totalDays: 'Total Days',
     participantsStat: 'Participants',
     landedStat: 'Landed',
-    flyingStat: 'Flying',
+    flyingStat: 'flying',
     tournamentComplete: 'Tournament Complete',
     openDetailResults: 'Open Detail Results →',
     winnerPigeonToday: '🏆 Winner Pigeon Today',
@@ -196,7 +196,7 @@ export function fParticipants(lang: Lang, n: number) {
   return lang === 'ur' ? `${n} شرکاء` : `${n} participants`
 }
 export function fFlewCount(lang: Lang, n: number) {
-  return lang === 'ur' ? `${n} اڑے` : `${n} flew`
+  return lang === 'ur' ? `کل لوفٹ = ${n}` : `Total Lofts = ${n}`
 }
 export function fLandedAt(lang: Lang, time: string, duration: string) {
   return lang === 'ur' ? `اترا ${time} · ${duration}` : `landed ${time} · ${duration}`
