@@ -26,8 +26,10 @@ export default async function TournamentPage({ params }: { params: { clubSlug: s
     const club = {
       id: clubDoc.id,
       name: String(clubRaw.name || ''),
+      ...(clubRaw.nameUrdu ? { nameUrdu: String(clubRaw.nameUrdu) } : {}),
       slug: String(clubRaw.slug || ''),
       city: String(clubRaw.city || ''),
+      ...(clubRaw.cityUrdu ? { cityUrdu: String(clubRaw.cityUrdu) } : {}),
     }
 
     // 2. Tournament

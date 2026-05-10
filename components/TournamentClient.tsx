@@ -32,7 +32,7 @@ interface TotalRow {
 }
 
 export interface TournamentInitialData {
-  club: { id: string; name: string; slug: string; city: string } | null
+  club: { id: string; name: string; nameUrdu?: string; slug: string; city: string; cityUrdu?: string } | null
   tournament: Tournament | null
   participants: Participant[]
   allEntryDocs: EntryDoc[]
@@ -234,7 +234,7 @@ export default function TournamentClient({
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2 min-w-0">
-              <p className="text-green-200 text-sm font-semibold truncate">{club.name} · {club.city}</p>
+              <p className="text-green-200 text-sm font-semibold truncate">{club.nameUrdu || club.name} · {club.cityUrdu || club.city}</p>
               {viewerCount > 1 && <span className="text-green-400 text-xs shrink-0">· 👁 {viewerCount}</span>}
             </div>
             <div className="flex items-center gap-3 shrink-0">
