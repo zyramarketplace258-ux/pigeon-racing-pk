@@ -221,14 +221,6 @@ export default function TournamentClient({
   }, [club?.id, tournament?.id])
 
 
-  const isRecentLanding = (landingTime: string) => {
-    if (!landingTime) return false
-    const now = new Date()
-    const [h, m] = landingTime.split(':').map(Number)
-    const landing = new Date(); landing.setHours(h, m, 0, 0)
-    const diff = now.getTime() - landing.getTime()
-    return diff >= 0 && diff < 5 * 60 * 1000
-  }
 
   const today = todayDate
   const selectedRaceDay = tournament?.raceDays?.find(rd => rd.dayNumber === selectedDay)
