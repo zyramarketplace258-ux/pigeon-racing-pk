@@ -45,6 +45,7 @@ export default async function TournamentPage({ params }: { params: { clubSlug: s
     const tournament = {
       id: tDoc.id,
       name: String(tRaw.name || ''),
+      ...(tRaw.nameUrdu ? { nameUrdu: String(tRaw.nameUrdu) } : {}),
       status: String(tRaw.status || ''),
       totalDays: Number(tRaw.totalDays || 0),
       defaultStartTime: String(tRaw.defaultStartTime || ''),
