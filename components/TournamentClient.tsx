@@ -13,7 +13,7 @@ import { useT, fDayHeader, fDaysFlown, fDaysShort, fFlewCount, fParticipants, fL
 export interface RaceDay { dayNumber: number; date: string; isGap?: boolean }
 export interface Tournament {
   id: string; name: string; nameUrdu?: string; status: string; totalDays: number
-  defaultStartTime: string; pigeonCount: number
+  defaultStartTime: string; defaultEndTime?: string; pigeonCount: number
   raceDays: RaceDay[]; participantIds?: string[]
 }
 export interface Participant { id: string; name: string; nameUrdu?: string; area: string; areaUrdu?: string; photoUrl?: string }
@@ -55,6 +55,17 @@ const rankCircleColor = (rank: number, hasData: boolean) => {
   if (!hasData) return 'text-[#aaa]'
   if (rank <= 2) return 'text-white'
   return 'text-[#6c757d]'
+}
+
+function getCutoffCountdown(endTime: string): string | null {
+  if (!endTime) return null
+  const now = new Date()
+  const pktMinutes = (now.getUTCHours() * 60 + now.getUTCMinutes() + 300) % 1440
+  const [h, m] = endTime.split(':').map(Number)
+  const diff = (h * 60 + m) - pktMinutes
+  if (diff <= 0) return null
+  const hrs = Math.floor(diff / 60), mins = diff % 60
+  return hrs > 0 ? `${hrs}h ${mins}m left` : `${mins}m left`
 }
 
 function buildDayEntries(
@@ -128,6 +139,10 @@ export default function TournamentClient({
   const [showTotal, setShowTotal] = useState(tournament?.status === 'completed' || allDaysPast)
   const [showDetailResults, setShowDetailResults] = useState(false)
   const [viewerCount, setViewerCount] = useState(0)
+  const [blinkingChips, setBlinkingChips] = useState<Set<string>>(new Set())
+  const [copied, setCopied] = useState(false)
+  const [cutoffCountdown, setCutoffCountdown] = useState<string | null>(null)
+  const prevPigeonsRef = useRef<Map<string, string>>(new Map())
   const sessionId = useRef(Math.random().toString(36).slice(2, 10))
 
   const dayEntries = useMemo(() => {
@@ -153,25 +168,41 @@ export default function TournamentClient({
     return best
   }, [dayEntries])
 
-  // Real-time entries listener
+  // Cutoff countdown
+  useEffect(() => {
+    if (!tournament?.defaultEndTime) return
+    const update = () => setCutoffCountdown(getCutoffCountdown(tournament.defaultEndTime!))
+    update()
+    const iv = setInterval(update, 60000)
+    return () => clearInterval(iv)
+  }, [tournament?.defaultEndTime])
+
+  // Real-time entries listener with blink detection
   useEffect(() => {
     if (!club || !tournament) return
     const unsub = onSnapshot(
       collection(db, 'clubs', club.id, 'tournaments', tournament.id, 'entries'),
       snapshot => {
-        setAllEntryDocs(snapshot.docs.map(d => {
+        const newBlinks = new Set<string>()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const entries = snapshot.docs.map(d => {
           const data = d.data()
-          return {
-            id: d.id,
-            startTime: String(data.startTime || ''),
-            totalHours: String(data.totalHours || ''),
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            pigeons: (data.pigeons || []).map((pg: any) => ({
-              landingTime: String(pg.landingTime || ''),
-              hoursFlown: String(pg.hoursFlown || ''),
-            })),
-          }
-        }))
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const pigeons = (data.pigeons || []).map((pg: any, idx: number) => {
+            const key = `${d.id}_${idx}`
+            const prev = prevPigeonsRef.current.get(key) ?? ''
+            const curr = String(pg.landingTime || '')
+            if (curr && curr !== prev) newBlinks.add(key)
+            prevPigeonsRef.current.set(key, curr)
+            return { landingTime: curr, hoursFlown: String(pg.hoursFlown || '') }
+          })
+          return { id: d.id, startTime: String(data.startTime || ''), totalHours: String(data.totalHours || ''), pigeons }
+        })
+        setAllEntryDocs(entries)
+        if (newBlinks.size > 0) {
+          setBlinkingChips(prev => new Set([...prev, ...newBlinks]))
+          setTimeout(() => setBlinkingChips(prev => { const n = new Set(prev); newBlinks.forEach(k => n.delete(k)); return n }), 90000)
+        }
       }
     )
     return () => unsub()
@@ -292,8 +323,30 @@ export default function TournamentClient({
         {/* DETAIL RESULTS */}
         {(tournament.status !== 'completed' || showDetailResults) && (<>
 
-        {/* Tournament name */}
-        <h1 className="text-[#1b5e20] font-bold text-xl sm:text-2xl leading-tight text-center">{tournament.nameUrdu || tournament.name}</h1>
+        {/* Tournament name + LIVE + info + share */}
+        <div className="text-center">
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            <h1 className="text-[#1b5e20] font-bold text-xl sm:text-2xl leading-tight">{tournament.nameUrdu || tournament.name}</h1>
+            {selectedRaceDay?.date === today && (
+              <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full border border-green-300">
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse inline-block" />
+                Live
+              </span>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-xs text-[#888] mt-1">
+            <span>🕐 {tournament.defaultStartTime}</span>
+            {tournament.defaultEndTime && <span>🏁 {tournament.defaultEndTime}</span>}
+            <span>🐦 {tournament.pigeonCount}</span>
+            <span>📅 {nonGapRaceDays.length} {t('days')}</span>
+            <button
+              onClick={() => { navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 2000) }}
+              className="text-[#888] hover:text-[#1b5e20] transition"
+            >
+              {copied ? '✓ Copied!' : '🔗 Share'}
+            </button>
+          </div>
+        </div>
 
         {/* Stats bar */}
         <div className="bg-white rounded-lg border border-[#d4edda] shadow-sm px-4 py-2 flex items-center justify-center gap-3 text-sm">
@@ -368,7 +421,7 @@ export default function TournamentClient({
             </div>
             <div className="divide-y divide-[#e9ecef]">
               {totalRows.map((row, i) => (
-                <div key={row.participantId} className="px-3 py-3" style={{ background: i === 0 && row.grandTotal ? '#dff0d8' : i % 2 === 1 ? '#f6faf6' : '#fff' }}>
+                <div key={row.participantId} className="px-3 py-3" style={{ background: row.grandTotal && row.rank === 1 ? '#fffde7' : row.grandTotal && row.rank === 2 ? '#f5f5f5' : row.grandTotal && row.rank === 3 ? '#fff3e0' : i % 2 === 1 ? '#f6faf6' : '#fff' }}>
                   <div className="flex items-center gap-2.5 mb-2">
                     <div className="relative shrink-0">
                       {row.photoUrl
@@ -422,13 +475,30 @@ export default function TournamentClient({
               <p className="text-green-300 text-xs">{fFlewCount(lang, dayEntries.filter(e => e.hasData).length)}</p>
             </div>
 
+            {/* Progress bar + countdown */}
+            <div className="px-4 py-2 bg-[#f8fdf8] border-b border-[#d4edda] flex items-center gap-3">
+              <div className="flex-1 bg-[#d4edda] rounded-full h-2 overflow-hidden">
+                <div className="bg-[#388e3c] h-2 rounded-full transition-all duration-500"
+                  style={{ width: totalLanded + stillFlying > 0 ? `${(totalLanded / (totalLanded + stillFlying)) * 100}%` : '0%' }} />
+              </div>
+              <span className="text-[#555] text-xs shrink-0">{totalLanded}/{totalLanded + stillFlying}</span>
+              {cutoffCountdown && selectedRaceDay?.date === today && (
+                <span className="text-orange-600 text-xs font-semibold shrink-0">⏱ {cutoffCountdown}</span>
+              )}
+            </div>
+
             <div className="divide-y divide-[#e9ecef]">
-              {dayEntries.map((entry, i) => (
-                <div key={entry.participantId} style={{ background: i === 0 && entry.hasData ? '#dff0d8' : i % 2 === 1 ? '#f6faf6' : '#fff' }}>
+              {dayEntries.map((entry, i) => {
+                const rowBg = entry.hasData && entry.rank === 1 ? '#fffde7'
+                  : entry.hasData && entry.rank === 2 ? '#f5f5f5'
+                  : entry.hasData && entry.rank === 3 ? '#fff3e0'
+                  : i % 2 === 1 ? '#f6faf6' : '#fff'
+                return (
+                <div key={entry.participantId} style={{ background: rowBg }}>
                   <div className="flex items-start gap-2 px-3 py-2.5">
                     <div className="relative shrink-0">
                       {entry.photoUrl
-                        ? <img src={entry.photoUrl} alt={entry.name} className="w-9 h-9 rounded-full object-cover border-2 shadow-sm" style={{ borderColor: entry.rank === 1 ? '#c8900a' : entry.rank === 2 ? '#8a8a8a' : '#e9ecef' }} />
+                        ? <img src={entry.photoUrl} alt={entry.name} className="w-9 h-9 rounded-full object-cover border-2 shadow-sm" style={{ borderColor: entry.rank === 1 ? '#c8900a' : entry.rank === 2 ? '#8a8a8a' : entry.rank === 3 ? '#cd7f32' : '#e9ecef' }} />
                         : <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shadow-sm" style={rankCircleStyle(entry.rank, entry.hasData)}>
                             <span className={rankCircleColor(entry.rank, entry.hasData)}>{rankCircleText(entry.rank, entry.hasData)}</span>
                           </div>
@@ -456,19 +526,21 @@ export default function TournamentClient({
                       {/* Pigeon chips */}
                       <div className="flex gap-1 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
                         {entry.pigeons.map((pg, pi) => {
-                          const recent = pg.landingTime && isRecentLanding(pg.landingTime)
+                          const chipKey = `${entry.participantId}_day${selectedDay}_${pi}`
+                          const isBlinking = blinkingChips.has(chipKey)
+                          const isWinner = entry.hasData && entry.rank === 1
                           return (
                             <div
                               key={pi}
-                              className="shrink-0 rounded flex flex-col items-center px-1.5 py-1 border"
+                              className={`shrink-0 rounded flex flex-col items-center px-1.5 py-1 border transition-all ${isBlinking ? 'animate-pulse ring-2 ring-green-400' : ''}`}
                               style={{
-                                background: recent ? '#fef08a' : pg.landingTime ? (i === 0 ? '#fff8e1' : '#f0fdf4') : '#fff',
-                                borderColor: recent ? '#f59e0b' : pg.landingTime ? (i === 0 ? '#ffc107' : '#86efac') : '#dee2e6',
+                                background: pg.landingTime ? (isWinner ? '#fff8e1' : '#f0fdf4') : '#fff',
+                                borderColor: pg.landingTime ? (isWinner ? '#ffc107' : '#86efac') : '#dee2e6',
                                 borderStyle: pg.landingTime ? 'solid' : 'dashed',
                               }}
                             >
                               <span className="text-[#777] leading-none" style={{ fontSize: '0.6rem' }} dir="ltr">#{pi + 1}</span>
-                              <span className="font-mono leading-tight mt-0.5" style={{ fontSize: '0.82rem', color: pg.landingTime ? (i === 0 ? '#664d03' : '#166534') : '#adb5bd' }} dir="ltr">
+                              <span className="font-mono leading-tight mt-0.5" style={{ fontSize: '0.82rem', color: pg.landingTime ? (isWinner ? '#664d03' : '#166534') : '#adb5bd' }} dir="ltr">
                                 {pg.landingTime || '—'}
                               </span>
                               {pg.hoursFlown && pg.landingTime && (
@@ -483,7 +555,8 @@ export default function TournamentClient({
                     </div>
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}

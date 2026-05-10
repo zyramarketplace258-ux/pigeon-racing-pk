@@ -113,6 +113,9 @@ export default function ClubPageClient({
       <SiteHeader />
       <nav className="bg-[#292929] px-4">
         <div className="max-w-4xl mx-auto flex items-center h-9 gap-1">
+          <Link href="/" className="text-green-300 hover:text-white text-xs font-medium transition shrink-0 me-2">
+            {isUrdu ? 'ہوم →' : '← Home'}
+          </Link>
           {(['tournaments', 'history'] as const).map(v => (
             <button key={v} onClick={() => setView(v)}
               className={`px-4 h-full text-sm font-semibold transition border-b-2 ${

@@ -51,6 +51,7 @@ export default async function TournamentPage({ params }: { params: { clubSlug: s
       status: String(tRaw.status || ''),
       totalDays: Number(tRaw.totalDays || 0),
       defaultStartTime: String(tRaw.defaultStartTime || ''),
+      ...(tRaw.defaultEndTime ? { defaultEndTime: String(tRaw.defaultEndTime) } : {}),
       pigeonCount: Number(tRaw.pigeonCount || 5),
       raceDays,
       ...(tRaw.participantIds ? { participantIds: tRaw.participantIds as string[] } : {}),
