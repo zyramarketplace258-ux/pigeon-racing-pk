@@ -5,13 +5,12 @@ import { Playfair_Display } from 'next/font/google'
 const playfair = Playfair_Display({ subsets: ['latin'], weight: ['700'], style: ['italic'] })
 
 export default function SplashScreen() {
-  const [visible, setVisible] = useState(false)
+  const [visible, setVisible] = useState(true)
   const [fading, setFading] = useState(false)
 
   useEffect(() => {
-    if (sessionStorage.getItem('splashShown')) return
+    if (sessionStorage.getItem('splashShown')) { setVisible(false); return }
     sessionStorage.setItem('splashShown', '1')
-    setVisible(true)
     const fadeTimer = setTimeout(() => setFading(true), 1400)
     const hideTimer = setTimeout(() => setVisible(false), 1900)
     return () => { clearTimeout(fadeTimer); clearTimeout(hideTimer) }
