@@ -10,11 +10,11 @@ const strings = {
     backToHome: '← Back to Home',
     clubLogin: 'Club Login',
     loveForTheLoft: 'Love for the Loft',
-    footer: '© 2026 Pakistan Pigeon Racing Platform',
-    footerFull: '© 2026 Pakistan Pigeon Racing Platform. All rights reserved.',
+    footer: '© 2026 High Fly Pigeons',
+    footerFull: '© 2026 High Fly Pigeons. All rights reserved.',
 
     // Homepage
-    pakistanPigeon: 'Pakistan Pigeon',
+    pakistanPigeon: 'High Fly Pigeons',
     tabHome: 'Home',
     tabClubs: 'Clubs',
     tabGallery: 'Gallery',
@@ -87,11 +87,11 @@ const strings = {
     backToHome: 'ہوم پر واپس →',
     clubLogin: 'کلب لاگ ان',
     loveForTheLoft: 'لوفٹ سے محبت',
-    footer: '© 2026 پاکستان کبوتر ریسنگ پلیٹ فارم',
-    footerFull: '© 2026 پاکستان کبوتر ریسنگ پلیٹ فارم۔ تمام حقوق محفوظ ہیں۔',
+    footer: '© 2026 ہائی فلائی پیجنز',
+    footerFull: '© 2026 ہائی فلائی پیجنز۔ تمام حقوق محفوظ ہیں۔',
 
     // Homepage
-    pakistanPigeon: 'پاکستان کبوتر',
+    pakistanPigeon: 'ہائی فلائی پیجنز',
     tabHome: 'ہوم',
     tabClubs: 'کلبز',
     tabGallery: 'گیلری',

@@ -15,8 +15,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Pakistan Pigeon",
-  description: "Pakistan Pigeon Racing Platform — Love for the Loft",
+  title: "High Fly Pigeons",
+  description: "High Fly Pigeons — Love for the Loft",
 };
 
 export default function RootLayout({

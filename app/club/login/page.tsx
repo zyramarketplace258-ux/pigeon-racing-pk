@@ -59,7 +59,7 @@ export default function ClubLoginPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <img src="/pigeon.png" alt="Pigeon" className="w-24 h-24 mx-auto mb-2 object-contain drop-shadow-lg" />
-          <h2 className="text-2xl font-bold text-secondary">Pakistan Pigeon Racing</h2>
+          <h2 className="text-2xl font-bold text-secondary">High Fly Pigeons</h2>
           <p className="text-green-400 text-sm mt-1">Club Portal</p>
         </div>
 

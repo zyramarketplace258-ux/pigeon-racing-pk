@@ -143,7 +143,7 @@ export default function AdminDashboard() {
             <img src="/pigeon.png" alt="" className="w-9 h-9 object-contain drop-shadow" />
             <div>
               <p className="text-white font-bold text-sm leading-tight">Admin Panel</p>
-              <p className="text-green-600 text-[11px]">Pakistan Pigeon Racing</p>
+              <p className="text-green-600 text-[11px]">High Fly Pigeons</p>
             </div>
           </div>
 
