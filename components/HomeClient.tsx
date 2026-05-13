@@ -79,7 +79,6 @@ export default function HomeClient({ initialData, tInfos }: Props) {
   const [totalLotsCompeting, setTotalLotsCompeting] = useState(initialData.totalLotsCompeting)
   const [activeTab, setActiveTab] = useState<'home' | 'clubs' | 'gallery'>('home')
   useEffect(() => {
-    setMounted(true)
     const s = sessionStorage.getItem('home-tab')
     if (s === 'home' || s === 'clubs' || s === 'gallery') setActiveTab(s)
   }, [])
@@ -93,7 +92,6 @@ export default function HomeClient({ initialData, tInfos }: Props) {
   const [homeCard, setHomeCard] = useState<{ url: string; name: string } | null>(null)
   const [homeCardSharing, setHomeCardSharing] = useState(false)
   const [homeCardCopied, setHomeCardCopied] = useState(false)
-  const [mounted, setMounted] = useState(false)
 
   const buildCardUrl = (params: Record<string, string>) =>
     `/api/card?${new URLSearchParams(params)}`
@@ -536,15 +534,6 @@ const getRank = (entry: TopEntry, entries: TopEntry[]) => {
                       <p className="font-semibold text-sm text-[#1a1a1a] truncate">{s.nameUrdu || s.name}{(s.areaUrdu || s.area) ? <span className="font-normal text-[#888]"> · {s.areaUrdu || s.area}</span> : ''}</p>
                     </div>
                     <p className="font-bold text-lg text-[#1b5e20] shrink-0">{formatTimeDisplay(s.totalHours)}</p>
-                    {mounted && (
-                      <span
-                        role="button"
-                        onClick={e => { e.preventDefault(); e.stopPropagation(); openCard(s.nameUrdu || s.name, { tournament: s.tournament || '', club: '', player: s.name || s.nameUrdu || '', playerUrdu: s.nameUrdu || '', area: s.area || s.areaUrdu || '', areaUrdu: s.areaUrdu || '', photoUrl: s.photoUrl || '', date: '', rank: String(s.rank), score: s.totalHours, times: '' }) }}
-                        className="text-[10px] text-[#388e3c] border border-[#c8e6c9] bg-[#f0fdf4] rounded-lg px-2 py-1 active:scale-95 transition leading-tight shrink-0 font-semibold cursor-pointer"
-                      >
-                        📤 Card
-                      </span>
-                    )}
                   </Link>
                 )
               })}
