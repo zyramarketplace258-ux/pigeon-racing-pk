@@ -20,7 +20,6 @@ export async function GET(request: NextRequest) {
   const tournament  = safeText(s('tournament', 'High Fly Spring Championship'), 'Tournament')
   const club        = safeText(s('club', 'High Fly Club'), 'Club')
   const player      = safeText(s('player', 'Muhammad Ali'), s('playerUrdu', 'Player'))
-  const playerUrdu  = ''
   const area        = safeText(s('area', 'Lahore'), safeText(s('areaUrdu', ''), ''))
   const photoUrl    = s('photoUrl')
   const date        = s('date', '10 May 2026')
