@@ -87,14 +87,16 @@ export default function CardTestClient() {
   const dayObj = t?.raceDays?.find(r => r.dayNumber === day)
 
   const cardParams = new URLSearchParams({
-    tournament: t?.nameUrdu || t?.name || '',
-    club: club?.nameUrdu || club?.name || '',
+    tournament: t?.name || t?.nameUrdu || '',
+    club: club?.name || club?.nameUrdu || '',
     player: participant?.name || '',
     playerUrdu: participant?.nameUrdu || '',
     area: participant?.area || '',
     areaUrdu: participant?.areaUrdu || '',
     photoUrl: participant?.photoUrl || '',
     date: dayObj?.date || '',
+    day: String(day),
+    totalDays: String(t?.raceDays?.length || 1),
     rank: String(rank),
     score: entryData?.totalHours || '',
     times: (entryData?.pigeons || []).map(p => p.landingTime || '').join(','),
