@@ -11,15 +11,17 @@ function getPKT(): string {
   return `${h}:${m} PKT`
 }
 
+const isArabic = (text: string) => /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/.test(text)
+const safeText = (text: string, fallback = '') => isArabic(text) ? fallback : text
+
 export async function GET(request: NextRequest) {
   const s = (k: string, def = '') => new URL(request.url).searchParams.get(k) ?? def
 
-  const tournament  = s('tournament', 'High Fly Spring Championship')
-  const club        = s('club', 'High Fly Club')
-  const player      = s('player', 'Muhammad Ali')
-  const playerUrdu  = s('playerUrdu', 'محمد علی')
-  const area        = s('area', 'Lahore')
-  const areaUrdu    = s('areaUrdu', '')
+  const tournament  = safeText(s('tournament', 'High Fly Spring Championship'), 'Tournament')
+  const club        = safeText(s('club', 'High Fly Club'), 'Club')
+  const player      = safeText(s('player', 'Muhammad Ali'), s('playerUrdu', 'Player'))
+  const playerUrdu  = ''
+  const area        = safeText(s('area', 'Lahore'), safeText(s('areaUrdu', ''), ''))
   const photoUrl    = s('photoUrl')
   const date        = s('date', '10 May 2026')
   const rank        = parseInt(s('rank', '1'))
@@ -89,7 +91,7 @@ export async function GET(request: NextRequest) {
           {/* Name + rank */}
           <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
             <span style={{ color: '#1a1a1a', fontSize: 22, fontWeight: 700 }}>{player}</span>
-            <span style={{ color: '#555', fontSize: 14, marginTop: 2 }}>{playerUrdu}{(areaUrdu || area) ? `  ·  ${areaUrdu || area}` : ''}</span>
+            <span style={{ color: '#555', fontSize: 14, marginTop: 2 }}>{area ? `  ·  ${area}` : ''}</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
               <span style={{ fontSize: 18 }}>{medal}</span>
               <span style={{ background: rankColor, color: 'white', fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 20 }}>

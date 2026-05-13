@@ -30,8 +30,8 @@ self.addEventListener('fetch', event => {
   // Skip non-GET and cross-origin requests
   if (request.method !== 'GET' || url.origin !== location.origin) return
 
-  // Skip admin routes — never cache these
-  if (url.pathname.startsWith('/admin') || url.pathname.startsWith('/club/login')) return
+  // Skip admin routes and API routes — never cache these
+  if (url.pathname.startsWith('/admin') || url.pathname.startsWith('/club/login') || url.pathname.startsWith('/api/')) return
 
   // Network-first for HTML pages (always fresh content)
   if (request.headers.get('accept')?.includes('text/html')) {

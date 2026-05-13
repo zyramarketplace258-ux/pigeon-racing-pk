@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { LanguageProvider } from "@/lib/language-context";
@@ -20,12 +20,15 @@ export const metadata: Metadata = {
   title: "High Fly Pigeons",
   description: "High Fly Pigeons — Love for the Loft",
   manifest: "/manifest.json",
-  themeColor: "#1b5e20",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "High Fly",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#1b5e20",
 };
 
 export default function RootLayout({

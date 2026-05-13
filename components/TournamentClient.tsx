@@ -142,6 +142,10 @@ export default function TournamentClient({
   const [blinkingChips, setBlinkingChips] = useState<Set<string>>(new Set())
   const [copied, setCopied] = useState(false)
   const [cutoffCountdown, setCutoffCountdown] = useState<string | null>(null)
+  const [cardEntry, setCardEntry] = useState<DayEntry | null>(null)
+  const [cardTotal, setCardTotal] = useState<TotalRow | null>(null)
+  const [cardSharing, setCardSharing] = useState(false)
+  const [cardCopied, setCardCopied] = useState(false)
   const prevPigeonsRef = useRef<Map<string, string>>(new Map())
   const sessionId = useRef(Math.random().toString(36).slice(2, 10))
 
@@ -208,7 +212,8 @@ export default function TournamentClient({
           setBlinkingChips(prev => { const n = new Set(Array.from(prev)); newBlinks.forEach(k => n.add(k)); return n })
           setTimeout(() => setBlinkingChips(prev => { const n = new Set(Array.from(prev)); newBlinks.forEach(k => n.delete(k)); return n }), 90000)
         }
-      }
+      },
+      () => { /* permission denied — real-time updates unavailable */ }
     )
     return () => unsub()
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -218,14 +223,116 @@ export default function TournamentClient({
   useEffect(() => {
     if (!club || !tournament) return
     const viewerRef = doc(db, 'clubs', club.id, 'tournaments', tournament.id, 'viewers', sessionId.current)
-    setDoc(viewerRef, { lastSeen: serverTimestamp() })
-    const heartbeat = setInterval(() => setDoc(viewerRef, { lastSeen: serverTimestamp() }), 30000)
-    const unsubscribe = onSnapshot(collection(db, 'clubs', club.id, 'tournaments', tournament.id, 'viewers'), snap => setViewerCount(snap.size))
-    return () => { clearInterval(heartbeat); deleteDoc(viewerRef); unsubscribe() }
+    setDoc(viewerRef, { lastSeen: serverTimestamp() }).catch(() => {})
+    const heartbeat = setInterval(() => setDoc(viewerRef, { lastSeen: serverTimestamp() }).catch(() => {}), 30000)
+    const unsubscribe = onSnapshot(
+      collection(db, 'clubs', club.id, 'tournaments', tournament.id, 'viewers'),
+      snap => setViewerCount(snap.size),
+      () => { /* permission denied — viewer count unavailable */ }
+    )
+    return () => { clearInterval(heartbeat); deleteDoc(viewerRef).catch(() => {}); unsubscribe() }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [club?.id, tournament?.id])
 
 
+
+  const buildCardUrl = (entry: DayEntry) => {
+    const raceDay = tournament?.raceDays?.find(rd => rd.dayNumber === selectedDay)
+    const dateStr = raceDay?.date
+      ? new Date(raceDay.date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+      : ''
+    const params = new URLSearchParams({
+      tournament: tournament?.name || tournament?.nameUrdu || '',
+      club: club?.name || club?.nameUrdu || '',
+      player: entry.name || entry.nameUrdu || '',
+      playerUrdu: entry.nameUrdu || '',
+      area: entry.area || entry.areaUrdu || '',
+      areaUrdu: entry.areaUrdu || '',
+      photoUrl: entry.photoUrl || '',
+      date: dateStr,
+      rank: String(entry.rank),
+      score: entry.totalHours,
+      times: entry.pigeons.map(pg => pg.landingTime || '').join(','),
+    })
+    return `/api/card?${params}`
+  }
+
+  const downloadCard = async (entry: DayEntry) => {
+    const url = buildCardUrl(entry)
+    const res = await fetch(url)
+    const blob = await res.blob()
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `pigeon-card-${entry.name}-day${selectedDay}.png`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }
+
+  const shareCard = async (entry: DayEntry) => {
+    setCardSharing(true)
+    try {
+      const url = buildCardUrl(entry)
+      const res = await fetch(url)
+      const blob = await res.blob()
+      const file = new File([blob], 'pigeon-card.png', { type: 'image/png' })
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: `${entry.nameUrdu || entry.name} — Race Result` })
+      } else {
+        await navigator.clipboard.writeText(window.location.origin + url)
+        setCardCopied(true)
+        setTimeout(() => setCardCopied(false), 2500)
+      }
+    } catch { /* user cancelled */ }
+    setCardSharing(false)
+  }
+
+  const buildTotalCardUrl = (row: TotalRow) => {
+    const params = new URLSearchParams({
+      tournament: tournament?.name || tournament?.nameUrdu || '',
+      club: club?.name || club?.nameUrdu || '',
+      player: row.name || row.nameUrdu || '',
+      playerUrdu: row.nameUrdu || '',
+      area: row.area || row.areaUrdu || '',
+      areaUrdu: row.areaUrdu || '',
+      photoUrl: row.photoUrl || '',
+      date: '',
+      rank: String(row.rank),
+      score: row.grandTotal,
+      times: row.dayTotals.map(dt => dt.hours || '').join(','),
+    })
+    return `/api/card?${params}`
+  }
+
+  const downloadCardTotal = async (row: TotalRow) => {
+    const url = buildTotalCardUrl(row)
+    const res = await fetch(url)
+    const blob = await res.blob()
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `pigeon-card-${row.name}-total.png`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }
+
+  const shareCardTotal = async (row: TotalRow) => {
+    setCardSharing(true)
+    try {
+      const url = buildTotalCardUrl(row)
+      const res = await fetch(url)
+      const blob = await res.blob()
+      const file = new File([blob], 'pigeon-card.png', { type: 'image/png' })
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: `${row.nameUrdu || row.name} — Race Result` })
+      } else {
+        await navigator.clipboard.writeText(window.location.origin + url)
+        setCardCopied(true)
+        setTimeout(() => setCardCopied(false), 2500)
+      }
+    } catch { /* user cancelled */ }
+    setCardSharing(false)
+  }
 
   const today = todayDate
   const selectedRaceDay = tournament?.raceDays?.find(rd => rd.dayNumber === selectedDay)
@@ -290,6 +397,12 @@ export default function TournamentClient({
                   <p className="text-[#1a1a1a] font-bold text-lg leading-tight text-center">{totalRows[0].nameUrdu || totalRows[0].name}{(totalRows[0].areaUrdu || totalRows[0].area) ? <span className="font-normal text-[#777] text-sm"> · {totalRows[0].areaUrdu || totalRows[0].area}</span> : ''}</p>
                   <p className="text-[#1b5e20] font-extrabold text-3xl">{formatTimeDisplay(totalRows[0].grandTotal)}</p>
                   <p className="text-[#999] text-xs">{fDaysFlown(lang, totalRows[0].daysFlown)}</p>
+                  <button
+                    onClick={() => { setCardTotal(totalRows[0]); setCardCopied(false) }}
+                    className="mt-2 text-xs text-[#388e3c] border border-[#c8e6c9] bg-[#f0fdf4] rounded-lg px-3 py-1.5 active:scale-95 transition font-semibold"
+                  >
+                    📤 Card
+                  </button>
                 </div>
               )}
 
@@ -303,6 +416,12 @@ export default function TournamentClient({
                     <p className="text-[#1a1a1a] font-bold text-sm truncate">{row.nameUrdu || row.name}{(row.areaUrdu || row.area) ? <span className="font-normal text-[#777]"> · {row.areaUrdu || row.area}</span> : ''}</p>
                     <p className="text-[#1b5e20] font-bold text-lg">{formatTimeDisplay(row.grandTotal)}</p>
                     <p className="text-[#999] text-xs">{fDaysShort(lang, row.daysFlown)}</p>
+                    <button
+                      onClick={() => { setCardTotal(row); setCardCopied(false) }}
+                      className="mt-1.5 text-[10px] text-[#388e3c] border border-[#c8e6c9] bg-[#f0fdf4] rounded px-2 py-0.5 active:scale-95 transition leading-tight"
+                    >
+                      📤 Card
+                    </button>
                   </div>
                 ) : <div key={i} />)}
               </div>
@@ -420,12 +539,20 @@ export default function TournamentClient({
                     <div className="flex-1 min-w-0">
                       <p className="text-[#1a1a1a] font-semibold text-sm truncate">{row.nameUrdu || row.name}{(row.areaUrdu || row.area) ? <span className="font-normal text-[#777]"> · {row.areaUrdu || row.area}</span> : ''}</p>
                     </div>
-                    <div className="text-right shrink-0">
+                    <div className="text-right shrink-0 flex flex-col items-end gap-1">
                       {row.grandTotal
                         ? <p className="font-bold text-xl text-[#1b5e20] leading-none" dir="ltr">{formatTimeDisplay(row.grandTotal)}</p>
                         : <p className="text-[#ccc] text-sm">—</p>
                       }
                       <p className="text-[#999] text-xs text-right">{row.daysFlown > 0 ? fDaysShort(lang, row.daysFlown) : ''}</p>
+                      {row.grandTotal && (
+                        <button
+                          onClick={() => { setCardTotal(row); setCardCopied(false) }}
+                          className="text-[10px] text-[#388e3c] border border-[#c8e6c9] bg-[#f0fdf4] rounded px-1.5 py-0.5 active:scale-95 transition leading-tight"
+                        >
+                          📤 Card
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div className="flex gap-1.5 overflow-x-auto ms-11 pb-0.5" style={{ scrollbarWidth: 'none' }}>
@@ -506,11 +633,19 @@ export default function TournamentClient({
                         <div className="min-w-0">
                           <p className="font-semibold text-sm text-[#1a1a1a] truncate">{entry.nameUrdu || entry.name}{(entry.areaUrdu || entry.area) ? <span className="font-normal text-[#777]"> · {entry.areaUrdu || entry.area}</span> : ''}{entry.hasData ? <span className="font-normal text-[#777]"> · {entry.startTime}</span> : ''}</p>
                         </div>
-                        <div className="shrink-0 text-right">
+                        <div className="shrink-0 text-right flex flex-col items-end gap-1">
                           {entry.totalHours
                             ? <p className="font-bold text-xl text-[#1a1a1a] leading-none" dir="ltr">{formatTimeDisplay(entry.totalHours)}</p>
                             : <p className="text-[#ccc] text-sm">—</p>
                           }
+                          {entry.hasData && entry.totalHours && (
+                            <button
+                              onClick={() => { setCardEntry(entry); setCardCopied(false) }}
+                              className="text-[10px] text-[#388e3c] border border-[#c8e6c9] bg-[#f0fdf4] rounded px-1.5 py-0.5 active:scale-95 transition leading-tight"
+                            >
+                              📤 Card
+                            </button>
+                          )}
                         </div>
                       </div>
 
@@ -559,6 +694,53 @@ export default function TournamentClient({
       <footer className="text-center py-4 text-gray-400 text-xs border-t border-[#d4edda] bg-white mt-4">
         {t('footer')}
       </footer>
+
+      {/* Card modal */}
+      {(cardEntry || cardTotal) && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center"
+          onClick={() => { setCardEntry(null); setCardTotal(null); setCardCopied(false) }}
+        >
+          <div
+            className="bg-white rounded-t-2xl sm:rounded-2xl overflow-hidden w-full max-w-lg shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="bg-[#1b5e20] px-4 py-3 flex items-center justify-between">
+              <p className="text-white text-sm font-semibold truncate">
+                {cardEntry ? (cardEntry.nameUrdu || cardEntry.name) : (cardTotal!.nameUrdu || cardTotal!.name)}
+              </p>
+              <button
+                onClick={() => { setCardEntry(null); setCardTotal(null); setCardCopied(false) }}
+                className="text-white text-2xl font-bold leading-none active:scale-75 transition ms-3 shrink-0"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="bg-[#e8f5e9]" style={{ minHeight: 180 }}>
+              <img
+                src={cardEntry ? buildCardUrl(cardEntry) : buildTotalCardUrl(cardTotal!)}
+                alt="Result card"
+                className="w-full block"
+              />
+            </div>
+            <div className="flex gap-3 p-4">
+              <button
+                onClick={() => cardEntry ? shareCard(cardEntry) : shareCardTotal(cardTotal!)}
+                disabled={cardSharing}
+                className="flex-1 bg-[#1b5e20] text-white py-3 rounded-xl font-bold text-sm active:scale-95 transition disabled:opacity-60"
+              >
+                {cardSharing ? 'Loading...' : cardCopied ? '✓ Copied!' : '📤 Share'}
+              </button>
+              <button
+                onClick={() => cardEntry ? downloadCard(cardEntry) : downloadCardTotal(cardTotal!)}
+                className="flex-1 border-2 border-[#1b5e20] text-[#1b5e20] py-3 rounded-xl font-bold text-sm active:scale-95 transition"
+              >
+                ⬇ Download
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

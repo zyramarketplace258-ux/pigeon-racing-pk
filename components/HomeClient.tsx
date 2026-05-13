@@ -79,6 +79,7 @@ export default function HomeClient({ initialData, tInfos }: Props) {
   const [totalLotsCompeting, setTotalLotsCompeting] = useState(initialData.totalLotsCompeting)
   const [activeTab, setActiveTab] = useState<'home' | 'clubs' | 'gallery'>('home')
   useEffect(() => {
+    setMounted(true)
     const s = sessionStorage.getItem('home-tab')
     if (s === 'home' || s === 'clubs' || s === 'gallery') setActiveTab(s)
   }, [])
@@ -89,6 +90,49 @@ export default function HomeClient({ initialData, tInfos }: Props) {
   const [galleryPosts, setGalleryPosts] = useState<GalleryPost[]>([])
   const [galleryLoading, setGalleryLoading] = useState(true)
   const [loggedInClub, setLoggedInClub] = useState<Club | null>(null)
+  const [homeCard, setHomeCard] = useState<{ url: string; name: string } | null>(null)
+  const [homeCardSharing, setHomeCardSharing] = useState(false)
+  const [homeCardCopied, setHomeCardCopied] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  const buildCardUrl = (params: Record<string, string>) =>
+    `/api/card?${new URLSearchParams(params)}`
+
+  const openCard = (name: string, params: Record<string, string>) => {
+    setHomeCard({ url: buildCardUrl(params), name })
+    setHomeCardCopied(false)
+  }
+
+  const shareHomeCard = async () => {
+    if (!homeCard) return
+    setHomeCardSharing(true)
+    try {
+      const res = await fetch(homeCard.url)
+      const blob = await res.blob()
+      const file = new File([blob], 'pigeon-card.png', { type: 'image/png' })
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: `${homeCard.name} — Race Result` })
+      } else {
+        await navigator.clipboard.writeText(window.location.origin + homeCard.url)
+        setHomeCardCopied(true)
+        setTimeout(() => setHomeCardCopied(false), 2500)
+      }
+    } catch { /* user cancelled */ }
+    setHomeCardSharing(false)
+  }
+
+  const downloadHomeCard = async () => {
+    if (!homeCard) return
+    const res = await fetch(homeCard.url)
+    const blob = await res.blob()
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `pigeon-card-${homeCard.name}.png`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }
+
   // Set up real-time listeners — structural data already provided by SSR
   useEffect(() => {
     if (tInfos.length === 0) return
@@ -492,6 +536,15 @@ const getRank = (entry: TopEntry, entries: TopEntry[]) => {
                       <p className="font-semibold text-sm text-[#1a1a1a] truncate">{s.nameUrdu || s.name}{(s.areaUrdu || s.area) ? <span className="font-normal text-[#888]"> · {s.areaUrdu || s.area}</span> : ''}</p>
                     </div>
                     <p className="font-bold text-lg text-[#1b5e20] shrink-0">{formatTimeDisplay(s.totalHours)}</p>
+                    {mounted && (
+                      <span
+                        role="button"
+                        onClick={e => { e.preventDefault(); e.stopPropagation(); openCard(s.nameUrdu || s.name, { tournament: s.tournament || '', club: '', player: s.name || s.nameUrdu || '', playerUrdu: s.nameUrdu || '', area: s.area || s.areaUrdu || '', areaUrdu: s.areaUrdu || '', photoUrl: s.photoUrl || '', date: '', rank: String(s.rank), score: s.totalHours, times: '' }) }}
+                        className="text-[10px] text-[#388e3c] border border-[#c8e6c9] bg-[#f0fdf4] rounded-lg px-2 py-1 active:scale-95 transition leading-tight shrink-0 font-semibold cursor-pointer"
+                      >
+                        📤 Card
+                      </span>
+                    )}
                   </Link>
                 )
               })}
@@ -613,7 +666,15 @@ const getRank = (entry: TopEntry, entries: TopEntry[]) => {
                             </div>
                           )}
                         </div>
-                        <p className="font-bold text-xl text-[#1a1a1a] shrink-0">{formatTimeDisplay(entry.totalHours)}</p>
+                        <div className="shrink-0 flex flex-col items-end gap-1">
+                          <p className="font-bold text-xl text-[#1a1a1a]">{formatTimeDisplay(entry.totalHours)}</p>
+                          <button
+                            onClick={() => openCard(entry.nameUrdu || entry.name, { tournament: tr.name || tr.nameUrdu || '', club: tr.clubName || tr.clubNameUrdu || '', player: entry.name || entry.nameUrdu || '', playerUrdu: entry.nameUrdu || '', area: entry.area || entry.areaUrdu || '', areaUrdu: entry.areaUrdu || '', photoUrl: entry.photoUrl || '', date: '', rank: String(rank + 1), score: entry.totalHours, times: entry.pigeons.map(pg => pg.landingTime || '').join(',') })}
+                            className="text-[10px] text-[#388e3c] border border-[#c8e6c9] bg-[#f0fdf4] rounded px-1.5 py-0.5 active:scale-95 transition leading-tight font-semibold"
+                          >
+                            📤 Card
+                          </button>
+                        </div>
                       </div>
                     )})}
                   </div>
@@ -668,6 +729,46 @@ const getRank = (entry: TopEntry, entries: TopEntry[]) => {
           >
             ✕
           </button>
+        </div>
+      )}
+
+      {homeCard && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center"
+          onClick={() => { setHomeCard(null); setHomeCardCopied(false) }}
+        >
+          <div
+            className="bg-white rounded-t-2xl sm:rounded-2xl overflow-hidden w-full max-w-lg shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="bg-[#1b5e20] px-4 py-3 flex items-center justify-between">
+              <p className="text-white text-sm font-semibold truncate">{homeCard.name}</p>
+              <button
+                onClick={() => { setHomeCard(null); setHomeCardCopied(false) }}
+                className="text-white text-2xl font-bold leading-none active:scale-75 transition ms-3 shrink-0"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="bg-[#e8f5e9]" style={{ minHeight: 180 }}>
+              <img src={homeCard.url} alt="Result card" className="w-full block" />
+            </div>
+            <div className="flex gap-3 p-4">
+              <button
+                onClick={shareHomeCard}
+                disabled={homeCardSharing}
+                className="flex-1 bg-[#1b5e20] text-white py-3 rounded-xl font-bold text-sm active:scale-95 transition disabled:opacity-60"
+              >
+                {homeCardSharing ? 'Loading...' : homeCardCopied ? '✓ Copied!' : '📤 Share'}
+              </button>
+              <button
+                onClick={downloadHomeCard}
+                className="flex-1 border-2 border-[#1b5e20] text-[#1b5e20] py-3 rounded-xl font-bold text-sm active:scale-95 transition"
+              >
+                ⬇ Download
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </main>

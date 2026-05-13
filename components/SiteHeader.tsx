@@ -4,7 +4,6 @@ import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
 import Link from 'next/link'
 import { Playfair_Display } from 'next/font/google'
-import { getPKTClock } from '@/lib/pkt'
 import { useLanguage } from '@/lib/language-context'
 import { useT } from '@/lib/translations'
 
@@ -14,13 +13,7 @@ export default function SiteHeader() {
   const { lang } = useLanguage()
   const t = useT()
   const isUrdu = lang === 'ur'
-  const [clockLabel, setClockLabel] = useState(getPKTClock)
   const [loggedIn, setLoggedIn] = useState(false)
-
-  useEffect(() => {
-    const interval = setInterval(() => setClockLabel(getPKTClock()), 15000)
-    return () => clearInterval(interval)
-  }, [])
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, user => setLoggedIn(!!user))
@@ -45,7 +38,6 @@ export default function SiteHeader() {
               {t('clubLogin')}
             </Link>
           )}
-          <span className="text-[10px] text-green-200 leading-none" dir="ltr">{clockLabel} PKT</span>
         </div>
       </div>
     </div>
