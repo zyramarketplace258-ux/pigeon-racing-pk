@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Playfair_Display } from 'next/font/google'
 import { useLanguage } from '@/lib/language-context'
 import { useT } from '@/lib/translations'
@@ -13,6 +14,7 @@ export default function SiteHeader() {
   const { lang } = useLanguage()
   const t = useT()
   const isUrdu = lang === 'ur'
+  const router = useRouter()
   const [loggedIn, setLoggedIn] = useState(false)
 
   useEffect(() => {
@@ -30,7 +32,7 @@ export default function SiteHeader() {
         <img src="/pigeon.png" alt="" aria-hidden="true" className="absolute left-1/2 -translate-x-1/2 w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-lg pointer-events-none" />
         <div className="flex flex-col items-end gap-1">
           {loggedIn ? (
-            <button onClick={() => signOut(auth)} className="text-xs text-red-300 border border-red-700 px-2 py-1.5 rounded hover:bg-red-900 active:scale-95 transition font-medium">
+            <button onClick={() => signOut(auth).then(() => router.push('/'))} className="text-xs text-red-300 border border-red-700 px-2 py-1.5 rounded hover:bg-red-900 active:scale-95 transition font-medium">
               Logout
             </button>
           ) : (
