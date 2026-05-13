@@ -1,4 +1,4 @@
-const CACHE = 'highfly-v2'
+const CACHE = 'highfly-v3'
 
 const STATIC_ASSETS = [
   '/',
@@ -42,7 +42,7 @@ self.addEventListener('fetch', event => {
           caches.open(CACHE).then(cache => cache.put(request, clone))
           return res
         })
-        .catch(() => caches.match(request))
+        .catch(() => caches.match(request).then(r => r || Response.error()))
     )
     return
   }
@@ -55,7 +55,7 @@ self.addEventListener('fetch', event => {
         const clone = res.clone()
         caches.open(CACHE).then(cache => cache.put(request, clone))
         return res
-      })
+      }).catch(() => Response.error())
     })
   )
 })
