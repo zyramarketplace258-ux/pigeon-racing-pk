@@ -199,6 +199,12 @@ export default function CardTestClient() {
           )}
           {tournamentId && sel('Participant', participantId, setParticipantId, participants.map(p => ({ value: p.id, label: `${p.name || p.nameUrdu} · ${p.area}` })), 'Select a participant...')}
 
+          {selectedTournament && (
+            <div className="text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2 font-mono">
+              pigeonCount: {selectedTournament.pigeonCount ?? 'MISSING'} · days: {selectedTournament.raceDays?.length ?? 'MISSING'}
+            </div>
+          )}
+
           <button onClick={generate} disabled={!clubId || !tournamentId || !participantId || loading}
             className="w-full bg-[#1b5e20] text-white py-3 rounded-xl font-bold text-sm hover:bg-[#2e7d32] active:scale-95 transition disabled:opacity-40">
             {loading ? 'Generating...' : 'Generate Card'}
