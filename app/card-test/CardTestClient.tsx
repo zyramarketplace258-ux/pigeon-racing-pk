@@ -4,7 +4,7 @@ import { collection, getDocs, query, orderBy } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 
 interface Club { id: string; name: string; nameUrdu?: string }
-interface Tournament { id: string; name: string; nameUrdu?: string; pigeonCount: number; raceDays: { dayNumber: number; date: string }[] }
+interface Tournament { id: string; name: string; nameUrdu?: string; pigeonCount: number; totalDays: number; raceDays: { dayNumber: number; date: string; isGap?: boolean }[] }
 interface Participant { id: string; name: string; nameUrdu?: string; area: string; areaUrdu?: string; photoUrl?: string }
 interface EntryData { totalHours: string; pigeons: { landingTime: string; hoursFlown: string }[] }
 
@@ -121,6 +121,9 @@ export default function CardTestClient() {
   const club = clubs.find(c => c.id === clubId)
   const dayObj = t?.raceDays?.find(r => r.dayNumber === day)
 
+  const resolvedPigeonCount = (t?.pigeonCount != null && t.pigeonCount > 0) ? t.pigeonCount : 9
+  const resolvedTotalDays   = (t?.raceDays?.length ?? 0) > 0 ? t!.raceDays.length : 1
+
   const cardParams = new URLSearchParams({
     type: cardType,
     tournament: t?.name || t?.nameUrdu || '',
@@ -134,12 +137,12 @@ export default function CardTestClient() {
     ...(cardType === 'daily' ? {
       date: dayObj?.date || '',
       day: String(day),
-      totalDays: String(t?.raceDays?.length || 1),
-      pigeonCount: String(t?.pigeonCount || 9),
+      totalDays: String(resolvedTotalDays),
+      pigeonCount: String(resolvedPigeonCount),
       score: entryData?.totalHours || '',
       times: (entryData?.pigeons || []).map(p => p.landingTime || '').join(','),
     } : {
-      totalDays: String(t?.raceDays?.length || 1),
+      totalDays: String(resolvedTotalDays),
       score: overallScore,
       dayTimes: dayTimes.join(','),
     }),
@@ -200,8 +203,9 @@ export default function CardTestClient() {
           {tournamentId && sel('Participant', participantId, setParticipantId, participants.map(p => ({ value: p.id, label: `${p.name || p.nameUrdu} · ${p.area}` })), 'Select a participant...')}
 
           {selectedTournament && (
-            <div className="text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2 font-mono">
-              pigeonCount: {selectedTournament.pigeonCount ?? 'MISSING'} · days: {selectedTournament.raceDays?.length ?? 'MISSING'}
+            <div className="text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2 font-mono space-y-0.5">
+              <div>DB → pigeonCount: <b>{selectedTournament.pigeonCount ?? 'MISSING'}</b> · raceDays: <b>{selectedTournament.raceDays?.length ?? 'MISSING'}</b></div>
+              <div>Sending → pigeons: <b>{resolvedPigeonCount}</b> · days: <b>{resolvedTotalDays}</b></div>
             </div>
           )}
 
