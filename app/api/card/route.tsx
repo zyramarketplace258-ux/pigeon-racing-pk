@@ -81,51 +81,56 @@ export async function GET(request: NextRequest) {
 
         {/* ── Player section ── */}
         <div style={{
-          display: 'flex', position: 'relative', overflow: 'hidden',
-          background: playerBg, padding: '20px 36px 20px 46px', gap: 20,
+          display: 'flex',
+          background: playerBg,
           borderBottom: `2px solid ${dark ? '#1e3e1e' : '#e8f5e9'}`,
-          alignItems: 'center',
         }}>
-          {/* Left rank stripe */}
-          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 8, background: rankGrad }} />
+          {/* Left rank stripe — flex sidebar, no absolute needed */}
+          <div style={{ width: 8, background: rankGrad, flexShrink: 0 }} />
 
-          {/* Watermark rank number */}
+          {/* Content area */}
           <div style={{
-            position: 'absolute', right: 12, top: -16,
-            color: watermarkCol, fontSize: 190, fontWeight: 900, lineHeight: 1, letterSpacing: -8,
+            display: 'flex', flex: 1, position: 'relative',
+            padding: '20px 36px 20px 18px', gap: 20, alignItems: 'center',
           }}>
-            {rank}
-          </div>
-
-          {/* Avatar / photo */}
-          <div style={{
-            display: 'flex', width: 84, height: 84, borderRadius: 42, flexShrink: 0,
-            background: rankGrad, alignItems: 'center', justifyContent: 'center',
-            border: `3px solid ${rankColor}`, overflow: 'hidden',
-          }}>
-            {photoData
-              ? <img src={photoData} style={{ width: 84, height: 84, objectFit: 'cover' }} alt="" />
-              : <span style={{ color: 'white', fontSize: 32, fontWeight: 800 }}>{player.charAt(0).toUpperCase()}</span>
-            }
-          </div>
-
-          {/* Name + badge */}
-          <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-            <span style={{ color: nameCol, fontSize: 26, fontWeight: 800, letterSpacing: -0.5 }}>{player}</span>
-            {area ? <span style={{ color: areaCol, fontSize: 13, marginTop: 3 }}>{area}</span> : null}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-              <span style={{ fontSize: 20 }}>{medal}</span>
-              <span style={{ background: rankGrad, color: badgeTextCol, fontSize: 12, fontWeight: 800, padding: '4px 14px', borderRadius: 20 }}>
-                {rankLabel}
-              </span>
+            {/* Watermark rank number */}
+            <div style={{
+              position: 'absolute', right: 36, top: 0,
+              color: watermarkCol, fontSize: 190, fontWeight: 900, lineHeight: 1,
+            }}>
+              {rank}
             </div>
-          </div>
 
-          {/* Score — hero element */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0 }}>
-            <span style={{ color: labelCol, fontSize: 9, letterSpacing: 3, textTransform: 'uppercase' }}>TOTAL SCORE</span>
-            <span style={{ color: scoreCol, fontSize: 56, fontWeight: 900, lineHeight: 1, marginTop: 4, letterSpacing: -2 }}>{score}</span>
-            <span style={{ color: labelCol, fontSize: 10, marginTop: 3 }}>hours flown</span>
+            {/* Avatar / photo */}
+            <div style={{
+              display: 'flex', width: 84, height: 84, borderRadius: 42, flexShrink: 0,
+              background: rankGrad, alignItems: 'center', justifyContent: 'center',
+              border: `3px solid ${rankColor}`, overflow: 'hidden',
+            }}>
+              {photoData
+                ? <img src={photoData} style={{ width: 84, height: 84, objectFit: 'cover' }} alt="" />
+                : <span style={{ color: 'white', fontSize: 32, fontWeight: 800 }}>{player.charAt(0).toUpperCase()}</span>
+              }
+            </div>
+
+            {/* Name + badge */}
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+              <span style={{ color: nameCol, fontSize: 26, fontWeight: 800, letterSpacing: -0.5 }}>{player}</span>
+              {area ? <span style={{ color: areaCol, fontSize: 13, marginTop: 3 }}>{area}</span> : null}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                <span style={{ fontSize: 20 }}>{medal}</span>
+                <span style={{ background: rankGrad, color: badgeTextCol, fontSize: 12, fontWeight: 800, padding: '4px 14px', borderRadius: 20 }}>
+                  {rankLabel}
+                </span>
+              </div>
+            </div>
+
+            {/* Score — hero element */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0 }}>
+              <span style={{ color: labelCol, fontSize: 9, letterSpacing: 3, textTransform: 'uppercase' }}>TOTAL SCORE</span>
+              <span style={{ color: scoreCol, fontSize: 56, fontWeight: 900, lineHeight: 1, marginTop: 4, letterSpacing: -2 }}>{score}</span>
+              <span style={{ color: labelCol, fontSize: 10, marginTop: 3 }}>hours flown</span>
+            </div>
           </div>
         </div>
 
@@ -137,7 +142,7 @@ export async function GET(request: NextRequest) {
 
           <div style={{ display: 'flex', position: 'relative', flex: 1, alignItems: 'flex-start' }}>
             {/* Horizontal connector line */}
-            <div style={{ position: 'absolute', left: 8, right: 8, top: 5, height: 2, background: lineCol }} />
+            <div style={{ position: 'absolute', left: 8, top: 5, width: '96%', height: 2, background: lineCol }} />
 
             {times.slice(0, 9).map((time, i) => (
               <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

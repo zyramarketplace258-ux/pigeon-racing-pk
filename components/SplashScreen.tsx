@@ -1,8 +1,5 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Playfair_Display } from 'next/font/google'
-
-const playfair = Playfair_Display({ subsets: ['latin'], weight: ['700'], style: ['italic'] })
 
 export default function SplashScreen() {
   const [visible, setVisible] = useState(false)
@@ -25,7 +22,7 @@ export default function SplashScreen() {
       style={{ transition: 'opacity 0.5s ease', opacity: fading ? 0 : 1 }}
     >
       <img src="/pigeon.png" alt="" className="w-28 h-28 object-contain drop-shadow-xl mb-4" />
-      <h1 className={`${playfair.className} text-white text-3xl leading-tight text-center`}>
+      <h1 className="text-white text-3xl leading-tight text-center font-bold italic" style={{ fontFamily: 'Georgia, serif' }}>
         High Fly Pigeons
       </h1>
       <p className="text-green-300 text-xs tracking-widest uppercase mt-1">Love for the Loft</p>
