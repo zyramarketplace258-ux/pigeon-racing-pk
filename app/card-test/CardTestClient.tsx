@@ -203,9 +203,11 @@ export default function CardTestClient() {
           {tournamentId && sel('Participant', participantId, setParticipantId, participants.map(p => ({ value: p.id, label: `${p.name || p.nameUrdu} · ${p.area}` })), 'Select a participant...')}
 
           {selectedTournament && (
-            <div className="text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2 font-mono space-y-0.5">
-              <div>DB → pigeonCount: <b>{selectedTournament.pigeonCount ?? 'MISSING'}</b> · raceDays: <b>{selectedTournament.raceDays?.length ?? 'MISSING'}</b></div>
-              <div>Sending → pigeons: <b>{resolvedPigeonCount}</b> · days: <b>{resolvedTotalDays}</b></div>
+            <div className="rounded-lg border border-orange-300 bg-orange-50 px-3 py-2 text-xs font-mono space-y-1">
+              <div className="font-bold text-orange-700">DEBUG (share this with me):</div>
+              <div>pigeonCount in DB: <b className="text-red-600">{String(selectedTournament.pigeonCount ?? 'MISSING')}</b></div>
+              <div>raceDays in DB: <b className="text-red-600">{String(selectedTournament.raceDays?.length ?? 'MISSING')}</b></div>
+              <div>sending pigeons: <b className="text-blue-600">{resolvedPigeonCount}</b> · sending days: <b className="text-blue-600">{resolvedTotalDays}</b></div>
             </div>
           )}
 
@@ -228,6 +230,9 @@ export default function CardTestClient() {
                 className="flex-1 border border-[#1b5e20] text-[#1b5e20] py-2.5 rounded-xl font-bold text-sm hover:bg-green-50 active:scale-95 transition">
                 Copy Link
               </button>
+            </div>
+            <div className="mt-3 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-[10px] font-mono text-orange-700 break-all">
+              <b>URL sent to API:</b><br />{cardUrl}
             </div>
           </div>
         )}
