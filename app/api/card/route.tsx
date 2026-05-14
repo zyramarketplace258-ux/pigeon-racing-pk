@@ -209,7 +209,7 @@ export async function GET(request: NextRequest) {
           {gridEl(dayCells, dayCols)}
         </div>
       ),
-      { width: W, height, fonts }
+      { width: W, height }
     )
 
   } catch (err) {
