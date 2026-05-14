@@ -565,9 +565,24 @@ const getRank = (entry: TopEntry, entries: TopEntry[]) => {
           <div className="space-y-4 mb-4">
             {activeTournaments.map(tr => (
               <div key={`${tr.clubId}-${tr.id}`} className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
-                <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-3 text-center">
-                  <h3 className="text-white font-bold text-base leading-snug">{tr.nameUrdu || tr.name}</h3>
-                  <p className="text-green-300 text-xs mt-0.5">{tr.clubNameUrdu || tr.clubName}</p>
+                <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-3 flex items-center gap-2">
+                  <div className="flex-1" />
+                  <div className="flex flex-col items-center flex-1">
+                    <h3 className="text-white font-bold text-base leading-snug text-center">{tr.nameUrdu || tr.name}</h3>
+                    <p className="text-green-300 text-xs mt-0.5 text-center">{tr.clubNameUrdu || tr.clubName}</p>
+                  </div>
+                  <div className="flex-1 flex flex-col items-end gap-1">
+                    {(tr.defaultStartTime || tr.defaultEndTime) && (
+                      <span className="text-green-200 text-[10px] font-medium">
+                        {tr.defaultStartTime}{tr.defaultEndTime ? ` - ${tr.defaultEndTime}` : ''}
+                      </span>
+                    )}
+                    {tr.totalRaceDays > 0 && (
+                      <span className="text-white text-[10px] font-bold bg-green-900 bg-opacity-40 px-2 py-0.5 rounded-full">
+                        {tr.currentDay} of {tr.totalRaceDays}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {tr.totalPigeons > 0 && (
