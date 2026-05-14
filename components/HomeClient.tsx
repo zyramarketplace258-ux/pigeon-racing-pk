@@ -6,21 +6,10 @@ import { onAuthStateChanged } from 'firebase/auth'
 import { db, auth } from '@/lib/firebase'
 import { compareHours, formatTimeDisplay } from '@/lib/timeUtils'
 
-function getCountdown(endTime: string): string | null {
-  if (!endTime) return null
-  const now = new Date()
-  const pktMinutes = (now.getUTCHours() * 60 + now.getUTCMinutes() + 300) % 1440
-  const [endH, endM] = endTime.split(':').map(Number)
-  const diff = (endH * 60 + endM) - pktMinutes
-  if (diff <= 0) return null
-  const h = Math.floor(diff / 60)
-  const m = diff % 60
-  return h > 0 ? `${h}h ${m}m left` : `${m}m left`
-}
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useLanguage } from '@/lib/language-context'
-import { useT, fDayOf, fLanded, fStillFlying } from '@/lib/translations'
+import { useT, fLanded, fStillFlying } from '@/lib/translations'
 import SiteHeader from './SiteHeader'
 
 export interface Club { id: string; name: string; nameUrdu?: string; slug: string; city: string; cityUrdu?: string; logoUrl?: string }
