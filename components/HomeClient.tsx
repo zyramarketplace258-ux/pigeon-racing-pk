@@ -565,7 +565,7 @@ const getRank = (entry: TopEntry, entries: TopEntry[]) => {
           <div className="space-y-4 mb-4">
             {activeTournaments.map(tr => (
               <div key={`${tr.clubId}-${tr.id}`} className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
-                <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-3">
+                <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-3 text-center">
                   <h3 className="text-white font-bold text-base leading-snug">{tr.nameUrdu || tr.name}</h3>
                   <p className="text-green-300 text-xs mt-0.5">{tr.clubNameUrdu || tr.clubName}</p>
                 </div>
