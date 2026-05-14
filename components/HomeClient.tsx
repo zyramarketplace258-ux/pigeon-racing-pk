@@ -6,21 +6,10 @@ import { onAuthStateChanged } from 'firebase/auth'
 import { db, auth } from '@/lib/firebase'
 import { compareHours, formatTimeDisplay } from '@/lib/timeUtils'
 
-function getCountdown(endTime: string): string | null {
-  if (!endTime) return null
-  const now = new Date()
-  const pktMinutes = (now.getUTCHours() * 60 + now.getUTCMinutes() + 300) % 1440
-  const [endH, endM] = endTime.split(':').map(Number)
-  const diff = (endH * 60 + endM) - pktMinutes
-  if (diff <= 0) return null
-  const h = Math.floor(diff / 60)
-  const m = diff % 60
-  return h > 0 ? `${h}h ${m}m left` : `${m}m left`
-}
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useLanguage } from '@/lib/language-context'
-import { useT, fDayOf, fLanded, fStillFlying } from '@/lib/translations'
+import { useT, fLanded, fStillFlying } from '@/lib/translations'
 import SiteHeader from './SiteHeader'
 
 export interface Club { id: string; name: string; nameUrdu?: string; slug: string; city: string; cityUrdu?: string; logoUrl?: string }
@@ -576,28 +565,23 @@ const getRank = (entry: TopEntry, entries: TopEntry[]) => {
           <div className="space-y-4 mb-4">
             {activeTournaments.map(tr => (
               <div key={`${tr.clubId}-${tr.id}`} className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
-                <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-3">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="bg-[#e65100] text-white text-xs px-1.5 py-0.5 rounded font-bold animate-pulse tracking-wider">LIVE</span>
-                      <span className="text-green-300 text-xs">
-                        {tr.defaultStartTime}{tr.defaultEndTime ? ` → ${tr.defaultEndTime}` : ''}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {tr.defaultEndTime && getCountdown(tr.defaultEndTime) && (
-                        <span className="text-yellow-300 text-xs font-semibold">⏱ {getCountdown(tr.defaultEndTime)}</span>
-                      )}
-                      {tr.totalRaceDays > 0 && (
-                        <span className="text-green-200 text-xs font-semibold bg-green-900 bg-opacity-40 px-2 py-0.5 rounded-full">
-                          {fDayOf(lang, tr.currentDay, tr.totalRaceDays)}
-                        </span>
-                      )}
-                    </div>
+                <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-3 flex items-center gap-2">
+                  <div className="flex flex-col items-start flex-1">
+                    <h3 className="text-white font-bold text-base leading-snug">{tr.nameUrdu || tr.name}</h3>
+                    <p className="text-green-300 text-xs mt-0.5">{tr.clubNameUrdu || tr.clubName}</p>
                   </div>
-                  <p className="text-white font-bold text-sm mb-0.5">{tr.clubNameUrdu || tr.clubName}</p>
-                  <p className="text-green-300 text-xs mb-1">{tr.clubCityUrdu || tr.clubCity}</p>
-                  <h3 className="text-green-100 text-sm leading-snug">{tr.nameUrdu || tr.name}</h3>
+                  <div className="flex-1 flex flex-col items-end gap-1">
+                    {(tr.defaultStartTime || tr.defaultEndTime) && (
+                      <span className="text-green-200 text-[10px] font-medium">
+                        {tr.defaultStartTime}{tr.defaultEndTime ? ` - ${tr.defaultEndTime}` : ''}
+                      </span>
+                    )}
+                    {tr.totalRaceDays > 0 && (
+                      <span className="text-white text-[10px] font-bold bg-green-900 bg-opacity-40 px-2 py-0.5 rounded-full">
+                        {tr.currentDay} of {tr.totalRaceDays}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {tr.totalPigeons > 0 && (
@@ -659,9 +643,10 @@ const getRank = (entry: TopEntry, entries: TopEntry[]) => {
                           <p className="font-bold text-xl text-[#1a1a1a]">{formatTimeDisplay(entry.totalHours)}</p>
                           <button
                             onClick={() => openCard(entry.nameUrdu || entry.name, { type: 'daily', tournament: tr.name || tr.nameUrdu || '', club: tr.clubName || tr.clubNameUrdu || '', player: entry.name || entry.nameUrdu || '', playerUrdu: entry.nameUrdu || '', area: entry.area || entry.areaUrdu || '', areaUrdu: entry.areaUrdu || '', photoUrl: entry.photoUrl || '', date: tr.raceDays?.find(rd => rd.dayNumber === tr.currentDay)?.date || '', day: String(tr.currentDay), totalDays: String(tr.totalRaceDays || 1), pigeonCount: String(tr.pigeonCount || 1), rank: String(rank + 1), score: entry.totalHours, times: entry.pigeons.map(pg => pg.landingTime || '').join(',') })}
-                            className="text-[10px] text-[#388e3c] border border-[#c8e6c9] bg-[#f0fdf4] rounded px-1.5 py-0.5 active:scale-95 transition leading-tight font-semibold"
+                            className="text-[10px] text-[#388e3c] border border-[#c8e6c9] bg-[#f0fdf4] rounded px-1.5 py-0.5 active:scale-95 transition leading-tight font-semibold flex items-center gap-1"
                           >
-                            📤 Card
+                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                            Card
                           </button>
                         </div>
                       </div>
@@ -748,7 +733,7 @@ const getRank = (entry: TopEntry, entries: TopEntry[]) => {
                 disabled={homeCardSharing}
                 className="flex-1 bg-[#1b5e20] text-white py-3 rounded-xl font-bold text-sm active:scale-95 transition disabled:opacity-60"
               >
-                {homeCardSharing ? 'Loading...' : homeCardCopied ? '✓ Copied!' : '📤 Share'}
+                {homeCardSharing ? 'Loading...' : homeCardCopied ? '✓ Copied!' : <span className="flex items-center justify-center gap-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>Share</span>}
               </button>
               <button
                 onClick={downloadHomeCard}

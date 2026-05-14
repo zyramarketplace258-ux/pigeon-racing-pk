@@ -402,9 +402,10 @@ export default function TournamentClient({
                   <p className="text-[#999] text-xs">{fDaysFlown(lang, totalRows[0].daysFlown)}</p>
                   <button
                     onClick={() => { setCardTotal(totalRows[0]); setCardCopied(false) }}
-                    className="mt-2 text-xs text-[#388e3c] border border-[#c8e6c9] bg-[#f0fdf4] rounded-lg px-3 py-1.5 active:scale-95 transition font-semibold"
+                    className="mt-2 text-xs text-[#388e3c] border border-[#c8e6c9] bg-[#f0fdf4] rounded-lg px-3 py-1.5 active:scale-95 transition font-semibold flex items-center gap-1"
                   >
-                    📤 Card
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                    Card
                   </button>
                 </div>
               )}
@@ -421,9 +422,10 @@ export default function TournamentClient({
                     <p className="text-[#999] text-xs">{fDaysShort(lang, row.daysFlown)}</p>
                     <button
                       onClick={() => { setCardTotal(row); setCardCopied(false) }}
-                      className="mt-1.5 text-[10px] text-[#388e3c] border border-[#c8e6c9] bg-[#f0fdf4] rounded px-2 py-0.5 active:scale-95 transition leading-tight"
+                      className="mt-1.5 text-[10px] text-[#388e3c] border border-[#c8e6c9] bg-[#f0fdf4] rounded px-2 py-0.5 active:scale-95 transition leading-tight flex items-center gap-1"
                     >
-                      📤 Card
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                      Card
                     </button>
                   </div>
                 ) : <div key={i} />)}
@@ -551,9 +553,10 @@ export default function TournamentClient({
                       {row.grandTotal && (
                         <button
                           onClick={() => { setCardTotal(row); setCardCopied(false) }}
-                          className="text-[10px] text-[#388e3c] border border-[#c8e6c9] bg-[#f0fdf4] rounded px-1.5 py-0.5 active:scale-95 transition leading-tight"
+                          className="text-[10px] text-[#388e3c] border border-[#c8e6c9] bg-[#f0fdf4] rounded px-1.5 py-0.5 active:scale-95 transition leading-tight flex items-center gap-1"
                         >
-                          📤 Card
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                          Card
                         </button>
                       )}
                     </div>
@@ -644,9 +647,10 @@ export default function TournamentClient({
                           {entry.hasData && entry.totalHours && (
                             <button
                               onClick={() => { setCardEntry(entry); setCardCopied(false) }}
-                              className="text-[10px] text-[#388e3c] border border-[#c8e6c9] bg-[#f0fdf4] rounded px-1.5 py-0.5 active:scale-95 transition leading-tight"
+                              className="text-[10px] text-[#388e3c] border border-[#c8e6c9] bg-[#f0fdf4] rounded px-1.5 py-0.5 active:scale-95 transition leading-tight flex items-center gap-1"
                             >
-                              📤 Card
+                              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                              Card
                             </button>
                           )}
                         </div>
@@ -732,7 +736,7 @@ export default function TournamentClient({
                 disabled={cardSharing}
                 className="flex-1 bg-[#1b5e20] text-white py-3 rounded-xl font-bold text-sm active:scale-95 transition disabled:opacity-60"
               >
-                {cardSharing ? 'Loading...' : cardCopied ? '✓ Copied!' : '📤 Share'}
+                {cardSharing ? 'Loading...' : cardCopied ? '✓ Copied!' : <span className="flex items-center justify-center gap-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>Share</span>}
               </button>
               <button
                 onClick={() => cardEntry ? downloadCard(cardEntry) : downloadCardTotal(cardTotal!)}
