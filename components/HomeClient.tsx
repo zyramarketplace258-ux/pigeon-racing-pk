@@ -573,26 +573,95 @@ const getRank = (entry: TopEntry, entries: TopEntry[]) => {
         )}
 
         {activeTournaments.length > 0 && (
-          <div className="space-y-3 mb-4">
+          <div className="space-y-4 mb-4">
             {activeTournaments.map(tr => (
-              <button
-                key={`${tr.clubId}-${tr.id}`}
-                onClick={() => { setNavLoading(`${tr.clubId}-${tr.id}`); router.push(`/${tr.clubSlug}/${tr.id}`) }}
-                className="w-full text-left bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden active:scale-[0.98] transition"
-              >
-                <div className="flex items-center justify-between px-4 py-4">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-[#1b5e20] text-base leading-tight truncate">{tr.nameUrdu || tr.name}</p>
-                    <p className="text-xs text-gray-400 mt-0.5 truncate">{tr.clubNameUrdu || tr.clubName}</p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0 ml-3">
-                    {navLoading === `${tr.clubId}-${tr.id}`
-                      ? <span className="inline-block w-4 h-4 border-2 border-[#1b5e20] border-t-transparent rounded-full animate-spin" />
-                      : <span className="text-[#1b5e20] text-lg">→</span>
-                    }
-                  </div>
+              <div key={`${tr.clubId}-${tr.id}`} className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
+                <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-3">
+                  <h3 className="text-white font-bold text-base leading-snug">{tr.nameUrdu || tr.name}</h3>
+                  <p className="text-green-300 text-xs mt-0.5">{tr.clubNameUrdu || tr.clubName}</p>
                 </div>
-              </button>
+
+                {tr.totalPigeons > 0 && (
+                  <div className="px-4 py-2.5 bg-green-50 border-b border-[#d4edda]">
+                    <div className="h-2 bg-[#e9ecef] rounded mb-1.5 overflow-hidden">
+                      <div
+                        className="h-full rounded"
+                        style={{
+                          width: `${Math.round((tr.totalLanded / tr.totalPigeons) * 100)}%`,
+                          background: 'linear-gradient(90deg,#388e3c,#66bb6a)',
+                          transition: 'width 0.4s ease',
+                        }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>{fLanded(lang, tr.totalLanded)}</span>
+                      <span>{fStillFlying(lang, Math.max(0, tr.totalPigeons - tr.totalLanded))}</span>
+                    </div>
+                  </div>
+                )}
+
+                {tr.topEntries.length > 0 ? (
+                  <div>
+                    {tr.topEntries.map((entry, i) => {
+                      const rank = getRank(entry, tr.topEntries)
+                      return (
+                      <div
+                        key={i}
+                        className="flex items-center gap-3 px-3 py-2.5 border-b border-[#e9ecef] last:border-b-0"
+                        style={{ background: rank === 0 ? '#dff0d8' : i % 2 === 1 ? '#f6faf6' : '#fff' }}
+                      >
+                        <div className="relative w-9 h-9 shrink-0">
+                          {entry.photoUrl ? (
+                            <>
+                              <img src={entry.photoUrl} alt={entry.name} className="w-9 h-9 rounded-full object-cover" style={{ border: `2px solid ${rank === 0 ? '#c8900a' : rank === 1 ? '#9e9e9e' : '#bbb'}` }} />
+                              <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold ${rankRingClass(rank)}`} style={rankRingStyle(rank)}>
+                                {rank + 1}
+                              </div>
+                            </>
+                          ) : (
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold ${rankRingClass(rank)}`} style={rankRingStyle(rank)}>
+                              {rank + 1}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm text-[#1a1a1a] truncate">{entry.nameUrdu || entry.name}{(entry.areaUrdu || entry.area) ? <span className="font-normal text-[#777]"> · {entry.areaUrdu || entry.area}</span> : ''}</p>
+                          {entry.pigeons.some(pg => pg.landingTime) && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {entry.pigeons.filter(pg => pg.landingTime).map((pg, pi) => (
+                                <span key={pi} className="text-[10px] bg-[#e8f5e9] text-[#2e7d32] px-1.5 py-0.5 rounded font-medium leading-tight">
+                                  {pg.landingTime}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div className="shrink-0 flex flex-col items-end gap-1">
+                          <p className="font-bold text-xl text-[#1a1a1a]">{formatTimeDisplay(entry.totalHours)}</p>
+                          <button
+                            onClick={() => openCard(entry.nameUrdu || entry.name, { type: 'daily', tournament: tr.name || tr.nameUrdu || '', club: tr.clubName || tr.clubNameUrdu || '', player: entry.name || entry.nameUrdu || '', playerUrdu: entry.nameUrdu || '', area: entry.area || entry.areaUrdu || '', areaUrdu: entry.areaUrdu || '', photoUrl: entry.photoUrl || '', date: tr.raceDays?.find(rd => rd.dayNumber === tr.currentDay)?.date || '', day: String(tr.currentDay), totalDays: String(tr.totalRaceDays || 1), pigeonCount: String(tr.pigeonCount || 1), rank: String(rank + 1), score: entry.totalHours, times: entry.pigeons.map(pg => pg.landingTime || '').join(',') })}
+                            className="text-[10px] text-[#388e3c] border border-[#c8e6c9] bg-[#f0fdf4] rounded px-1.5 py-0.5 active:scale-95 transition leading-tight font-semibold"
+                          >
+                            📤 Card
+                          </button>
+                        </div>
+                      </div>
+                    )})}
+                  </div>
+                ) : (
+                  <div className="px-4 py-6 text-center text-gray-400 text-sm bg-[#f9fdf9]">
+                    {t('noResultsYet')}
+                  </div>
+                )}
+
+                <button
+                  onClick={() => { setNavLoading(`${tr.clubId}-${tr.id}`); router.push(`/${tr.clubSlug}/${tr.id}`) }}
+                  className="flex items-center justify-center gap-2 py-3 text-sm font-semibold text-[#23592b] bg-[#f1faf2] border-t border-[#d4edda] hover:bg-[#e8f5e9] active:scale-95 transition w-full"
+                >
+                  {navLoading === `${tr.clubId}-${tr.id}` ? <span className="inline-block w-3 h-3 border-2 border-[#23592b] border-t-transparent rounded-full animate-spin" /> : null}
+                  {t('fullResults')} <span>→</span>
+                </button>
+              </div>
             ))}
           </div>
         )}
