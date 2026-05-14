@@ -658,7 +658,7 @@ const getRank = (entry: TopEntry, entries: TopEntry[]) => {
                         <div className="shrink-0 flex flex-col items-end gap-1">
                           <p className="font-bold text-xl text-[#1a1a1a]">{formatTimeDisplay(entry.totalHours)}</p>
                           <button
-                            onClick={() => openCard(entry.nameUrdu || entry.name, { tournament: tr.name || tr.nameUrdu || '', club: tr.clubName || tr.clubNameUrdu || '', player: entry.name || entry.nameUrdu || '', playerUrdu: entry.nameUrdu || '', area: entry.area || entry.areaUrdu || '', areaUrdu: entry.areaUrdu || '', photoUrl: entry.photoUrl || '', date: '', rank: String(rank + 1), score: entry.totalHours, times: entry.pigeons.map(pg => pg.landingTime || '').join(',') })}
+                            onClick={() => openCard(entry.nameUrdu || entry.name, { type: 'daily', tournament: tr.name || tr.nameUrdu || '', club: tr.clubName || tr.clubNameUrdu || '', player: entry.name || entry.nameUrdu || '', playerUrdu: entry.nameUrdu || '', area: entry.area || entry.areaUrdu || '', areaUrdu: entry.areaUrdu || '', photoUrl: entry.photoUrl || '', date: tr.raceDays?.find(rd => rd.dayNumber === tr.currentDay)?.date || '', day: String(tr.currentDay), totalDays: String(tr.totalRaceDays || 1), pigeonCount: String(tr.pigeonCount || 1), rank: String(rank + 1), score: entry.totalHours, times: entry.pigeons.map(pg => pg.landingTime || '').join(',') })}
                             className="text-[10px] text-[#388e3c] border border-[#c8e6c9] bg-[#f0fdf4] rounded px-1.5 py-0.5 active:scale-95 transition leading-tight font-semibold"
                           >
                             📤 Card

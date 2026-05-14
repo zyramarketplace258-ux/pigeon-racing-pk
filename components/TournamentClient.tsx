@@ -238,10 +238,9 @@ export default function TournamentClient({
 
   const buildCardUrl = (entry: DayEntry) => {
     const raceDay = tournament?.raceDays?.find(rd => rd.dayNumber === selectedDay)
-    const dateStr = raceDay?.date
-      ? new Date(raceDay.date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-      : ''
+    const nonGapDays = (tournament?.raceDays || []).filter(rd => !rd.isGap)
     const params = new URLSearchParams({
+      type: 'daily',
       tournament: tournament?.name || tournament?.nameUrdu || '',
       club: club?.name || club?.nameUrdu || '',
       player: entry.name || entry.nameUrdu || '',
@@ -249,7 +248,10 @@ export default function TournamentClient({
       area: entry.area || entry.areaUrdu || '',
       areaUrdu: entry.areaUrdu || '',
       photoUrl: entry.photoUrl || '',
-      date: dateStr,
+      date: raceDay?.date || '',
+      day: String(selectedDay),
+      totalDays: String(nonGapDays.length || 1),
+      pigeonCount: String(tournament?.pigeonCount || 1),
       rank: String(entry.rank),
       score: entry.totalHours,
       times: entry.pigeons.map(pg => pg.landingTime || '').join(','),
@@ -289,6 +291,7 @@ export default function TournamentClient({
 
   const buildTotalCardUrl = (row: TotalRow) => {
     const params = new URLSearchParams({
+      type: 'overall',
       tournament: tournament?.name || tournament?.nameUrdu || '',
       club: club?.name || club?.nameUrdu || '',
       player: row.name || row.nameUrdu || '',
@@ -296,10 +299,10 @@ export default function TournamentClient({
       area: row.area || row.areaUrdu || '',
       areaUrdu: row.areaUrdu || '',
       photoUrl: row.photoUrl || '',
-      date: '',
       rank: String(row.rank),
       score: row.grandTotal,
-      times: row.dayTotals.map(dt => dt.hours || '').join(','),
+      totalDays: String(row.dayTotals.length || 1),
+      dayTimes: row.dayTotals.map(dt => dt.hours || '').join(','),
     })
     return `/api/card?${params}`
   }
