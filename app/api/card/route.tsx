@@ -3,11 +3,14 @@ import { NextRequest } from 'next/server'
 
 export const runtime = 'edge'
 
+const W = 1170  // 390 × 3 — high-res render
+const S = 3     // scale factor
+
 const isArabic = (text: string) => /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/.test(text)
 const safe = (text: string, fallback = '') => isArabic(text) ? fallback : text
 
-const getMedal  = (r: number) => r === 1 ? '🥇' : r === 2 ? '🥈' : r === 3 ? '🥉' : null
-const getRankLabel = (r: number) => r === 1 ? '1ST PLACE' : r === 2 ? '2ND PLACE' : '3RD PLACE'
+const getMedal      = (r: number) => r === 1 ? '🥇' : r === 2 ? '🥈' : r === 3 ? '🥉' : null
+const getRankLabel  = (r: number) => r === 1 ? '1ST PLACE' : r === 2 ? '2ND PLACE' : '3RD PLACE'
 const getRankGradient = (r: number) =>
   r === 1 ? 'linear-gradient(90deg,#f9a825,#ff8f00)'
   : r === 2 ? 'linear-gradient(90deg,#9e9e9e,#bdbdbd)'
@@ -44,22 +47,22 @@ export async function GET(request: NextRequest) {
 
     // ── Header ───────────────────────────────────────────────────
     const headerEl = (rightContent: React.ReactNode) => (
-      <div style={{ display: 'flex', flexDirection: 'column', background: 'linear-gradient(135deg,#1a4a1f,#2e7d32)', padding: '12px 16px 10px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', background: 'linear-gradient(135deg,#1a4a1f,#2e7d32)', padding: `${36}px ${48}px ${30}px` }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 26 }}>🕊️</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+            <span style={{ fontSize: 78 }}>🕊️</span>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ color: 'white', fontSize: 15, fontWeight: 900 }}>{club}</span>
-              <span style={{ color: '#a5d6a7', fontSize: 7, letterSpacing: 2 }}>RACING FEDERATION</span>
+              <span style={{ color: 'white', fontSize: 45, fontWeight: 900 }}>{club}</span>
+              <span style={{ color: '#a5d6a7', fontSize: 21, letterSpacing: 6 }}>RACING FEDERATION</span>
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
             {rightContent}
           </div>
         </div>
-        <div style={{ display: 'flex', marginTop: 8 }}>
-          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.18)', borderRadius: 20, padding: '2px 10px', border: '1px solid rgba(255,255,255,0.3)' }}>
-            <span style={{ color: 'white', fontSize: 9, fontWeight: 600 }}>{tournament}</span>
+        <div style={{ display: 'flex', marginTop: 24 }}>
+          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.18)', borderRadius: 60, padding: `${6}px ${30}px`, border: '3px solid rgba(255,255,255,0.3)' }}>
+            <span style={{ color: 'white', fontSize: 27, fontWeight: 600 }}>{tournament}</span>
           </div>
         </div>
       </div>
@@ -67,33 +70,33 @@ export async function GET(request: NextRequest) {
 
     // ── Rank banner (top 3 only) ──────────────────────────────────
     const rankBannerEl = medal ? (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: getRankGradient(rank), padding: '8px 0' }}>
-        <span style={{ fontSize: 20 }}>{medal}</span>
-        <span style={{ color: 'white', fontSize: 13, fontWeight: 900, letterSpacing: 2 }}>{getRankLabel(rank)}</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, background: getRankGradient(rank), padding: `${24}px 0` }}>
+        <span style={{ fontSize: 60 }}>{medal}</span>
+        <span style={{ color: 'white', fontSize: 39, fontWeight: 900, letterSpacing: 6 }}>{getRankLabel(rank)}</span>
       </div>
     ) : null
 
     // ── Profile ──────────────────────────────────────────────────
     const profileEl = (scoreLabel: string) => (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '10px 12px', background: 'white', borderRadius: 14, padding: '12px 14px', border: '1px solid #e0e0e0' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', border: '2px solid #c8e6c9', borderRadius: 10, padding: '6px 12px', background: '#f1fbf1', flexShrink: 0 }}>
-          <span style={{ color: '#888', fontSize: 7, letterSpacing: 2, fontWeight: 700 }}>{scoreLabel}</span>
-          <span style={{ color: '#1b5e20', fontSize: score ? 24 : 15, fontWeight: 900, lineHeight: 1, marginTop: 3 }}>{score || '--:--'}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 36, margin: `${30}px ${36}px`, background: 'white', borderRadius: 42, padding: `${36}px ${42}px`, border: '3px solid #e0e0e0' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', border: '6px solid #c8e6c9', borderRadius: 30, padding: `${18}px ${36}px`, background: '#f1fbf1', flexShrink: 0 }}>
+          <span style={{ color: '#888', fontSize: 21, letterSpacing: 6, fontWeight: 700 }}>{scoreLabel}</span>
+          <span style={{ color: '#1b5e20', fontSize: score ? 72 : 45, fontWeight: 900, lineHeight: 1, marginTop: 9 }}>{score || '--:--'}</span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, alignItems: 'center' }}>
-          <span style={{ color: '#111', fontSize: 16, fontWeight: 800, textAlign: 'center' }}>{player}</span>
-          {area ? <span style={{ color: '#4caf50', fontSize: 11, marginTop: 3 }}>{area}</span> : null}
+          <span style={{ color: '#111', fontSize: 48, fontWeight: 800, textAlign: 'center' }}>{player}</span>
+          {area ? <span style={{ color: '#4caf50', fontSize: 33, marginTop: 9 }}>{area}</span> : null}
           {!medal && rank > 0 ? (
-            <div style={{ display: 'flex', background: '#388e3c', borderRadius: 20, padding: '2px 10px', marginTop: 5 }}>
-              <span style={{ color: 'white', fontSize: 10, fontWeight: 800 }}>#{rank}</span>
+            <div style={{ display: 'flex', background: '#388e3c', borderRadius: 60, padding: `${6}px ${30}px`, marginTop: 15 }}>
+              <span style={{ color: 'white', fontSize: 30, fontWeight: 800 }}>#{rank}</span>
             </div>
           ) : null}
         </div>
         <div style={{ display: 'flex', flexShrink: 0 }}>
-          <div style={{ display: 'flex', width: 78, height: 78, borderRadius: 39, border: `3px solid ${ringColor}`, background: '#e8f5e9', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', width: 234, height: 234, borderRadius: 117, border: `${9}px solid ${ringColor}`, background: '#e8f5e9', alignItems: 'center', justifyContent: 'center' }}>
             {photoData
-              ? <img src={photoData} width={78} height={78} style={{ borderRadius: 39 }} alt="" />
-              : <span style={{ fontSize: 28, fontWeight: 900, color: '#1b5e20' }}>{player.charAt(0).toUpperCase()}</span>
+              ? <img src={photoData} width={234} height={234} style={{ borderRadius: 117 }} alt="" />
+              : <span style={{ fontSize: 84, fontWeight: 900, color: '#1b5e20' }}>{player.charAt(0).toUpperCase()}</span>
             }
           </div>
         </div>
@@ -109,19 +112,19 @@ export async function GET(request: NextRequest) {
         rows.push(row)
       }
       return (
-        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, margin: '4px 12px 0', gap: 6 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, margin: `${12}px ${36}px 0`, gap: 18 }}>
           {rows.map((row, ri) => (
-            <div key={ri} style={{ display: 'flex', gap: 6, flex: 1 }}>
+            <div key={ri} style={{ display: 'flex', gap: 18, flex: 1 }}>
               {row.map((cell, ci) => cell.i === -1
                 ? <div key={ci} style={{ flex: 1, display: 'flex' }} />
                 : (
                   <div key={cell.i} style={{
                     flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                     background: cell.active ? '#2e7d32' : '#f0f0f0',
-                    borderRadius: 8, padding: '6px 2px',
+                    borderRadius: 24, padding: `${18}px ${6}px`,
                   }}>
-                    <span style={{ color: cell.active ? 'rgba(255,255,255,0.65)' : '#c0c0c0', fontSize: 8, fontWeight: 700 }}>{cell.label}</span>
-                    <span style={{ color: cell.active ? 'white' : '#d0d0d0', fontSize: 13, fontWeight: 900, marginTop: 2 }}>{cell.time}</span>
+                    <span style={{ color: cell.active ? 'rgba(255,255,255,0.65)' : '#c0c0c0', fontSize: 24, fontWeight: 700 }}>{cell.label}</span>
+                    <span style={{ color: cell.active ? 'white' : '#d0d0d0', fontSize: 39, fontWeight: 900, marginTop: 6 }}>{cell.time}</span>
                   </div>
                 )
               )}
@@ -133,8 +136,8 @@ export async function GET(request: NextRequest) {
 
     // ── Footer ───────────────────────────────────────────────────
     const footerEl = (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '8px 16px 10px' }}>
-        <span style={{ color: 'rgba(27,94,32,0.3)', fontSize: 9, fontWeight: 700, letterSpacing: 3 }}>PAKISTAN PIGEON RACING</span>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: `${24}px ${48}px ${30}px` }}>
+        <span style={{ color: 'rgba(27,94,32,0.3)', fontSize: 27, fontWeight: 700, letterSpacing: 9 }}>PAKISTAN PIGEON RACING</span>
       </div>
     )
 
@@ -151,15 +154,15 @@ export async function GET(request: NextRequest) {
       const cells  = rawTimes.slice(0, pigeonCount).map((t, i) => ({ i, label: `#${i + 1}`, time: t || '--', active: !!(t && t !== '--') }))
       const cols   = pigeonCount <= 6 ? 3 : pigeonCount <= 12 ? 4 : 5
       const nRows  = Math.ceil(pigeonCount / cols)
-      const height = Math.min(Math.max(480, 250 + (medal ? 36 : 0) + nRows * 72), 720)
+      const height = Math.min(Math.max(480 * S, (250 + (medal ? 36 : 0) + nRows * 72) * S), 720 * S)
 
       return new ImageResponse(
         (
           <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', fontFamily: 'sans-serif', background: 'linear-gradient(160deg,#e8f5e9,#f9fdf9,#e8f5e9)' }}>
             {headerEl(
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
-                <span style={{ color: 'white', fontSize: 13, fontWeight: 800 }}>{`DAY ${day} / ${totalDays}`}</span>
-                {date ? <span style={{ color: '#c8e6c9', fontSize: 10 }}>{date}</span> : null}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 9 }}>
+                <span style={{ color: 'white', fontSize: 39, fontWeight: 800 }}>{`DAY ${day} / ${totalDays}`}</span>
+                {date ? <span style={{ color: '#c8e6c9', fontSize: 30 }}>{date}</span> : null}
               </div>
             )}
             {rankBannerEl}
@@ -168,7 +171,7 @@ export async function GET(request: NextRequest) {
             {footerEl}
           </div>
         ),
-        { width: 390, height }
+        { width: W, height }
       )
     }
 
@@ -181,15 +184,15 @@ export async function GET(request: NextRequest) {
     const dayCells = rawDayTimes.slice(0, totalDays).map((t, i) => ({ i, label: `DAY ${i + 1}`, time: t || '--', active: !!(t && t !== '--') }))
     const dayCols  = totalDays <= 3 ? totalDays : totalDays <= 8 ? 4 : 5
     const dayRows  = Math.ceil(totalDays / dayCols)
-    const height   = Math.min(Math.max(450, 230 + (medal ? 36 : 0) + dayRows * 72), 690)
+    const height   = Math.min(Math.max(450 * S, (230 + (medal ? 36 : 0) + dayRows * 72) * S), 690 * S)
 
     return new ImageResponse(
       (
         <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', fontFamily: 'sans-serif', background: 'linear-gradient(160deg,#e8f5e9,#f9fdf9,#e8f5e9)' }}>
           {headerEl(
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
-              <span style={{ color: 'white', fontSize: 12, fontWeight: 700 }}>OVERALL RESULT</span>
-              <span style={{ color: '#a5d6a7', fontSize: 9, marginTop: 2 }}>{`${totalDays} DAY${totalDays > 1 ? 'S' : ''}`}</span>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 9 }}>
+              <span style={{ color: 'white', fontSize: 36, fontWeight: 700 }}>OVERALL RESULT</span>
+              <span style={{ color: '#a5d6a7', fontSize: 27, marginTop: 6 }}>{`${totalDays} DAY${totalDays > 1 ? 'S' : ''}`}</span>
             </div>
           )}
           {rankBannerEl}
@@ -198,7 +201,7 @@ export async function GET(request: NextRequest) {
           {footerEl}
         </div>
       ),
-      { width: 390, height }
+      { width: W, height }
     )
 
   } catch (err) {
