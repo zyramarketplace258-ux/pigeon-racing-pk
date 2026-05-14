@@ -26,17 +26,6 @@ async function fetchPhoto(url: string): Promise<string | null> {
   } catch { return null }
 }
 
-async function fetchUrduFont(): Promise<ArrayBuffer | null> {
-  try {
-    const css = await fetch(
-      'https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@700',
-      { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' } }
-    ).then(r => r.text())
-    const fontUrl = css.match(/src: url\(([^)]+)\)/)?.[1]
-    if (!fontUrl) return null
-    return await fetch(fontUrl).then(r => r.arrayBuffer())
-  } catch { return null }
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -58,21 +47,15 @@ export async function GET(request: NextRequest) {
     const score      = s('score', '')
     const photoUrl   = s('photoUrl')
 
-    const [photoData, cardBkData, urduFontData] = await Promise.all([
+    const [photoData, cardBkData] = await Promise.all([
       photoUrl ? fetchPhoto(photoUrl) : Promise.resolve(null),
       fetchPhoto(`${baseUrl}/cardbk.png`),
-      showUrdu ? fetchUrduFont() : Promise.resolve(null),
     ])
 
     const medal     = getMedal(rank)
     const ringColor = getRankRing(rank)
-    const fonts     = urduFontData
-      ? [{ name: 'UrduFont', data: urduFontData, style: 'normal' as const, weight: 700 as const }]
-      : []
 
-    const nameStyle = showUrdu
-      ? { fontFamily: 'UrduFont', direction: 'rtl' as const }
-      : {}
+    const nameStyle = showUrdu ? { direction: 'rtl' as const } : {}
 
     // ── Header (home-page style, cardbk.png as center logo) ─────
     const headerEl = (rightContent: React.ReactNode) => (
@@ -195,7 +178,7 @@ export async function GET(request: NextRequest) {
             {gridEl(cells, cols)}
           </div>
         ),
-        { width: W, height, fonts }
+        { width: W, height }
       )
     }
 
