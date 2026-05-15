@@ -1,9 +1,17 @@
 import { ImageResponse } from 'next/og'
 import { NextRequest } from 'next/server'
+import fs from 'fs'
+import path from 'path'
 
-export const runtime = 'edge'
+export const runtime = 'nodejs'
 
 const W = 1170  // 390 × 3 — high-res render
+
+// Read the logo once at module load from the local filesystem
+const _logoPath = path.join(process.cwd(), 'public', 'cardbk.jpg')
+const LOGO_DATA_URL = fs.existsSync(_logoPath)
+  ? `data:image/jpeg;base64,${fs.readFileSync(_logoPath).toString('base64')}`
+  : null
 
 const isArabic = (text: string) => /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/.test(text)
 const safeEn = (text: string, fallback = '') => isArabic(text) ? fallback : text
@@ -42,8 +50,6 @@ export async function GET(request: NextRequest) {
     const score      = s('score', '')
     const photoUrl   = s('photoUrl')
 
-    const cardLogoUrl = `${baseUrl}/cardbk.jpg`
-
     const photoData = photoUrl ? await fetchPhoto(photoUrl) : null
 
     const medal     = getMedal(rank)
@@ -56,7 +62,7 @@ export async function GET(request: NextRequest) {
           <span style={{ color: 'white', fontSize: 51, fontWeight: 900 }}>Pakistan Pigeon Racing</span>
           <span style={{ color: '#86efac', fontSize: 21, letterSpacing: 6 }}>LOVE FOR THE LOFT</span>
         </div>
-        <img src={cardLogoUrl} width={120} height={120} style={{ objectFit: 'contain' }} alt="" />
+        {LOGO_DATA_URL && <img src={LOGO_DATA_URL} width={120} height={120} style={{ objectFit: 'contain' }} alt="" />}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 9 }}>
           {rightContent}
         </div>
@@ -158,7 +164,7 @@ export async function GET(request: NextRequest) {
       return new ImageResponse(
         (
           <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', fontFamily: 'sans-serif', background: 'linear-gradient(160deg,#e8f5e9,#f9fdf9,#e8f5e9)', position: 'relative' }}>
-            <img src={cardLogoUrl} width={W} height={height} style={{ position: 'absolute', top: 0, left: 0, objectFit: 'contain', opacity: 0.12 }} alt="" />
+            {LOGO_DATA_URL && <img src={LOGO_DATA_URL} width={W} height={height} style={{ position: 'absolute', top: 0, left: 0, objectFit: 'contain', opacity: 0.12 }} alt="" />}
             {headerEl(
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 9 }}>
                 <span style={{ color: 'white', fontSize: 36, fontWeight: 800 }}>{club}</span>
@@ -189,7 +195,7 @@ export async function GET(request: NextRequest) {
     return new ImageResponse(
       (
         <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', fontFamily: 'sans-serif', background: 'linear-gradient(160deg,#e8f5e9,#f9fdf9,#e8f5e9)', position: 'relative' }}>
-          <img src={cardLogoUrl} width={W} height={height} style={{ position: 'absolute', top: 0, left: 0, objectFit: 'contain', opacity: 0.12 }} alt="" />
+          <img src={LOGO_DATA_URL} width={W} height={height} style={{ position: 'absolute', top: 0, left: 0, objectFit: 'contain', opacity: 0.12 }} alt="" />
           {headerEl(
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 9 }}>
               <span style={{ color: 'white', fontSize: 36, fontWeight: 800 }}>{club}</span>
