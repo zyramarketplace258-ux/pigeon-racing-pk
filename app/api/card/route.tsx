@@ -73,10 +73,12 @@ export async function GET(request: NextRequest) {
     const score      = s('score', '')
     const photoUrl   = s('photoUrl')
 
+    const timeout = <T,>(p: Promise<T>) => Promise.race([p, new Promise<null>(r => setTimeout(() => r(null), 3000))])
+
     const [photoData, playfairBuf, urduBuf] = await Promise.all([
       photoUrl ? fetchPhoto(photoUrl) : Promise.resolve(null),
-      getPlayfair(),
-      getUrdu(),
+      timeout(getPlayfair()),
+      timeout(getUrdu()),
     ])
 
     const medal     = getMedal(rank)
