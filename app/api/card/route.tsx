@@ -42,8 +42,9 @@ export async function GET(request: NextRequest) {
     const score      = s('score', '')
     const photoUrl   = s('photoUrl')
 
-    const [photoData] = await Promise.all([
+    const [photoData, cardBkData] = await Promise.all([
       photoUrl ? fetchPhoto(photoUrl) : Promise.resolve(null),
+      fetchPhoto(`${baseUrl}/cardbk.jpg`),
     ])
 
     const medal    = getMedal(rank)
@@ -56,6 +57,10 @@ export async function GET(request: NextRequest) {
           <span style={{ color: 'white', fontSize: 51, fontWeight: 900 }}>Pakistan Pigeon Racing</span>
           <span style={{ color: '#86efac', fontSize: 21, letterSpacing: 6 }}>LOVE FOR THE LOFT</span>
         </div>
+        {cardBkData
+          ? <img src={cardBkData} width={120} height={120} style={{ objectFit: 'contain' }} alt="" />
+          : <div style={{ width: 120, height: 120, display: 'flex' }} />
+        }
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 9 }}>
           {rightContent}
         </div>
@@ -147,7 +152,8 @@ export async function GET(request: NextRequest) {
 
       return new ImageResponse(
         (
-          <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', fontFamily: 'sans-serif', background: 'linear-gradient(160deg,#e8f5e9,#f9fdf9,#e8f5e9)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', fontFamily: 'sans-serif', background: 'linear-gradient(160deg,#e8f5e9,#f9fdf9,#e8f5e9)', position: 'relative' }}>
+            {cardBkData && <img src={cardBkData} width={W} height={height} style={{ position: 'absolute', top: 0, left: 0, objectFit: 'contain', opacity: 0.12 }} alt="" />}
             {headerEl(
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 9 }}>
                 <span style={{ color: 'white', fontSize: 36, fontWeight: 800 }}>{club}</span>
