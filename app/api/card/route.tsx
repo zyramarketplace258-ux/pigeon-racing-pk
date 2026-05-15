@@ -61,13 +61,13 @@ export async function GET(request: NextRequest) {
 
     // ── Header ────────────────────────────────────────────────────
     const headerEl = (rightContent: React.ReactNode) => (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg,#1b5e20,#2e7d32)', padding: '36px 54px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', alignItems: 'center', background: 'linear-gradient(135deg,#1b5e20,#2e7d32)', padding: '36px 54px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
           <span style={{ color: 'white', fontSize: 51, fontWeight: 900 }}>Pakistan Pigeon Racing</span>
           <span style={{ color: '#86efac', fontSize: 21, letterSpacing: 6 }}>LOVE FOR THE LOFT</span>
         </div>
-        {PIGEON_DATA_URL && <img src={PIGEON_DATA_URL} width={120} height={120} alt="" />}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 9 }}>
+        {PIGEON_DATA_URL && <img src={PIGEON_DATA_URL} width={162} height={162} alt="" />}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 9, flex: 1 }}>
           {rightContent}
         </div>
       </div>
@@ -164,7 +164,7 @@ export async function GET(request: NextRequest) {
       const cols   = pigeonCount <= 6 ? 3 : pigeonCount <= 12 ? 4 : 5
       const nRows  = Math.ceil(pigeonCount / cols)
       const height = Math.min(Math.max(1500, 870 + (medal ? 108 : 0) + nRows * 216), 2250)
-      const gridH  = nRows * 216 + 36
+      const gridH  = Math.round((nRows * 216 + 36) * 0.7)
 
       return new ImageResponse(
         (
@@ -196,7 +196,7 @@ export async function GET(request: NextRequest) {
     const dayCols  = totalDays <= 3 ? totalDays : totalDays <= 8 ? 4 : 5
     const dayRows  = Math.ceil(totalDays / dayCols)
     const height   = Math.min(Math.max(1440, 840 + (medal ? 108 : 0) + dayRows * 216), 2160)
-    const gridH    = dayRows * 216 + 36
+    const gridH    = Math.round((dayRows * 216 + 36) * 0.7)
 
     return new ImageResponse(
       (
