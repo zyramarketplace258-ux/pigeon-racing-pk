@@ -34,19 +34,28 @@ export async function GET(request: NextRequest) {
     const club       = safeEn(s('club', 'Club'), 'Club')
     const playerEn   = s('player', '').trim()
     const playerUr   = s('playerUrdu', '').trim()
-    const playerName = playerEn || playerUr || 'Player'
-    const area       = s('area', '').trim() || s('areaUrdu', '').trim()
+    const playerDisplay = playerEn || playerUr || 'Player'
+    const areaEn     = s('area', '').trim()
+    const areaUr     = s('areaUrdu', '').trim()
     const rank       = parseInt(s('rank', '0')) || 0
     const score      = s('score', '')
     const photoUrl   = s('photoUrl')
 
-    const [photoData, cardBkData] = await Promise.all([
+    // Use the public asset URL directly — no need to fetch+base64 encode the logo
+    const cardLogoUrl = `${baseUrl}/cardbk.jpg`
+
+    const [photoData, urduFontData] = await Promise.all([
       photoUrl ? fetchPhoto(photoUrl) : Promise.resolve(null),
-      fetchPhoto(`${baseUrl}/cardbk.jpg`),
+      fetch('https://cdn.jsdelivr.net/npm/@fontsource/noto-naskh-arabic@5.0.9/files/noto-naskh-arabic-arabic-400-normal.woff2')
+        .then(r => r.arrayBuffer()).catch(() => null),
     ])
 
-    const medal    = getMedal(rank)
+    const medal     = getMedal(rank)
     const ringColor = getRankRing(rank)
+
+    const fonts = urduFontData
+      ? [{ name: 'NotoNaskhArabic', data: urduFontData, style: 'normal' as const, weight: 400 as const }]
+      : []
 
     // ── Header ────────────────────────────────────────────────────
     const headerEl = (rightContent: React.ReactNode) => (
@@ -55,10 +64,7 @@ export async function GET(request: NextRequest) {
           <span style={{ color: 'white', fontSize: 51, fontWeight: 900 }}>Pakistan Pigeon Racing</span>
           <span style={{ color: '#86efac', fontSize: 21, letterSpacing: 6 }}>LOVE FOR THE LOFT</span>
         </div>
-        {cardBkData
-          ? <img src={cardBkData} width={120} height={120} style={{ objectFit: 'contain' }} alt="" />
-          : <div style={{ width: 120, height: 120, display: 'flex' }} />
-        }
+        <img src={cardLogoUrl} width={120} height={120} style={{ objectFit: 'contain' }} alt="" />
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 9 }}>
           {rightContent}
         </div>
@@ -78,8 +84,17 @@ export async function GET(request: NextRequest) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 42, margin: '24px 36px', background: 'transparent', borderRadius: 36, padding: '33px 42px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
           <span style={{ color: '#1b5e20', fontSize: 51, fontWeight: 900, lineHeight: 1.1 }}>{tournament}</span>
-          <span style={{ color: '#111', fontSize: 45, fontWeight: 800, marginTop: 12 }}>{playerName}</span>
-          {area ? <span style={{ color: '#2e7d32', fontSize: 30, marginTop: 6 }}>{area}</span> : null}
+          {playerEn
+            ? <span style={{ color: '#111', fontSize: 45, fontWeight: 800, marginTop: 12 }}>{playerEn}</span>
+            : null}
+          {playerUr
+            ? <span style={{ color: '#111', fontSize: playerEn ? 36 : 45, fontWeight: 800, marginTop: playerEn ? 4 : 12, direction: 'rtl', fontFamily: 'NotoNaskhArabic, sans-serif' }}>{playerUr}</span>
+            : null}
+          {!playerEn && !playerUr
+            ? <span style={{ color: '#111', fontSize: 45, fontWeight: 800, marginTop: 12 }}>Player</span>
+            : null}
+          {areaEn ? <span style={{ color: '#2e7d32', fontSize: 30, marginTop: 6 }}>{areaEn}</span> : null}
+          {areaUr ? <span style={{ color: '#2e7d32', fontSize: 27, marginTop: 4, direction: 'rtl', fontFamily: 'NotoNaskhArabic, sans-serif' }}>{areaUr}</span> : null}
           {!medal && rank > 0 ? (
             <div style={{ display: 'flex', alignSelf: 'flex-start', background: 'rgba(56,142,60,0.85)', borderRadius: 60, padding: '6px 27px', marginTop: 12 }}>
               <span style={{ color: 'white', fontSize: 27, fontWeight: 800 }}>#{rank}</span>
@@ -94,7 +109,7 @@ export async function GET(request: NextRequest) {
           <div style={{ display: 'flex', width: 219, height: 219, borderRadius: 110, border: `9px solid ${ringColor}`, background: 'rgba(232,245,233,0.7)', alignItems: 'center', justifyContent: 'center' }}>
             {photoData
               ? <img src={photoData} width={219} height={219} style={{ borderRadius: 110 }} alt="" />
-              : <span style={{ fontSize: 81, fontWeight: 900, color: '#1b5e20' }}>{playerName.charAt(0).toUpperCase()}</span>
+              : <span style={{ fontSize: 81, fontWeight: 900, color: '#1b5e20' }}>{playerDisplay.charAt(0).toUpperCase()}</span>
             }
           </div>
         </div>
@@ -151,7 +166,7 @@ export async function GET(request: NextRequest) {
       return new ImageResponse(
         (
           <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', fontFamily: 'sans-serif', background: 'linear-gradient(160deg,#e8f5e9,#f9fdf9,#e8f5e9)', position: 'relative' }}>
-            {cardBkData && <img src={cardBkData} width={W} height={height} style={{ position: 'absolute', top: 0, left: 0, objectFit: 'contain', opacity: 0.12 }} alt="" />}
+            <img src={cardLogoUrl} width={W} height={height} style={{ position: 'absolute', top: 0, left: 0, objectFit: 'contain', opacity: 0.12 }} alt="" />
             {headerEl(
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 9 }}>
                 <span style={{ color: 'white', fontSize: 36, fontWeight: 800 }}>{club}</span>
@@ -164,7 +179,7 @@ export async function GET(request: NextRequest) {
             {gridEl(cells, cols)}
           </div>
         ),
-        { width: W, height }
+        { width: W, height, fonts }
       )
     }
 
@@ -182,6 +197,7 @@ export async function GET(request: NextRequest) {
     return new ImageResponse(
       (
         <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', fontFamily: 'sans-serif', background: 'linear-gradient(160deg,#e8f5e9,#f9fdf9,#e8f5e9)', position: 'relative' }}>
+          <img src={cardLogoUrl} width={W} height={height} style={{ position: 'absolute', top: 0, left: 0, objectFit: 'contain', opacity: 0.12 }} alt="" />
           {headerEl(
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 9 }}>
               <span style={{ color: 'white', fontSize: 36, fontWeight: 800 }}>{club}</span>
@@ -194,7 +210,7 @@ export async function GET(request: NextRequest) {
           {gridEl(dayCells, dayCols)}
         </div>
       ),
-      { width: W, height }
+      { width: W, height, fonts }
     )
 
   } catch (err) {
