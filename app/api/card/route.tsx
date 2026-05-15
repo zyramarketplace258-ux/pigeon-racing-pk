@@ -36,7 +36,6 @@ async function fetchPhoto(url: string): Promise<string | null> {
 export async function GET(request: NextRequest) {
   try {
     const s = (k: string, def = '') => new URL(request.url).searchParams.get(k) ?? def
-    const baseUrl = new URL(request.url).origin
 
     const type       = s('type', 'daily')
     const tournament = safeEn(s('tournament', 'Tournament'), 'Tournament')
