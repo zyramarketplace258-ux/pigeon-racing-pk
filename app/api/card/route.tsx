@@ -42,9 +42,8 @@ export async function GET(request: NextRequest) {
     const score      = s('score', '')
     const photoUrl   = s('photoUrl')
 
-    const [photoData, cardBkData] = await Promise.all([
+    const [photoData] = await Promise.all([
       photoUrl ? fetchPhoto(photoUrl) : Promise.resolve(null),
-      fetchPhoto(`${baseUrl}/cardbk.jpg`),
     ])
 
     const medal    = getMedal(rank)
@@ -57,10 +56,6 @@ export async function GET(request: NextRequest) {
           <span style={{ color: 'white', fontSize: 51, fontWeight: 900 }}>Pakistan Pigeon Racing</span>
           <span style={{ color: '#86efac', fontSize: 21, letterSpacing: 6 }}>LOVE FOR THE LOFT</span>
         </div>
-        {cardBkData
-          ? <img src={cardBkData} width={120} height={120} style={{ objectFit: 'contain' }} alt="" />
-          : <div style={{ width: 120, height: 120, display: 'flex' }} />
-        }
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 9 }}>
           {rightContent}
         </div>
@@ -69,15 +64,15 @@ export async function GET(request: NextRequest) {
 
     // ── Rank banner ───────────────────────────────────────────────
     const rankBannerEl = medal ? (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, background: getRankBg(rank), padding: '21px 0' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, background: 'transparent', padding: '21px 0' }}>
         <span style={{ fontSize: 57 }}>{medal}</span>
-        <span style={{ color: 'white', fontSize: 39, fontWeight: 900, letterSpacing: 6 }}>{getRankLabel(rank)}</span>
+        <span style={{ color: '#1b5e20', fontSize: 39, fontWeight: 900, letterSpacing: 6 }}>{getRankLabel(rank)}</span>
       </div>
     ) : null
 
     // ── Profile box ───────────────────────────────────────────────
     const profileEl = (scoreLabel: string) => (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 42, margin: '24px 36px', background: 'rgba(253,248,240,0.7)', borderRadius: 36, padding: '33px 42px', border: '2px solid rgba(232,220,200,0.6)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 42, margin: '24px 36px', background: 'transparent', borderRadius: 36, padding: '33px 42px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
           <span style={{ color: '#1b5e20', fontSize: 51, fontWeight: 900, lineHeight: 1.1 }}>{tournament}</span>
           <span style={{ color: '#111', fontSize: 45, fontWeight: 800, marginTop: 12 }}>{playerName}</span>
@@ -120,9 +115,9 @@ export async function GET(request: NextRequest) {
                 : (
                   <div key={cell.i} style={{
                     flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    background: cell.active ? 'rgba(254,249,238,0.65)' : 'rgba(245,245,240,0.45)',
+                    background: 'transparent',
                     borderRadius: 24, padding: '18px 6px',
-                    border: cell.active ? '2px solid rgba(46,125,50,0.5)' : '2px solid rgba(224,224,224,0.4)',
+                    border: cell.active ? '2px solid rgba(46,125,50,0.4)' : '2px solid rgba(0,0,0,0.08)',
                   }}>
                     <span style={{ color: cell.active ? '#444' : '#c8c8c8', fontSize: 24, fontWeight: 700 }}>{cell.label}</span>
                     <span style={{ color: cell.active ? '#111' : '#d8d8d8', fontSize: 39, fontWeight: 900, marginTop: 6 }}>{cell.time}</span>
@@ -152,8 +147,7 @@ export async function GET(request: NextRequest) {
 
       return new ImageResponse(
         (
-          <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', fontFamily: 'sans-serif', background: 'linear-gradient(160deg,#e8f5e9,#f9fdf9,#e8f5e9)', position: 'relative' }}>
-            {cardBkData && <img src={cardBkData} width={W} height={height} style={{ position: 'absolute', top: 0, left: 0, objectFit: 'contain', opacity: 0.1 }} alt="" />}
+          <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', fontFamily: 'sans-serif', background: 'linear-gradient(160deg,#e8f5e9,#f9fdf9,#e8f5e9)' }}>
             {headerEl(
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 9 }}>
                 <span style={{ color: 'white', fontSize: 36, fontWeight: 800 }}>{club}</span>
@@ -184,7 +178,6 @@ export async function GET(request: NextRequest) {
     return new ImageResponse(
       (
         <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', fontFamily: 'sans-serif', background: 'linear-gradient(160deg,#e8f5e9,#f9fdf9,#e8f5e9)', position: 'relative' }}>
-          {cardBkData && <img src={cardBkData} width={W} height={height} style={{ position: 'absolute', top: 0, left: 0, objectFit: 'contain', opacity: 0.1 }} alt="" />}
           {headerEl(
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 9 }}>
               <span style={{ color: 'white', fontSize: 36, fontWeight: 800 }}>{club}</span>
