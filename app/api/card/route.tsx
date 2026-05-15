@@ -42,10 +42,9 @@ export async function GET(request: NextRequest) {
     const score      = s('score', '')
     const photoUrl   = s('photoUrl')
 
-    const [photoData, logoBk] = await Promise.all([
-      photoUrl ? fetchPhoto(photoUrl) : Promise.resolve(null),
-      fetchPhoto(`${baseUrl}/cardbk.jpg`),
-    ])
+    const cardLogoUrl = `${baseUrl}/cardbk.jpg`
+
+    const photoData = photoUrl ? await fetchPhoto(photoUrl) : null
 
     const medal     = getMedal(rank)
     const ringColor = getRankRing(rank)
@@ -57,9 +56,7 @@ export async function GET(request: NextRequest) {
           <span style={{ color: 'white', fontSize: 51, fontWeight: 900 }}>Pakistan Pigeon Racing</span>
           <span style={{ color: '#86efac', fontSize: 21, letterSpacing: 6 }}>LOVE FOR THE LOFT</span>
         </div>
-        {logoBk
-          ? <img src={logoBk} width={120} height={120} style={{ objectFit: 'contain' }} alt="" />
-          : <div style={{ width: 120, height: 120, display: 'flex' }} />}
+        <img src={cardLogoUrl} width={120} height={120} style={{ objectFit: 'contain' }} alt="" />
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 9 }}>
           {rightContent}
         </div>
@@ -161,7 +158,7 @@ export async function GET(request: NextRequest) {
       return new ImageResponse(
         (
           <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', fontFamily: 'sans-serif', background: 'linear-gradient(160deg,#e8f5e9,#f9fdf9,#e8f5e9)', position: 'relative' }}>
-            {logoBk && <img src={logoBk} width={W} height={height} style={{ position: 'absolute', top: 0, left: 0, objectFit: 'contain', opacity: 0.12 }} alt="" />}
+            <img src={cardLogoUrl} width={W} height={height} style={{ position: 'absolute', top: 0, left: 0, objectFit: 'contain', opacity: 0.12 }} alt="" />
             {headerEl(
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 9 }}>
                 <span style={{ color: 'white', fontSize: 36, fontWeight: 800 }}>{club}</span>
