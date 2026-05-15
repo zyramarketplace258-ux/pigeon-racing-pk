@@ -1,35 +1,35 @@
 import { ImageResponse } from 'next/og'
 import { NextRequest } from 'next/server'
-import fs from 'fs'
-import path from 'path'
 
-export const runtime = 'nodejs'
+export const runtime = 'edge'
 
-const W = 1170  // 390 × 3 — high-res render
+const W = 1170
 
-// ── Static assets loaded from filesystem at startup ──────────────
-function readBuf(p: string): Buffer | null {
-  return fs.existsSync(p) ? fs.readFileSync(p) : null
+// Static assets fetched once from Vercel CDN on first request, reused on warm invocations
+let _assetsLoaded  = false
+let _pigeonDataUrl: string | null = null
+let _cardbkDataUrl: string | null = null
+let _playfairFont:  ArrayBuffer | null = null
+let _urduFont:      ArrayBuffer | null = null
+
+async function fetchAB(url: string): Promise<ArrayBuffer | null> {
+  try {
+    const r = await fetch(url)
+    return r.ok ? r.arrayBuffer() : null
+  } catch { return null }
 }
-function toArrayBuffer(b: Buffer): ArrayBuffer {
-  return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer
+
+async function fetchDataUrl(url: string): Promise<string | null> {
+  try {
+    const r = await fetch(url)
+    if (!r.ok) return null
+    const buf = await r.arrayBuffer()
+    const bytes = new Uint8Array(buf)
+    let b64 = ''
+    for (let i = 0; i < bytes.length; i++) b64 += String.fromCharCode(bytes[i])
+    return `data:${r.headers.get('content-type') || 'image/jpeg'};base64,${btoa(b64)}`
+  } catch { return null }
 }
-function toDataUrl(b: Buffer, mime: string): string {
-  return `data:${mime};base64,${b.toString('base64')}`
-}
-
-const fontsDir = path.join(process.cwd(), 'public', 'fonts')
-
-const _pigeonBuf   = readBuf(path.join(process.cwd(), 'public', 'pigeon.png'))
-const _cardbkBuf   = readBuf(path.join(process.cwd(), 'public', 'cardbk.jpg'))
-const _playfairBuf = readBuf(path.join(fontsDir, 'playfair-italic-700.woff2'))
-const _urdu0Buf    = readBuf(path.join(fontsDir, 'noto-naskh-arabic.woff2'))
-
-const PIGEON_DATA_URL = _pigeonBuf  ? toDataUrl(_pigeonBuf,  'image/png')  : null
-const CARDBK_DATA_URL = _cardbkBuf  ? toDataUrl(_cardbkBuf,  'image/jpeg') : null
-const PLAYFAIR_FONT   = _playfairBuf ? toArrayBuffer(_playfairBuf) : null
-
-const URDU_FONT = _urdu0Buf ? { name: 'UrduFont', data: toArrayBuffer(_urdu0Buf), style: 'normal' as const, weight: 400 as const } : null
 
 // ── Helpers ───────────────────────────────────────────────────────
 const isArabic = (t: string) => /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/.test(t)
@@ -39,20 +39,25 @@ const getMedalColor = (r: number) => r === 1 ? '#f9a825' : r === 2 ? '#9e9e9e' :
 const getRankLabel  = (r: number) => r === 1 ? '1ST PLACE' : r === 2 ? '2ND PLACE' : '3RD PLACE'
 const getRankRing   = (r: number) => r === 1 ? '#f9a825' : r === 2 ? '#9e9e9e' : r === 3 ? '#8d6e63' : '#43a047'
 
-async function fetchPhoto(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url)
-    if (!res.ok) return null
-    const buf = await res.arrayBuffer()
-    const bytes = new Uint8Array(buf)
-    let b64 = ''
-    for (let i = 0; i < bytes.length; i++) b64 += String.fromCharCode(bytes[i])
-    return `data:${res.headers.get('content-type') || 'image/jpeg'};base64,${btoa(b64)}`
-  } catch { return null }
-}
-
 export async function GET(request: NextRequest) {
   try {
+    const origin = new URL(request.url).origin
+
+    // Load all static assets on first request; reused on warm invocations
+    if (!_assetsLoaded) {
+      const [pigeon, cardbk, playfair, urdu] = await Promise.all([
+        fetchDataUrl(`${origin}/pigeon.png`),
+        fetchDataUrl(`${origin}/cardbk.jpg`),
+        fetchAB(`${origin}/fonts/playfair-italic-700.ttf`),
+        fetchAB(`${origin}/fonts/noto-naskh-arabic.ttf`),
+      ])
+      _pigeonDataUrl = pigeon
+      _cardbkDataUrl = cardbk
+      _playfairFont  = playfair
+      _urduFont      = urdu
+      _assetsLoaded  = true
+    }
+
     const s = (k: string, def = '') => new URL(request.url).searchParams.get(k) ?? def
 
     const type          = s('type', 'daily')
@@ -67,19 +72,24 @@ export async function GET(request: NextRequest) {
     const score         = s('score', '')
     const photoUrl      = s('photoUrl')
 
-    const photoData = photoUrl ? await fetchPhoto(photoUrl) : null
-
+    const photoData  = photoUrl ? await fetchDataUrl(photoUrl) : null
     const medalColor = getMedalColor(rank)
     const ringColor  = getRankRing(rank)
+
+    const customFonts = [
+      ...(_playfairFont ? [{ name: 'Playfair', data: _playfairFont, style: 'italic' as const, weight: 700 as const }] : []),
+      ...(_urduFont ? [{ name: 'UrduFont', data: _urduFont, style: 'normal' as const, weight: 400 as const }] : []),
+    ]
+    const fontOpts = customFonts.length > 0 ? { fonts: customFonts } : {}
 
     // ── Header ────────────────────────────────────────────────────
     const headerEl = (rightContent: React.ReactNode) => (
       <div style={{ display: 'flex', alignItems: 'center', background: 'linear-gradient(135deg,#1b5e20,#2e7d32)', padding: '36px 54px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-          <span style={{ fontFamily: 'Playfair, serif', fontStyle: 'italic', color: 'white', fontSize: 36, fontWeight: 700, lineHeight: 1.1 }}>Pakistan Pigeon Racing</span>
+          <span style={{ fontFamily: 'Playfair', fontStyle: 'italic', color: 'white', fontSize: 36, fontWeight: 700, lineHeight: 1.1 }}>Pakistan Pigeon Racing</span>
           <span style={{ color: '#86efac', fontSize: 18, letterSpacing: 5 }}>LOVE FOR THE LOFT</span>
         </div>
-        {PIGEON_DATA_URL && <img src={PIGEON_DATA_URL} width={162} height={162} alt="" />}
+        {_pigeonDataUrl && <img src={_pigeonDataUrl} width={162} height={162} alt="" />}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 9, flex: 1 }}>
           {rightContent}
         </div>
@@ -100,10 +110,10 @@ export async function GET(request: NextRequest) {
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
           <span style={{ color: '#1b5e20', fontSize: 51, fontWeight: 900, lineHeight: 1.1 }}>{tournament}</span>
           {playerEn ? <span style={{ color: '#111', fontSize: 45, fontWeight: 800, marginTop: 12 }}>{playerEn}</span> : null}
-          {playerUr ? <span style={{ fontFamily: 'UrduFont, serif', direction: 'rtl', color: '#111', fontSize: playerEn ? 36 : 45, fontWeight: 400, marginTop: playerEn ? 4 : 12 }}>{playerUr}</span> : null}
+          {playerUr ? <span style={{ fontFamily: 'UrduFont', direction: 'rtl', color: '#111', fontSize: playerEn ? 36 : 45, fontWeight: 400, marginTop: playerEn ? 4 : 12 }}>{playerUr}</span> : null}
           {!playerEn && !playerUr ? <span style={{ color: '#111', fontSize: 45, fontWeight: 800, marginTop: 12 }}>Player</span> : null}
           {areaEn ? <span style={{ color: '#2e7d32', fontSize: 30, marginTop: 6 }}>{areaEn}</span> : null}
-          {areaUr && !areaEn ? <span style={{ fontFamily: 'UrduFont, serif', direction: 'rtl', color: '#2e7d32', fontSize: 30, marginTop: 6 }}>{areaUr}</span> : null}
+          {areaUr && !areaEn ? <span style={{ fontFamily: 'UrduFont', direction: 'rtl', color: '#2e7d32', fontSize: 30, marginTop: 6 }}>{areaUr}</span> : null}
           {!medalColor && rank > 0 ? (
             <div style={{ display: 'flex', alignSelf: 'flex-start', background: 'rgba(56,142,60,0.85)', borderRadius: 60, padding: '6px 27px', marginTop: 12 }}>
               <span style={{ color: 'white', fontSize: 27, fontWeight: 800 }}>#{rank}</span>
@@ -156,13 +166,6 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // ── Font options — omit key entirely when empty so next/og falls back to built-in Inter ──
-    const customFonts = [
-      ...(PLAYFAIR_FONT ? [{ name: 'Playfair', data: PLAYFAIR_FONT, style: 'italic' as const, weight: 700 as const }] : []),
-      ...(URDU_FONT ? [URDU_FONT] : []),
-    ]
-    const fontOpts = customFonts.length > 0 ? { fonts: customFonts } : {}
-
     // ── DAILY CARD ────────────────────────────────────────────────
     if (type === 'daily') {
       const day         = s('day', '1')
@@ -182,7 +185,7 @@ export async function GET(request: NextRequest) {
       return new ImageResponse(
         (
           <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', fontFamily: 'sans-serif', background: 'linear-gradient(160deg,#e8f5e9,#f9fdf9,#e8f5e9)', position: 'relative' }}>
-            {CARDBK_DATA_URL && <img src={CARDBK_DATA_URL} width={W} height={gridH} style={{ position: 'absolute', bottom: 0, left: 0, objectFit: 'contain', opacity: 0.06 }} alt="" />}
+            {_cardbkDataUrl && <img src={_cardbkDataUrl} width={W} height={gridH} style={{ position: 'absolute', bottom: 0, left: 0, objectFit: 'contain', opacity: 0.06 }} alt="" />}
             {headerEl(
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 9 }}>
                 <span style={{ color: 'white', fontSize: 36, fontWeight: 800 }}>{club}</span>
@@ -214,7 +217,7 @@ export async function GET(request: NextRequest) {
     return new ImageResponse(
       (
         <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', fontFamily: 'sans-serif', background: 'linear-gradient(160deg,#e8f5e9,#f9fdf9,#e8f5e9)', position: 'relative' }}>
-          {CARDBK_DATA_URL && <img src={CARDBK_DATA_URL} width={W} height={gridH} style={{ position: 'absolute', bottom: 0, left: 0, objectFit: 'contain', opacity: 0.06 }} alt="" />}
+          {_cardbkDataUrl && <img src={_cardbkDataUrl} width={W} height={gridH} style={{ position: 'absolute', bottom: 0, left: 0, objectFit: 'contain', opacity: 0.06 }} alt="" />}
           {headerEl(
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 9 }}>
               <span style={{ color: 'white', fontSize: 36, fontWeight: 800 }}>{club}</span>
@@ -227,7 +230,7 @@ export async function GET(request: NextRequest) {
           {gridEl(dayCells, dayCols)}
         </div>
       ),
-      { width: W, height, fonts: [...(PLAYFAIR_FONT ? [{ name: 'Playfair', data: PLAYFAIR_FONT, style: 'italic' as const, weight: 700 as const }] : []), ...(URDU_FONT ? [URDU_FONT] : [])] }
+      { width: W, height, ...fontOpts }
     )
 
   } catch (err) {
