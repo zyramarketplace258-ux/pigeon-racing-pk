@@ -135,12 +135,12 @@ export async function GET(request: NextRequest) {
                 : (
                   <div key={cell.i} style={{
                     flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    background: 'transparent',
+                    background: cell.active ? 'rgba(255,255,255,0.82)' : 'rgba(255,255,255,0.55)',
                     borderRadius: 24, padding: '18px 6px',
-                    border: cell.active ? '2px solid rgba(46,125,50,0.4)' : '2px solid rgba(0,0,0,0.08)',
+                    border: cell.active ? '2px solid rgba(46,125,50,0.55)' : '2px solid rgba(0,0,0,0.10)',
                   }}>
-                    <span style={{ color: cell.active ? '#444' : '#c8c8c8', fontSize: 24, fontWeight: 700 }}>{cell.label}</span>
-                    <span style={{ color: cell.active ? '#111' : '#d8d8d8', fontSize: 39, fontWeight: 900, marginTop: 6 }}>{cell.time}</span>
+                    <span style={{ color: cell.active ? '#2e7d32' : '#bdbdbd', fontSize: 24, fontWeight: 700 }}>{cell.label}</span>
+                    <span style={{ color: cell.active ? '#1b5e20' : '#d0d0d0', fontSize: 39, fontWeight: 900, marginTop: 6 }}>{cell.time}</span>
                   </div>
                 )
               )}
@@ -164,11 +164,12 @@ export async function GET(request: NextRequest) {
       const cols   = pigeonCount <= 6 ? 3 : pigeonCount <= 12 ? 4 : 5
       const nRows  = Math.ceil(pigeonCount / cols)
       const height = Math.min(Math.max(1500, 870 + (medal ? 108 : 0) + nRows * 216), 2250)
+      const gridH  = nRows * 216 + 36
 
       return new ImageResponse(
         (
           <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', fontFamily: 'sans-serif', background: 'linear-gradient(160deg,#e8f5e9,#f9fdf9,#e8f5e9)', position: 'relative' }}>
-            {LOGO_DATA_URL && <img src={LOGO_DATA_URL} width={W} height={height} style={{ position: 'absolute', top: 0, left: 0, objectFit: 'contain', opacity: 0.12 }} alt="" />}
+            {LOGO_DATA_URL && <img src={LOGO_DATA_URL} width={W} height={gridH} style={{ position: 'absolute', bottom: 0, left: 0, objectFit: 'cover', opacity: 0.06 }} alt="" />}
             {headerEl(
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 9 }}>
                 <span style={{ color: 'white', fontSize: 36, fontWeight: 800 }}>{club}</span>
@@ -195,11 +196,12 @@ export async function GET(request: NextRequest) {
     const dayCols  = totalDays <= 3 ? totalDays : totalDays <= 8 ? 4 : 5
     const dayRows  = Math.ceil(totalDays / dayCols)
     const height   = Math.min(Math.max(1440, 840 + (medal ? 108 : 0) + dayRows * 216), 2160)
+    const gridH    = dayRows * 216 + 36
 
     return new ImageResponse(
       (
         <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', fontFamily: 'sans-serif', background: 'linear-gradient(160deg,#e8f5e9,#f9fdf9,#e8f5e9)', position: 'relative' }}>
-          {LOGO_DATA_URL && <img src={LOGO_DATA_URL} width={W} height={height} style={{ position: 'absolute', top: 0, left: 0, objectFit: 'contain', opacity: 0.12 }} alt="" />}
+          {LOGO_DATA_URL && <img src={LOGO_DATA_URL} width={W} height={gridH} style={{ position: 'absolute', bottom: 0, left: 0, objectFit: 'cover', opacity: 0.06 }} alt="" />}
           {headerEl(
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 9 }}>
               <span style={{ color: 'white', fontSize: 36, fontWeight: 800 }}>{club}</span>
