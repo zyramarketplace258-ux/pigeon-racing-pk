@@ -18,13 +18,22 @@ function toDataUrl(b: Buffer, mime: string): string {
   return `data:${mime};base64,${b.toString('base64')}`
 }
 
-const _pigeonBuf  = readBuf(path.join(process.cwd(), 'public', 'pigeon.png'))
-const _cardbkBuf  = readBuf(path.join(process.cwd(), 'public', 'cardbk.jpg'))
-const _playfairBuf = readBuf(path.join(process.cwd(), 'public', 'fonts', 'playfair-italic-700.woff2'))
+const fontsDir = path.join(process.cwd(), 'public', 'fonts')
 
-const PIGEON_DATA_URL  = _pigeonBuf  ? toDataUrl(_pigeonBuf,  'image/png')  : null
-const CARDBK_DATA_URL  = _cardbkBuf  ? toDataUrl(_cardbkBuf,  'image/jpeg') : null
-const PLAYFAIR_FONT    = _playfairBuf ? toArrayBuffer(_playfairBuf) : null
+const _pigeonBuf   = readBuf(path.join(process.cwd(), 'public', 'pigeon.png'))
+const _cardbkBuf   = readBuf(path.join(process.cwd(), 'public', 'cardbk.jpg'))
+const _playfairBuf = readBuf(path.join(fontsDir, 'playfair-italic-700.woff2'))
+const _urdu0Buf    = readBuf(path.join(fontsDir, 'urdu-0.woff2'))
+const _urdu1Buf    = readBuf(path.join(fontsDir, 'urdu-1.woff2'))
+const _urdu2Buf    = readBuf(path.join(fontsDir, 'urdu-2.woff2'))
+
+const PIGEON_DATA_URL = _pigeonBuf  ? toDataUrl(_pigeonBuf,  'image/png')  : null
+const CARDBK_DATA_URL = _cardbkBuf  ? toDataUrl(_cardbkBuf,  'image/jpeg') : null
+const PLAYFAIR_FONT   = _playfairBuf ? toArrayBuffer(_playfairBuf) : null
+
+const URDU_FONTS = [_urdu0Buf, _urdu1Buf, _urdu2Buf]
+  .filter((b): b is Buffer => b !== null)
+  .map(b => ({ name: 'UrduFont', data: toArrayBuffer(b), style: 'normal' as const, weight: 400 as const }))
 
 // ── Helpers ───────────────────────────────────────────────────────
 const isArabic = (t: string) => /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/.test(t)
@@ -95,10 +104,10 @@ export async function GET(request: NextRequest) {
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
           <span style={{ color: '#1b5e20', fontSize: 51, fontWeight: 900, lineHeight: 1.1 }}>{tournament}</span>
           {playerEn ? <span style={{ color: '#111', fontSize: 45, fontWeight: 800, marginTop: 12 }}>{playerEn}</span> : null}
-          {playerUr ? <span style={{ color: '#111', fontSize: playerEn ? 36 : 45, fontWeight: 800, marginTop: playerEn ? 4 : 12 }}>{playerUr}</span> : null}
+          {playerUr ? <span style={{ fontFamily: 'UrduFont, serif', direction: 'rtl', color: '#111', fontSize: playerEn ? 36 : 45, fontWeight: 400, marginTop: playerEn ? 4 : 12 }}>{playerUr}</span> : null}
           {!playerEn && !playerUr ? <span style={{ color: '#111', fontSize: 45, fontWeight: 800, marginTop: 12 }}>Player</span> : null}
           {areaEn ? <span style={{ color: '#2e7d32', fontSize: 30, marginTop: 6 }}>{areaEn}</span> : null}
-          {areaUr && !areaEn ? <span style={{ color: '#2e7d32', fontSize: 30, marginTop: 6 }}>{areaUr}</span> : null}
+          {areaUr && !areaEn ? <span style={{ fontFamily: 'UrduFont, serif', direction: 'rtl', color: '#2e7d32', fontSize: 30, marginTop: 6 }}>{areaUr}</span> : null}
           {!medal && rank > 0 ? (
             <div style={{ display: 'flex', alignSelf: 'flex-start', background: 'rgba(56,142,60,0.85)', borderRadius: 60, padding: '6px 27px', marginTop: 12 }}>
               <span style={{ color: 'white', fontSize: 27, fontWeight: 800 }}>#{rank}</span>
@@ -183,7 +192,7 @@ export async function GET(request: NextRequest) {
             {gridEl(cells, cols)}
           </div>
         ),
-        { width: W, height, fonts: PLAYFAIR_FONT ? [{ name: 'Playfair', data: PLAYFAIR_FONT, style: 'italic' as const, weight: 700 as const }] : [] }
+        { width: W, height, fonts: [...(PLAYFAIR_FONT ? [{ name: 'Playfair', data: PLAYFAIR_FONT, style: 'italic' as const, weight: 700 as const }] : []), ...URDU_FONTS] }
       )
     }
 
