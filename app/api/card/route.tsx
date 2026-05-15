@@ -7,16 +7,24 @@ export const runtime = 'nodejs'
 
 const W = 1170  // 390 × 3 — high-res render
 
-// ── Static images loaded from filesystem at startup ───────────────
-const _pigeonPath = path.join(process.cwd(), 'public', 'pigeon.png')
-const PIGEON_DATA_URL = fs.existsSync(_pigeonPath)
-  ? `data:image/png;base64,${fs.readFileSync(_pigeonPath).toString('base64')}`
-  : null
+// ── Static assets loaded from filesystem at startup ──────────────
+function readBuf(p: string): Buffer | null {
+  return fs.existsSync(p) ? fs.readFileSync(p) : null
+}
+function toArrayBuffer(b: Buffer): ArrayBuffer {
+  return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer
+}
+function toDataUrl(b: Buffer, mime: string): string {
+  return `data:${mime};base64,${b.toString('base64')}`
+}
 
-const _cardbkPath = path.join(process.cwd(), 'public', 'cardbk.jpg')
-const CARDBK_DATA_URL = fs.existsSync(_cardbkPath)
-  ? `data:image/jpeg;base64,${fs.readFileSync(_cardbkPath).toString('base64')}`
-  : null
+const _pigeonBuf  = readBuf(path.join(process.cwd(), 'public', 'pigeon.png'))
+const _cardbkBuf  = readBuf(path.join(process.cwd(), 'public', 'cardbk.jpg'))
+const _playfairBuf = readBuf(path.join(process.cwd(), 'public', 'fonts', 'playfair-italic-700.woff2'))
+
+const PIGEON_DATA_URL  = _pigeonBuf  ? toDataUrl(_pigeonBuf,  'image/png')  : null
+const CARDBK_DATA_URL  = _cardbkBuf  ? toDataUrl(_cardbkBuf,  'image/jpeg') : null
+const PLAYFAIR_FONT    = _playfairBuf ? toArrayBuffer(_playfairBuf) : null
 
 // ── Helpers ───────────────────────────────────────────────────────
 const isArabic = (t: string) => /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/.test(t)
@@ -63,7 +71,7 @@ export async function GET(request: NextRequest) {
     const headerEl = (rightContent: React.ReactNode) => (
       <div style={{ display: 'flex', alignItems: 'center', background: 'linear-gradient(135deg,#1b5e20,#2e7d32)', padding: '36px 54px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-          <span style={{ color: 'white', fontSize: 36, fontWeight: 900, lineHeight: 1.1 }}>Pakistan Pigeon Racing</span>
+          <span style={{ fontFamily: 'Playfair, serif', fontStyle: 'italic', color: 'white', fontSize: 36, fontWeight: 700, lineHeight: 1.1 }}>Pakistan Pigeon Racing</span>
           <span style={{ color: '#86efac', fontSize: 18, letterSpacing: 5 }}>LOVE FOR THE LOFT</span>
         </div>
         {PIGEON_DATA_URL && <img src={PIGEON_DATA_URL} width={162} height={162} alt="" />}
@@ -175,7 +183,7 @@ export async function GET(request: NextRequest) {
             {gridEl(cells, cols)}
           </div>
         ),
-        { width: W, height }
+        { width: W, height, fonts: PLAYFAIR_FONT ? [{ name: 'Playfair', data: PLAYFAIR_FONT, style: 'italic' as const, weight: 700 as const }] : [] }
       )
     }
 
