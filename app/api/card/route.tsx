@@ -23,7 +23,7 @@ const fontsDir = path.join(process.cwd(), 'public', 'fonts')
 const _pigeonBuf   = readBuf(path.join(process.cwd(), 'public', 'pigeon.png'))
 const _cardbkBuf   = readBuf(path.join(process.cwd(), 'public', 'cardbk.jpg'))
 const _playfairBuf = readBuf(path.join(fontsDir, 'playfair-italic-700.woff2'))
-const _urdu0Buf    = readBuf(path.join(fontsDir, 'urdu-0.woff2'))
+const _urdu0Buf    = readBuf(path.join(fontsDir, 'noto-naskh-arabic.woff2'))
 
 const PIGEON_DATA_URL = _pigeonBuf  ? toDataUrl(_pigeonBuf,  'image/png')  : null
 const CARDBK_DATA_URL = _cardbkBuf  ? toDataUrl(_cardbkBuf,  'image/jpeg') : null
@@ -35,9 +35,9 @@ const URDU_FONT = _urdu0Buf ? { name: 'UrduFont', data: toArrayBuffer(_urdu0Buf)
 const isArabic = (t: string) => /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/.test(t)
 const safeEn   = (t: string, fb = '') => isArabic(t) ? fb : t
 
-const getMedal     = (r: number) => r === 1 ? '🥇' : r === 2 ? '🥈' : r === 3 ? '🥉' : null
-const getRankLabel = (r: number) => r === 1 ? '1ST PLACE' : r === 2 ? '2ND PLACE' : '3RD PLACE'
-const getRankRing  = (r: number) => r === 1 ? '#f9a825' : r === 2 ? '#9e9e9e' : r === 3 ? '#8d6e63' : '#43a047'
+const getMedalColor = (r: number) => r === 1 ? '#f9a825' : r === 2 ? '#9e9e9e' : r === 3 ? '#8d6e63' : null
+const getRankLabel  = (r: number) => r === 1 ? '1ST PLACE' : r === 2 ? '2ND PLACE' : '3RD PLACE'
+const getRankRing   = (r: number) => r === 1 ? '#f9a825' : r === 2 ? '#9e9e9e' : r === 3 ? '#8d6e63' : '#43a047'
 
 async function fetchPhoto(url: string): Promise<string | null> {
   try {
@@ -69,8 +69,8 @@ export async function GET(request: NextRequest) {
 
     const photoData = photoUrl ? await fetchPhoto(photoUrl) : null
 
-    const medal     = getMedal(rank)
-    const ringColor = getRankRing(rank)
+    const medalColor = getMedalColor(rank)
+    const ringColor  = getRankRing(rank)
 
     // ── Header ────────────────────────────────────────────────────
     const headerEl = (rightContent: React.ReactNode) => (
@@ -87,9 +87,9 @@ export async function GET(request: NextRequest) {
     )
 
     // ── Rank banner ───────────────────────────────────────────────
-    const rankBannerEl = medal ? (
+    const rankBannerEl = medalColor ? (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, padding: '21px 0' }}>
-        <span style={{ fontSize: 57 }}>{medal}</span>
+        <div style={{ display: 'flex', width: 57, height: 57, borderRadius: 29, background: medalColor }} />
         <span style={{ color: '#1b5e20', fontSize: 39, fontWeight: 900, letterSpacing: 6 }}>{getRankLabel(rank)}</span>
       </div>
     ) : null
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
           {!playerEn && !playerUr ? <span style={{ color: '#111', fontSize: 45, fontWeight: 800, marginTop: 12 }}>Player</span> : null}
           {areaEn ? <span style={{ color: '#2e7d32', fontSize: 30, marginTop: 6 }}>{areaEn}</span> : null}
           {areaUr && !areaEn ? <span style={{ fontFamily: 'UrduFont, serif', direction: 'rtl', color: '#2e7d32', fontSize: 30, marginTop: 6 }}>{areaUr}</span> : null}
-          {!medal && rank > 0 ? (
+          {!medalColor && rank > 0 ? (
             <div style={{ display: 'flex', alignSelf: 'flex-start', background: 'rgba(56,142,60,0.85)', borderRadius: 60, padding: '6px 27px', marginTop: 12 }}>
               <span style={{ color: 'white', fontSize: 27, fontWeight: 800 }}>#{rank}</span>
             </div>
@@ -169,7 +169,7 @@ export async function GET(request: NextRequest) {
       const cells  = rawTimes.slice(0, pigeonCount).map((t, i) => ({ i, label: `#${i + 1}`, time: t || '--', active: !!(t && t !== '--') }))
       const cols   = pigeonCount <= 6 ? 3 : pigeonCount <= 12 ? 4 : 5
       const nRows  = Math.ceil(pigeonCount / cols)
-      const height = Math.min(Math.max(1500, 870 + (medal ? 108 : 0) + nRows * 216), 2250)
+      const height = Math.min(Math.max(1500, 870 + (medalColor ? 108 : 0) + nRows * 216), 2250)
       const gridH  = Math.round((nRows * 216 + 36) * 0.7)
 
       return new ImageResponse(
@@ -201,7 +201,7 @@ export async function GET(request: NextRequest) {
     const dayCells = rawDayTimes.slice(0, totalDays).map((t, i) => ({ i, label: `DAY ${i + 1}`, time: t || '--', active: !!(t && t !== '--') }))
     const dayCols  = totalDays <= 3 ? totalDays : totalDays <= 8 ? 4 : 5
     const dayRows  = Math.ceil(totalDays / dayCols)
-    const height   = Math.min(Math.max(1440, 840 + (medal ? 108 : 0) + dayRows * 216), 2160)
+    const height   = Math.min(Math.max(1440, 840 + (medalColor ? 108 : 0) + dayRows * 216), 2160)
     const gridH    = Math.round((dayRows * 216 + 36) * 0.7)
 
     return new ImageResponse(
