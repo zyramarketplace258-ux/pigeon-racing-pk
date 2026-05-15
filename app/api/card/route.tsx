@@ -24,16 +24,12 @@ const _pigeonBuf   = readBuf(path.join(process.cwd(), 'public', 'pigeon.png'))
 const _cardbkBuf   = readBuf(path.join(process.cwd(), 'public', 'cardbk.jpg'))
 const _playfairBuf = readBuf(path.join(fontsDir, 'playfair-italic-700.woff2'))
 const _urdu0Buf    = readBuf(path.join(fontsDir, 'urdu-0.woff2'))
-const _urdu1Buf    = readBuf(path.join(fontsDir, 'urdu-1.woff2'))
-const _urdu2Buf    = readBuf(path.join(fontsDir, 'urdu-2.woff2'))
 
 const PIGEON_DATA_URL = _pigeonBuf  ? toDataUrl(_pigeonBuf,  'image/png')  : null
 const CARDBK_DATA_URL = _cardbkBuf  ? toDataUrl(_cardbkBuf,  'image/jpeg') : null
 const PLAYFAIR_FONT   = _playfairBuf ? toArrayBuffer(_playfairBuf) : null
 
-const URDU_FONTS = [_urdu0Buf, _urdu1Buf, _urdu2Buf]
-  .filter((b): b is Buffer => b !== null)
-  .map(b => ({ name: 'UrduFont', data: toArrayBuffer(b), style: 'normal' as const, weight: 400 as const }))
+const URDU_FONT = _urdu0Buf ? { name: 'UrduFont', data: toArrayBuffer(_urdu0Buf), style: 'normal' as const, weight: 400 as const } : null
 
 // ── Helpers ───────────────────────────────────────────────────────
 const isArabic = (t: string) => /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/.test(t)
@@ -192,7 +188,7 @@ export async function GET(request: NextRequest) {
             {gridEl(cells, cols)}
           </div>
         ),
-        { width: W, height, fonts: [...(PLAYFAIR_FONT ? [{ name: 'Playfair', data: PLAYFAIR_FONT, style: 'italic' as const, weight: 700 as const }] : []), ...URDU_FONTS] }
+        { width: W, height, fonts: [...(PLAYFAIR_FONT ? [{ name: 'Playfair', data: PLAYFAIR_FONT, style: 'italic' as const, weight: 700 as const }] : []), ...(URDU_FONT ? [URDU_FONT] : [])] }
       )
     }
 
@@ -224,7 +220,7 @@ export async function GET(request: NextRequest) {
           {gridEl(dayCells, dayCols)}
         </div>
       ),
-      { width: W, height }
+      { width: W, height, fonts: [...(PLAYFAIR_FONT ? [{ name: 'Playfair', data: PLAYFAIR_FONT, style: 'italic' as const, weight: 700 as const }] : []), ...(URDU_FONT ? [URDU_FONT] : [])] }
     )
 
   } catch (err) {
