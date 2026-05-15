@@ -18,25 +18,6 @@ const CARDBK_DATA_URL = fs.existsSync(_cardbkPath)
   ? `data:image/jpeg;base64,${fs.readFileSync(_cardbkPath).toString('base64')}`
   : null
 
-// ── Google Fonts — cached per container lifecycle ─────────────────
-async function fetchGoogleFontBuf(family: string): Promise<ArrayBuffer | null> {
-  try {
-    const css = await fetch(
-      `https://fonts.googleapis.com/css2?family=${family}&display=swap`,
-      { headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' } }
-    ).then(r => r.text())
-    const m = css.match(/url\((https:\/\/fonts\.gstatic\.com\/[^)]+\.woff2)\)/)
-    if (!m) return null
-    return fetch(m[1]).then(r => r.arrayBuffer())
-  } catch { return null }
-}
-
-let _playfairCache: Promise<ArrayBuffer | null> | null = null
-let _urduCache:     Promise<ArrayBuffer | null> | null = null
-
-const getPlayfair = () => { if (!_playfairCache) _playfairCache = fetchGoogleFontBuf('Playfair+Display:ital,wght@1,700'); return _playfairCache }
-const getUrdu     = () => { if (!_urduCache)     _urduCache     = fetchGoogleFontBuf('Noto+Nastaliq+Urdu:wght@400');    return _urduCache }
-
 // ── Helpers ───────────────────────────────────────────────────────
 const isArabic = (t: string) => /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/.test(t)
 const safeEn   = (t: string, fb = '') => isArabic(t) ? fb : t
@@ -61,43 +42,28 @@ export async function GET(request: NextRequest) {
   try {
     const s = (k: string, def = '') => new URL(request.url).searchParams.get(k) ?? def
 
-    const type       = s('type', 'daily')
-    const tournament = safeEn(s('tournament', 'Tournament'), 'Tournament')
-    const club       = safeEn(s('club', 'Club'), 'Club')
-    const playerEn   = s('player', '').trim()
-    const playerUr   = s('playerUrdu', '').trim()
+    const type          = s('type', 'daily')
+    const tournament    = safeEn(s('tournament', 'Tournament'), 'Tournament')
+    const club          = safeEn(s('club', 'Club'), 'Club')
+    const playerEn      = s('player', '').trim()
+    const playerUr      = s('playerUrdu', '').trim()
     const playerDisplay = playerEn || playerUr || 'Player'
-    const areaEn     = s('area', '').trim()
-    const areaUr     = s('areaUrdu', '').trim()
-    const rank       = parseInt(s('rank', '0')) || 0
-    const score      = s('score', '')
-    const photoUrl   = s('photoUrl')
+    const areaEn        = s('area', '').trim()
+    const areaUr        = s('areaUrdu', '').trim()
+    const rank          = parseInt(s('rank', '0')) || 0
+    const score         = s('score', '')
+    const photoUrl      = s('photoUrl')
 
-    const timeout = <T,>(p: Promise<T>) => Promise.race([p, new Promise<null>(r => setTimeout(() => r(null), 3000))])
-
-    const [photoData, playfairBuf, urduBuf] = await Promise.all([
-      photoUrl ? fetchPhoto(photoUrl) : Promise.resolve(null),
-      timeout(getPlayfair()),
-      timeout(getUrdu()),
-    ])
+    const photoData = photoUrl ? await fetchPhoto(photoUrl) : null
 
     const medal     = getMedal(rank)
     const ringColor = getRankRing(rank)
-
-    const fonts = [
-      ...(playfairBuf ? [{ name: 'Playfair', data: playfairBuf, style: 'italic'  as const, weight: 700 as const }] : []),
-      ...(urduBuf     ? [{ name: 'UrduFont', data: urduBuf,     style: 'normal'  as const, weight: 400 as const }] : []),
-    ]
-
-    const urduSpan = (text: string, size: number, color: string, mt = 0) => (
-      <span style={{ fontFamily: 'UrduFont, serif', direction: 'rtl', fontSize: size, color, marginTop: mt, fontWeight: 400 }}>{text}</span>
-    )
 
     // ── Header ────────────────────────────────────────────────────
     const headerEl = (rightContent: React.ReactNode) => (
       <div style={{ display: 'flex', alignItems: 'center', background: 'linear-gradient(135deg,#1b5e20,#2e7d32)', padding: '36px 54px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-          <span style={{ fontFamily: 'Playfair, serif', fontStyle: 'italic', color: 'white', fontSize: 36, fontWeight: 700, lineHeight: 1.1 }}>Pakistan Pigeon Racing</span>
+          <span style={{ color: 'white', fontSize: 36, fontWeight: 900, lineHeight: 1.1 }}>Pakistan Pigeon Racing</span>
           <span style={{ color: '#86efac', fontSize: 18, letterSpacing: 5 }}>LOVE FOR THE LOFT</span>
         </div>
         {PIGEON_DATA_URL && <img src={PIGEON_DATA_URL} width={162} height={162} alt="" />}
@@ -121,10 +87,10 @@ export async function GET(request: NextRequest) {
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
           <span style={{ color: '#1b5e20', fontSize: 51, fontWeight: 900, lineHeight: 1.1 }}>{tournament}</span>
           {playerEn ? <span style={{ color: '#111', fontSize: 45, fontWeight: 800, marginTop: 12 }}>{playerEn}</span> : null}
-          {playerUr ? urduSpan(playerUr, playerEn ? 36 : 45, '#111', playerEn ? 4 : 12) : null}
+          {playerUr ? <span style={{ color: '#111', fontSize: playerEn ? 36 : 45, fontWeight: 800, marginTop: playerEn ? 4 : 12 }}>{playerUr}</span> : null}
           {!playerEn && !playerUr ? <span style={{ color: '#111', fontSize: 45, fontWeight: 800, marginTop: 12 }}>Player</span> : null}
           {areaEn ? <span style={{ color: '#2e7d32', fontSize: 30, marginTop: 6 }}>{areaEn}</span> : null}
-          {areaUr && !areaEn ? urduSpan(areaUr, 30, '#2e7d32', 6) : null}
+          {areaUr && !areaEn ? <span style={{ color: '#2e7d32', fontSize: 30, marginTop: 6 }}>{areaUr}</span> : null}
           {!medal && rank > 0 ? (
             <div style={{ display: 'flex', alignSelf: 'flex-start', background: 'rgba(56,142,60,0.85)', borderRadius: 60, padding: '6px 27px', marginTop: 12 }}>
               <span style={{ color: 'white', fontSize: 27, fontWeight: 800 }}>#{rank}</span>
@@ -209,7 +175,7 @@ export async function GET(request: NextRequest) {
             {gridEl(cells, cols)}
           </div>
         ),
-        { width: W, height, fonts }
+        { width: W, height }
       )
     }
 
@@ -241,7 +207,7 @@ export async function GET(request: NextRequest) {
           {gridEl(dayCells, dayCols)}
         </div>
       ),
-      { width: W, height, fonts }
+      { width: W, height }
     )
 
   } catch (err) {
