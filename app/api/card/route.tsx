@@ -7,10 +7,15 @@ export const runtime = 'nodejs'
 
 const W = 1170  // 390 × 3 — high-res render
 
-// Read the logo once at module load from the local filesystem
-const _logoPath = path.join(process.cwd(), 'public', 'cardbk.jpg')
-const LOGO_DATA_URL = fs.existsSync(_logoPath)
-  ? `data:image/jpeg;base64,${fs.readFileSync(_logoPath).toString('base64')}`
+// Read images once at module load from the local filesystem
+const _pigeonPath = path.join(process.cwd(), 'public', 'pigeon.png')
+const PIGEON_DATA_URL = fs.existsSync(_pigeonPath)
+  ? `data:image/png;base64,${fs.readFileSync(_pigeonPath).toString('base64')}`
+  : null
+
+const _cardbkPath = path.join(process.cwd(), 'public', 'cardbk.jpg')
+const LOGO_DATA_URL = fs.existsSync(_cardbkPath)
+  ? `data:image/jpeg;base64,${fs.readFileSync(_cardbkPath).toString('base64')}`
   : null
 
 const isArabic = (text: string) => /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/.test(text)
@@ -61,7 +66,7 @@ export async function GET(request: NextRequest) {
           <span style={{ color: 'white', fontSize: 51, fontWeight: 900 }}>Pakistan Pigeon Racing</span>
           <span style={{ color: '#86efac', fontSize: 21, letterSpacing: 6 }}>LOVE FOR THE LOFT</span>
         </div>
-        {LOGO_DATA_URL && <img src={LOGO_DATA_URL} width={120} height={120} style={{ objectFit: 'contain' }} alt="" />}
+        {PIGEON_DATA_URL && <img src={PIGEON_DATA_URL} width={120} height={120} alt="" />}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 9 }}>
           {rightContent}
         </div>
