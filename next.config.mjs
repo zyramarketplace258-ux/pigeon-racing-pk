@@ -2,6 +2,14 @@
 const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: ['firebase-admin'],
+    outputFileTracingIncludes: {
+      '/api/card': [
+        './public/pigeon.png',
+        './public/cardbk.jpg',
+        './public/fonts/playfair-italic-700.woff2',
+        './public/fonts/noto-naskh-arabic.woff2',
+      ],
+    },
   },
 
   async headers() {

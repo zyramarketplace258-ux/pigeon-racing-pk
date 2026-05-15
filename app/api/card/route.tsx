@@ -156,6 +156,13 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // ── Font options — omit key entirely when empty so next/og falls back to built-in Inter ──
+    const customFonts = [
+      ...(PLAYFAIR_FONT ? [{ name: 'Playfair', data: PLAYFAIR_FONT, style: 'italic' as const, weight: 700 as const }] : []),
+      ...(URDU_FONT ? [URDU_FONT] : []),
+    ]
+    const fontOpts = customFonts.length > 0 ? { fonts: customFonts } : {}
+
     // ── DAILY CARD ────────────────────────────────────────────────
     if (type === 'daily') {
       const day         = s('day', '1')
@@ -188,7 +195,7 @@ export async function GET(request: NextRequest) {
             {gridEl(cells, cols)}
           </div>
         ),
-        { width: W, height, fonts: [...(PLAYFAIR_FONT ? [{ name: 'Playfair', data: PLAYFAIR_FONT, style: 'italic' as const, weight: 700 as const }] : []), ...(URDU_FONT ? [URDU_FONT] : [])] }
+        { width: W, height, ...fontOpts }
       )
     }
 
