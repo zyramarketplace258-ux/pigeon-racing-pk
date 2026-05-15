@@ -7,24 +7,43 @@ export const runtime = 'nodejs'
 
 const W = 1170  // 390 × 3 — high-res render
 
-// Read images once at module load from the local filesystem
+// ── Static images loaded from filesystem at startup ───────────────
 const _pigeonPath = path.join(process.cwd(), 'public', 'pigeon.png')
 const PIGEON_DATA_URL = fs.existsSync(_pigeonPath)
   ? `data:image/png;base64,${fs.readFileSync(_pigeonPath).toString('base64')}`
   : null
 
 const _cardbkPath = path.join(process.cwd(), 'public', 'cardbk.jpg')
-const LOGO_DATA_URL = fs.existsSync(_cardbkPath)
+const CARDBK_DATA_URL = fs.existsSync(_cardbkPath)
   ? `data:image/jpeg;base64,${fs.readFileSync(_cardbkPath).toString('base64')}`
   : null
 
-const isArabic = (text: string) => /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/.test(text)
-const safeEn = (text: string, fallback = '') => isArabic(text) ? fallback : text
+// ── Google Fonts — cached per container lifecycle ─────────────────
+async function fetchGoogleFontBuf(family: string): Promise<ArrayBuffer | null> {
+  try {
+    const css = await fetch(
+      `https://fonts.googleapis.com/css2?family=${family}&display=swap`,
+      { headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' } }
+    ).then(r => r.text())
+    const m = css.match(/url\((https:\/\/fonts\.gstatic\.com\/[^)]+\.woff2)\)/)
+    if (!m) return null
+    return fetch(m[1]).then(r => r.arrayBuffer())
+  } catch { return null }
+}
+
+let _playfairCache: Promise<ArrayBuffer | null> | null = null
+let _urduCache:     Promise<ArrayBuffer | null> | null = null
+
+const getPlayfair = () => { if (!_playfairCache) _playfairCache = fetchGoogleFontBuf('Playfair+Display:ital,wght@1,700'); return _playfairCache }
+const getUrdu     = () => { if (!_urduCache)     _urduCache     = fetchGoogleFontBuf('Noto+Nastaliq+Urdu:wght@400');    return _urduCache }
+
+// ── Helpers ───────────────────────────────────────────────────────
+const isArabic = (t: string) => /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/.test(t)
+const safeEn   = (t: string, fb = '') => isArabic(t) ? fb : t
 
 const getMedal     = (r: number) => r === 1 ? '🥇' : r === 2 ? '🥈' : r === 3 ? '🥉' : null
 const getRankLabel = (r: number) => r === 1 ? '1ST PLACE' : r === 2 ? '2ND PLACE' : '3RD PLACE'
-const getRankRing  = (r: number) =>
-  r === 1 ? '#f9a825' : r === 2 ? '#9e9e9e' : r === 3 ? '#8d6e63' : '#43a047'
+const getRankRing  = (r: number) => r === 1 ? '#f9a825' : r === 2 ? '#9e9e9e' : r === 3 ? '#8d6e63' : '#43a047'
 
 async function fetchPhoto(url: string): Promise<string | null> {
   try {
@@ -54,17 +73,30 @@ export async function GET(request: NextRequest) {
     const score      = s('score', '')
     const photoUrl   = s('photoUrl')
 
-    const photoData = photoUrl ? await fetchPhoto(photoUrl) : null
+    const [photoData, playfairBuf, urduBuf] = await Promise.all([
+      photoUrl ? fetchPhoto(photoUrl) : Promise.resolve(null),
+      getPlayfair(),
+      getUrdu(),
+    ])
 
     const medal     = getMedal(rank)
     const ringColor = getRankRing(rank)
+
+    const fonts = [
+      ...(playfairBuf ? [{ name: 'Playfair', data: playfairBuf, style: 'italic'  as const, weight: 700 as const }] : []),
+      ...(urduBuf     ? [{ name: 'UrduFont', data: urduBuf,     style: 'normal'  as const, weight: 400 as const }] : []),
+    ]
+
+    const urduSpan = (text: string, size: number, color: string, mt = 0) => (
+      <span style={{ fontFamily: 'UrduFont, serif', direction: 'rtl', fontSize: size, color, marginTop: mt, fontWeight: 400 }}>{text}</span>
+    )
 
     // ── Header ────────────────────────────────────────────────────
     const headerEl = (rightContent: React.ReactNode) => (
       <div style={{ display: 'flex', alignItems: 'center', background: 'linear-gradient(135deg,#1b5e20,#2e7d32)', padding: '36px 54px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-          <span style={{ color: 'white', fontSize: 51, fontWeight: 900 }}>Pakistan Pigeon Racing</span>
-          <span style={{ color: '#86efac', fontSize: 21, letterSpacing: 6 }}>LOVE FOR THE LOFT</span>
+          <span style={{ fontFamily: 'Playfair, serif', fontStyle: 'italic', color: 'white', fontSize: 36, fontWeight: 700, lineHeight: 1.1 }}>Pakistan Pigeon Racing</span>
+          <span style={{ color: '#86efac', fontSize: 18, letterSpacing: 5 }}>LOVE FOR THE LOFT</span>
         </div>
         {PIGEON_DATA_URL && <img src={PIGEON_DATA_URL} width={162} height={162} alt="" />}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 9, flex: 1 }}>
@@ -75,7 +107,7 @@ export async function GET(request: NextRequest) {
 
     // ── Rank banner ───────────────────────────────────────────────
     const rankBannerEl = medal ? (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, background: 'transparent', padding: '21px 0' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, padding: '21px 0' }}>
         <span style={{ fontSize: 57 }}>{medal}</span>
         <span style={{ color: '#1b5e20', fontSize: 39, fontWeight: 900, letterSpacing: 6 }}>{getRankLabel(rank)}</span>
       </div>
@@ -83,20 +115,14 @@ export async function GET(request: NextRequest) {
 
     // ── Profile box ───────────────────────────────────────────────
     const profileEl = (scoreLabel: string) => (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 42, margin: '24px 36px', background: 'transparent', borderRadius: 36, padding: '33px 42px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 42, margin: '24px 36px', borderRadius: 36, padding: '33px 42px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
           <span style={{ color: '#1b5e20', fontSize: 51, fontWeight: 900, lineHeight: 1.1 }}>{tournament}</span>
-          {playerEn
-            ? <span style={{ color: '#111', fontSize: 45, fontWeight: 800, marginTop: 12 }}>{playerEn}</span>
-            : null}
-          {playerUr
-            ? <span style={{ color: '#111', fontSize: playerEn ? 36 : 45, fontWeight: 800, marginTop: playerEn ? 4 : 12 }}>{playerUr}</span>
-            : null}
-          {!playerEn && !playerUr
-            ? <span style={{ color: '#111', fontSize: 45, fontWeight: 800, marginTop: 12 }}>Player</span>
-            : null}
+          {playerEn ? <span style={{ color: '#111', fontSize: 45, fontWeight: 800, marginTop: 12 }}>{playerEn}</span> : null}
+          {playerUr ? urduSpan(playerUr, playerEn ? 36 : 45, '#111', playerEn ? 4 : 12) : null}
+          {!playerEn && !playerUr ? <span style={{ color: '#111', fontSize: 45, fontWeight: 800, marginTop: 12 }}>Player</span> : null}
           {areaEn ? <span style={{ color: '#2e7d32', fontSize: 30, marginTop: 6 }}>{areaEn}</span> : null}
-          {areaUr && !areaEn ? <span style={{ color: '#2e7d32', fontSize: 30, marginTop: 6 }}>{areaUr}</span> : null}
+          {areaUr && !areaEn ? urduSpan(areaUr, 30, '#2e7d32', 6) : null}
           {!medal && rank > 0 ? (
             <div style={{ display: 'flex', alignSelf: 'flex-start', background: 'rgba(56,142,60,0.85)', borderRadius: 60, padding: '6px 27px', marginTop: 12 }}>
               <span style={{ color: 'white', fontSize: 27, fontWeight: 800 }}>#{rank}</span>
@@ -111,8 +137,7 @@ export async function GET(request: NextRequest) {
           <div style={{ display: 'flex', width: 219, height: 219, borderRadius: 110, border: `9px solid ${ringColor}`, background: 'rgba(232,245,233,0.7)', alignItems: 'center', justifyContent: 'center' }}>
             {photoData
               ? <img src={photoData} width={219} height={219} style={{ borderRadius: 110 }} alt="" />
-              : <span style={{ fontSize: 81, fontWeight: 900, color: '#1b5e20' }}>{playerDisplay.charAt(0).toUpperCase()}</span>
-            }
+              : <span style={{ fontSize: 81, fontWeight: 900, color: '#1b5e20' }}>{playerDisplay.charAt(0).toUpperCase()}</span>}
           </div>
         </div>
       </div>
@@ -169,7 +194,7 @@ export async function GET(request: NextRequest) {
       return new ImageResponse(
         (
           <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', fontFamily: 'sans-serif', background: 'linear-gradient(160deg,#e8f5e9,#f9fdf9,#e8f5e9)', position: 'relative' }}>
-            {LOGO_DATA_URL && <img src={LOGO_DATA_URL} width={W} height={gridH} style={{ position: 'absolute', bottom: 0, left: 0, objectFit: 'cover', opacity: 0.06 }} alt="" />}
+            {CARDBK_DATA_URL && <img src={CARDBK_DATA_URL} width={W} height={gridH} style={{ position: 'absolute', bottom: 0, left: 0, objectFit: 'contain', opacity: 0.06 }} alt="" />}
             {headerEl(
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 9 }}>
                 <span style={{ color: 'white', fontSize: 36, fontWeight: 800 }}>{club}</span>
@@ -182,7 +207,7 @@ export async function GET(request: NextRequest) {
             {gridEl(cells, cols)}
           </div>
         ),
-        { width: W, height }
+        { width: W, height, fonts }
       )
     }
 
@@ -201,7 +226,7 @@ export async function GET(request: NextRequest) {
     return new ImageResponse(
       (
         <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', fontFamily: 'sans-serif', background: 'linear-gradient(160deg,#e8f5e9,#f9fdf9,#e8f5e9)', position: 'relative' }}>
-          {LOGO_DATA_URL && <img src={LOGO_DATA_URL} width={W} height={gridH} style={{ position: 'absolute', bottom: 0, left: 0, objectFit: 'cover', opacity: 0.06 }} alt="" />}
+          {CARDBK_DATA_URL && <img src={CARDBK_DATA_URL} width={W} height={gridH} style={{ position: 'absolute', bottom: 0, left: 0, objectFit: 'contain', opacity: 0.06 }} alt="" />}
           {headerEl(
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 9 }}>
               <span style={{ color: 'white', fontSize: 36, fontWeight: 800 }}>{club}</span>
@@ -214,7 +239,7 @@ export async function GET(request: NextRequest) {
           {gridEl(dayCells, dayCols)}
         </div>
       ),
-      { width: W, height }
+      { width: W, height, fonts }
     )
 
   } catch (err) {
