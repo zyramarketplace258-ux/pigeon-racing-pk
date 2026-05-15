@@ -10,8 +10,6 @@ const safeEn = (text: string, fallback = '') => isArabic(text) ? fallback : text
 
 const getMedal     = (r: number) => r === 1 ? '🥇' : r === 2 ? '🥈' : r === 3 ? '🥉' : null
 const getRankLabel = (r: number) => r === 1 ? '1ST PLACE' : r === 2 ? '2ND PLACE' : '3RD PLACE'
-const getRankBg    = (r: number) =>
-  r === 1 ? 'rgba(249,168,37,0.85)' : r === 2 ? 'rgba(158,158,158,0.85)' : 'rgba(141,110,99,0.85)'
 const getRankRing  = (r: number) =>
   r === 1 ? '#f9a825' : r === 2 ? '#9e9e9e' : r === 3 ? '#8d6e63' : '#43a047'
 
