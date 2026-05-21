@@ -638,7 +638,7 @@ const getRank = (entry: TopEntry, entries: TopEntry[]) => {
             <div className="w-12 h-12 shrink-0 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md" style={{ background: 'linear-gradient(145deg,#388e3c,#1b5e20)' }}>S</div>
             <div className="min-w-0 flex-1">
               <p className="font-bold text-[#1a1a1a] text-base">Shahzad</p>
-              <p className="text-[#555] text-sm">Developer · Pigeon Racing PK</p>
+              <p className="text-[#555] text-sm">Developer · High Fly Pigeon</p>
               <p className="text-[#777] text-xs">Masters in Cyber Security</p>
             </div>
             <a
