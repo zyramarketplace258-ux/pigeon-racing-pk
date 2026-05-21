@@ -163,17 +163,23 @@ export default function TournamentClient({
     return buildTotalRows(allEntryDocs, participants, tournament)
   }, [allEntryDocs, participants, tournament])
 
-  const winnerPigeon = useMemo(() => {
-    let best: { name: string; nameUrdu?: string; area: string; areaUrdu?: string; landingTime: string; hoursFlown: string } | null = null
+  const winnerPigeons = useMemo(() => {
+    let bestHours = ''
+    const winners: { name: string; nameUrdu?: string; area: string; areaUrdu?: string; landingTime: string; hoursFlown: string }[] = []
     for (const entry of dayEntries) {
       if (!entry.hasData) continue
       for (const pg of entry.pigeons) {
         if (!pg.landingTime || !pg.hoursFlown) continue
-        if (best === null || compareHours(pg.hoursFlown, best.hoursFlown) < 0)
-          best = { name: entry.name, nameUrdu: entry.nameUrdu, area: entry.area, areaUrdu: entry.areaUrdu, landingTime: pg.landingTime, hoursFlown: pg.hoursFlown }
+        if (!bestHours || compareHours(pg.hoursFlown, bestHours) < 0) {
+          bestHours = pg.hoursFlown
+          winners.length = 0
+          winners.push({ name: entry.name, nameUrdu: entry.nameUrdu, area: entry.area, areaUrdu: entry.areaUrdu, landingTime: pg.landingTime, hoursFlown: pg.hoursFlown })
+        } else if (pg.hoursFlown === bestHours) {
+          winners.push({ name: entry.name, nameUrdu: entry.nameUrdu, area: entry.area, areaUrdu: entry.areaUrdu, landingTime: pg.landingTime, hoursFlown: pg.hoursFlown })
+        }
       }
     }
-    return best
+    return winners
   }, [dayEntries])
 
   // Cutoff countdown
@@ -356,16 +362,20 @@ export default function TournamentClient({
 
 
         {/* Winner Pigeon */}
-        {!showTotal && winnerPigeon && (
+        {!showTotal && winnerPigeons.length > 0 && (
           <div className="bg-white rounded-xl border border-[#d4edda] shadow-sm overflow-hidden">
             <div className="bg-gradient-to-r from-[#1b5e20] to-[#388e3c] px-4 py-2">
               <p className="text-green-200 text-xs font-bold uppercase tracking-widest">{t('winnerPigeonToday')}</p>
             </div>
-            <div className="px-4 py-3 flex items-center gap-3">
-              <div className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center font-bold text-white text-sm shadow-md" style={{ background: 'linear-gradient(145deg,#ffe066,#c8900a)' }}>1</div>
-              <div className="min-w-0">
-                <p className="text-[#1a1a1a] font-bold truncate">{winnerPigeon.nameUrdu || winnerPigeon.name}{(winnerPigeon.areaUrdu || winnerPigeon.area) ? <span className="font-normal text-[#777] text-sm"> · {winnerPigeon.areaUrdu || winnerPigeon.area}</span> : ''} <span className="font-normal text-[#777] text-xs">· {fLandedAt(lang, winnerPigeon.landingTime, formatTimeDisplay(winnerPigeon.hoursFlown))}</span></p>
-              </div>
+            <div className="divide-y divide-[#f0f0f0]">
+              {winnerPigeons.map((w, i) => (
+                <div key={i} className="px-4 py-3 flex items-center gap-3">
+                  <div className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center font-bold text-white text-sm shadow-md" style={{ background: 'linear-gradient(145deg,#ffe066,#c8900a)' }}>1</div>
+                  <div className="min-w-0">
+                    <p className="text-[#1a1a1a] font-bold truncate">{w.nameUrdu || w.name}{(w.areaUrdu || w.area) ? <span className="font-normal text-[#777] text-sm"> · {w.areaUrdu || w.area}</span> : ''} <span className="font-normal text-[#777] text-xs">· {fLandedAt(lang, w.landingTime, formatTimeDisplay(w.hoursFlown))}</span></p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
