@@ -84,9 +84,13 @@ function buildDayEntries(
   })
   const withData = rows.filter(r => r.hasData && r.totalHours).sort((a, b) => compareHours(a.totalHours, b.totalHours))
   const noData = rows.filter(r => !r.hasData || !r.totalHours)
-  const sorted = [...withData, ...noData]
-  sorted.forEach((r, i) => { r.rank = i + 1 })
-  return sorted
+  let prevH = '', rank = 0
+  for (const r of withData) {
+    if (r.totalHours !== prevH) { rank++; prevH = r.totalHours }
+    r.rank = rank
+  }
+  noData.forEach((r, i) => { r.rank = rank + i + 1 })
+  return [...withData, ...noData]
 }
 
 function buildTotalRows(
@@ -111,9 +115,13 @@ function buildTotalRows(
   })
   const withData = rows.filter(r => r.grandTotal).sort((a, b) => compareHours(a.grandTotal, b.grandTotal))
   const noData = rows.filter(r => !r.grandTotal)
-  const sorted = [...withData, ...noData]
-  sorted.forEach((r, i) => { r.rank = i + 1 })
-  return sorted
+  let prevG = '', rank = 0
+  for (const r of withData) {
+    if (r.grandTotal !== prevG) { rank++; prevG = r.grandTotal }
+    r.rank = rank
+  }
+  noData.forEach((r, i) => { r.rank = rank + i + 1 })
+  return [...withData, ...noData]
 }
 
 export default function TournamentClient({
